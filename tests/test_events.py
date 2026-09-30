@@ -81,3 +81,16 @@ def test_save_and_load_roundtrip(tmp_path):
     save_events(tmp_path, events)
     assert load_events(tmp_path) == events
     assert load_events(tmp_path / "missing") == []
+
+
+def test_ambiguous_scoreboard_is_no_evidence_not_a_miss():
+    both = [R(t, home=(12 if t >= 13 else 10), away=(10 if t >= 13 else 8)) for t in range(60)]
+    [a] = build_shot_events([A(10.0)], both, [("made", 0.97)], "g")
+    assert a.made is True and a.confidence == round(0.7 * 0.97, 2) and a.team is None
+    assert "scoreboard-ambiguous" in a.flags and "clf-scoreboard-disagree" not in a.flags
+    assert a.signals["scoreboard"] == "ambiguous"
+    [b] = build_shot_events([A(10.0)], timeline_with_home_score_at(13, points=5), [("missed", 0.9)], "g")
+    assert b.made is False and b.confidence == round(0.7 * 0.9, 2) and "scoreboard-ambiguous" in b.flags
+    [c] = build_shot_events([A(10.0)], both, [None], "g")
+    assert c.made is None and c.confidence == 0.3
+    assert "no-classifier" in c.flags and "scoreboard-ambiguous" in c.flags

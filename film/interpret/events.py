@@ -11,6 +11,7 @@ CLIP_BEFORE_S = 3.0
 CLIP_AFTER_S = 1.5
 SCORE_WINDOW_S = 6.0
 NEXT_ARRIVAL_MARGIN_S = 0.5
+SCORE_LEAD_S = 1.0
 
 
 @dataclass
@@ -42,8 +43,8 @@ def event_id(t: float, rim_id: int) -> str:
 
 
 def score_change(timeline: list[ScoreboardRead], t: float, window_s: float) -> tuple[int, int] | None:
-    """(home delta, away delta) between the read just before t and the read at t + window_s."""
-    before = lookup(timeline, t - 1.0)
+    """(home delta, away delta) between the read at t - SCORE_LEAD_S and the read at t + window_s."""
+    before = lookup(timeline, t - SCORE_LEAD_S)
     after = lookup(timeline, t + window_s)
     if before is None or after is None:
         return None
@@ -67,19 +68,30 @@ def build_shot_events(arrivals: list[Arrival], timeline: list[ScoreboardRead],
         delta = score_change(timeline, arrival.t, _window_for(i, arrivals))
         d_home, d_away = delta if delta is not None else (0, 0)
         home_scored, away_scored = d_home in (1, 2, 3), d_away in (1, 2, 3)
-        score_made = delta is not None and (home_scored != away_scored)
+        if delta is None:
+            verdict = "unknown"
+        elif home_scored != away_scored and (d_home if home_scored else d_away) in (1, 2, 3) \
+                and (d_away if home_scored else d_home) == 0:
+            verdict = "made"
+        elif delta == (0, 0):
+            verdict = "missed"
+        else:
+            verdict = "ambiguous"
+        score_made = verdict == "made"
+        no_evidence = verdict in ("unknown", "ambiguous")
+        no_evidence_flag = "no-scoreboard" if verdict == "unknown" else "scoreboard-ambiguous"
         team = "home" if score_made and home_scored else ("away" if score_made and away_scored else None)
         points = (d_home if home_scored else d_away) if score_made else 0
         read = lookup(timeline, arrival.t)
         flags: list[str] = []
         kind = "shot"
         signals = {"source": arrival.source, "arrival_conf": arrival.conf, "clf": list(pred) if pred else None,
-                   "score_delta": list(delta) if delta is not None else None, "points": points}
+                   "score_delta": list(delta) if delta is not None else None, "scoreboard": verdict, "points": points}
         if pred is None:
             flags.append("no-classifier")
-            if delta is None:
+            if no_evidence:
                 made, conf = None, 0.3
-                flags.append("no-scoreboard")
+                flags.append(no_evidence_flag)
             else:
                 made, conf = score_made, (0.6 if score_made else 0.5)
         else:
@@ -89,12 +101,12 @@ def build_shot_events(arrivals: list[Arrival], timeline: list[ScoreboardRead],
                 if arrival.source == "motion":
                     kind, made, conf = "unknown", None, 0.2
                 else:
-                    made, conf = (score_made if delta is not None else False), 0.4
+                    made, conf = (False if no_evidence else score_made), 0.4
             else:
                 clf_made = label == "made"
-                if delta is None:
+                if no_evidence:
                     made, conf = clf_made, 0.7 * prob
-                    flags.append("no-scoreboard")
+                    flags.append(no_evidence_flag)
                 elif clf_made == score_made:
                     made, conf = clf_made, (0.95 if clf_made else 0.9)
                 else:
