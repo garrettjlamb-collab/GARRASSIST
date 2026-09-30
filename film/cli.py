@@ -16,6 +16,7 @@ COMMANDS = [
     "film.commands.perceive",
     "film.commands.interpret",
     "film.commands.prelabel",
+    "film.commands.train",
 ]
 
 
