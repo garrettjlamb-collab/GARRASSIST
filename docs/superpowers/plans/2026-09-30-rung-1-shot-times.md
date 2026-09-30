@@ -42,7 +42,8 @@ basketball-film-pipeline/
       registry.py                   latest(), new_version_dir(), write_manifest(), read_manifest()
       video.py                      VideoInfo, probe(), iter_frames()
     ingest/
-      profile.py                    led_fraction(), detect_profile()
+      profile.py                    overlay_features(), overlay_correlation(), detect_profile()
+      hudl_overlay.png              grayscale template of the Hudl overlay's static artwork (Task 4 fix round)
       run.py                        ingest()
     perceive/
       profiles/hudl_tactical.json   scoreboard cell geometry
@@ -5470,6 +5471,244 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 ```
 
 **Human step (Garrett), the rung-1 finish line:** label and train per the README, re-run `film perceive` and `film interpret` on the same game, review again, and compare `film eval` to the baseline. Shots-only is "ready" (spec section 10) when the machine rarely invents a shot, rarely misses one you find in the film, and agrees with you on made-or-missed nearly every time.
+
+---
+
+### Task 22: Template rim detector for the Hudl Tactical profile
+
+Added during execution. YOLO-World's open-vocabulary prompts do not find the rims in this film at any input size or wording (every box it returns is the ball in a player's hands), so the plan's zero-shot rim fallback would leave the pipeline blind until Garrett labels and trains. The Hudl Focus camera never moves or zooms, only the crop pans, so each backboard always looks the same and template matching finds it. Measured on 269 frames sampled every 20 s of `JV vs Marcos - Tactical.mp4`: the left template scores 0.70 to 1.0 when the left basket is in frame and at most 0.64 otherwise; the right template scores 0.73 to 0.98 when the right basket is in frame and under 0.70 otherwise. The templates are the TOP of each backboard, which players and the ball rarely occlude; the rim box is a fixed offset below it. This task runs before Task 11's smoke test.
+
+**Files:**
+- Create: `film/perceive/rim_templates.py`, `film/perceive/profiles/hudl_tactical_rim_left.png`, `film/perceive/profiles/hudl_tactical_rim_right.png`
+- Modify: `film/perceive/profiles/hudl_tactical.json` (add a `rims` section), `film/perceive/detectors.py:load_detector` (add `profile` and the template path), `tests/test_detectors.py` (one new case)
+- Test: `tests/test_rim_templates.py`
+
+**Interfaces:**
+- Consumes: `Box` (Task 7), the registry's `latest` (Task 7).
+- Produces: `load_rim_profile(profile_name) -> dict | None`; `TemplateRimDetector(band, templates, name)` implementing the `Detector` protocol with classmethod `for_profile(profile_name) -> TemplateRimDetector | None` and `name = "rim@template-<profile>"`; `load_detector(kind, device, profile: str | None = None)` now returns the template detector for `kind == "rim"` when no trained model exists and the profile has templates, else the YOLO-World fallback as before. Task 11 passes `profile=manifest.profile`.
+
+- [ ] **Step 1: Cut the two templates from the fixtures**
+
+```bash
+uv run python -c "
+import cv2
+g = lambda n: cv2.cvtColor(cv2.imread(f'fixtures/frames/hudl_tactical_{n}.jpg'), cv2.COLOR_BGR2GRAY)
+cv2.imwrite('film/perceive/profiles/hudl_tactical_rim_left.png', g('t4800')[105:190, 425:555])
+cv2.imwrite('film/perceive/profiles/hudl_tactical_rim_right.png', g('t3600')[70:160, 1430:1590])
+print('ok')"
+```
+Expected: two grayscale PNGs, 130x85 and 160x90.
+
+- [ ] **Step 2: Add the `rims` section to the profile**
+
+Append to the top-level object in `film/perceive/profiles/hudl_tactical.json` (keep everything already there):
+```json
+"rims": {
+  "band": [40, 320],
+  "templates": [
+    {"name": "left", "file": "hudl_tactical_rim_left.png", "threshold": 0.68, "rim_offset": [30, 93, 97, 109]},
+    {"name": "right", "file": "hudl_tactical_rim_right.png", "threshold": 0.70, "rim_offset": [40, 116, 125, 130]}
+  ]
+}
+```
+`band` is the y range of the frame searched (baskets live near the top in this camera). `rim_offset` is the rim box relative to the template's top-left corner, measured from the fixtures.
+
+- [ ] **Step 3: Write the failing tests**
+
+`tests/test_rim_templates.py`:
+```python
+from pathlib import Path
+
+import cv2
+
+from film.perceive.detectors import load_detector
+from film.perceive.rim_templates import TemplateRimDetector, load_rim_profile
+
+FIXTURES = Path(__file__).resolve().parents[1] / "fixtures" / "frames"
+
+
+def load(name):
+    return cv2.imread(str(FIXTURES / name))
+
+
+def test_profile_without_templates_gives_none():
+    assert load_rim_profile("test") is None
+    assert TemplateRimDetector.for_profile("test") is None
+
+
+def test_left_basket_is_found_where_it_is():
+    det = TemplateRimDetector.for_profile("hudl-tactical")
+    assert det.name == "rim@template-hudl-tactical"
+    rims = det.detect(load("hudl_tactical_t1500.jpg"))
+    assert len(rims) == 1 and rims[0].cls == "rim" and rims[0].conf >= 0.8
+    assert abs(rims[0].x1 - 378) <= 8 and abs(rims[0].y1 - 177) <= 8
+    rims = det.detect(load("hudl_tactical_t4800.jpg"))
+    assert len(rims) == 1 and rims[0].conf >= 0.95
+    assert abs(rims[0].x1 - 455) <= 4 and abs(rims[0].y1 - 198) <= 4
+
+
+def test_right_basket_is_found_where_it_is():
+    det = TemplateRimDetector.for_profile("hudl-tactical")
+    rims = det.detect(load("hudl_tactical_t3600.jpg"))
+    assert len(rims) == 1 and rims[0].conf >= 0.9
+    assert abs(rims[0].x1 - 1470) <= 4 and abs(rims[0].y1 - 186) <= 4
+
+
+def test_frames_without_a_basket_give_nothing():
+    det = TemplateRimDetector.for_profile("hudl-tactical")
+    for name in ("hudl_tactical_t2400.jpg", "hudl_tactical_t600.jpg", "hudl_tactical_t60.jpg"):
+        assert det.detect(load(name)) == [], name
+
+
+def test_load_detector_prefers_templates_for_the_profile(tmp_path, monkeypatch):
+    monkeypatch.setenv("FILM_MODELS_DIR", str(tmp_path / "models"))
+    det = load_detector("rim", "cpu", profile="hudl-tactical")
+    assert isinstance(det, TemplateRimDetector)
+```
+
+Add to `tests/test_detectors.py`, next to the existing `load_detector` test, a case showing that with no profile (or a profile without templates) the rim fallback is still the open-vocabulary one:
+```python
+def test_load_detector_falls_back_to_open_vocab_without_templates(tmp_path, monkeypatch):
+    monkeypatch.setenv("FILM_MODELS_DIR", str(tmp_path / "models"))
+    seen = {}
+
+    def fake_open_vocab(classes, device, imgsz, conf=0.15, name="", weights=""):
+        seen["name"] = name
+        return object()
+
+    monkeypatch.setattr("film.perceive.detectors.YoloDetector.open_vocab", staticmethod(fake_open_vocab))
+    load_detector("rim", "cpu", profile="test")
+    assert seen["name"] == "rim@world-fallback"
+```
+(If the existing test already stubs `open_vocab` in a different style, follow that style.)
+
+- [ ] **Step 4: Run the tests to verify they fail**
+
+Run: `uv run pytest tests/test_rim_templates.py tests/test_detectors.py -v`
+Expected: FAIL with `ModuleNotFoundError: No module named 'film.perceive.rim_templates'` and a `TypeError` for the new `profile` argument.
+
+- [ ] **Step 5: Write the implementation**
+
+`film/perceive/rim_templates.py`:
+```python
+from __future__ import annotations
+
+import json
+from importlib import resources
+
+import cv2
+import numpy as np
+
+from film.perceive.detectors import Box
+
+PROFILE_PACKAGE = "film.perceive.profiles"
+
+
+def load_rim_profile(profile_name: str) -> dict | None:
+    """The `rims` section of a camera profile, or None when the profile has no rim templates."""
+    path = resources.files(PROFILE_PACKAGE).joinpath(f"{profile_name.replace('-', '_')}.json")
+    if not path.is_file():
+        return None
+    return json.loads(path.read_text()).get("rims")
+
+
+def _load_gray(name: str) -> np.ndarray:
+    data = resources.files(PROFILE_PACKAGE).joinpath(name).read_bytes()
+    return cv2.imdecode(np.frombuffer(data, np.uint8), cv2.IMREAD_GRAYSCALE)
+
+
+def iou(a: Box, b: Box) -> float:
+    ix1, iy1, ix2, iy2 = max(a.x1, b.x1), max(a.y1, b.y1), min(a.x2, b.x2), min(a.y2, b.y2)
+    inter = max(0.0, ix2 - ix1) * max(0.0, iy2 - iy1)
+    union = a.w * a.h + b.w * b.h - inter
+    return inter / union if union > 0 else 0.0
+
+
+class TemplateRimDetector:
+    """Finds rims for a fixed camera by matching the top of each backboard against a stored template.
+
+    The rim box is a fixed offset below the matched template. Only the top band of the frame is
+    searched, and when two templates claim overlapping rims the higher score wins.
+    """
+
+    def __init__(self, band: tuple[int, int], templates: list[dict], name: str) -> None:
+        self.band = band
+        self.templates = templates
+        self.name = name
+
+    @classmethod
+    def for_profile(cls, profile_name: str) -> "TemplateRimDetector | None":
+        rims = load_rim_profile(profile_name)
+        if not rims:
+            return None
+        templates = [
+            {
+                "name": t["name"],
+                "image": _load_gray(t["file"]),
+                "threshold": float(t["threshold"]),
+                "rim_offset": tuple(t["rim_offset"]),
+            }
+            for t in rims["templates"]
+        ]
+        return cls(band=(int(rims["band"][0]), int(rims["band"][1])), templates=templates, name=f"rim@template-{profile_name}")
+
+    def detect(self, image_bgr: np.ndarray) -> list[Box]:
+        gray = cv2.cvtColor(image_bgr, cv2.COLOR_BGR2GRAY)
+        y0, y1 = self.band
+        strip = gray[y0:y1]
+        found: list[Box] = []
+        for t in self.templates:
+            tpl = t["image"]
+            if strip.shape[0] < tpl.shape[0] or strip.shape[1] < tpl.shape[1]:
+                continue
+            result = cv2.matchTemplate(strip, tpl, cv2.TM_CCOEFF_NORMED)
+            _, score, _, (x, y) = cv2.minMaxLoc(result)
+            if score < t["threshold"]:
+                continue
+            ox1, oy1, ox2, oy2 = t["rim_offset"]
+            found.append(Box(x + ox1, y + y0 + oy1, x + ox2, y + y0 + oy2, float(score), "rim"))
+        found.sort(key=lambda b: -b.conf)
+        kept: list[Box] = []
+        for box in found:
+            if all(iou(box, other) < 0.3 for other in kept):
+                kept.append(box)
+        return kept
+```
+
+In `film/perceive/detectors.py`, change `load_detector` to:
+```python
+def load_detector(kind: str, device: str, profile: str | None = None):
+    """The trained detector for `kind` if one exists, else a template detector for the camera profile
+    (rims only), else the open-vocabulary fallback."""
+    found = latest(kind)
+    if found:
+        version, folder = found
+        return YoloDetector.from_weights(folder / "best.pt", device=device, imgsz=IMGSZ[kind], name=f"{kind}@{version}")
+    if kind == "rim":
+        if profile:
+            from film.perceive.rim_templates import TemplateRimDetector
+
+            templates = TemplateRimDetector.for_profile(profile)
+            if templates is not None:
+                return templates
+        return YoloDetector.open_vocab(RIM_WORLD_CLASSES, device=device, imgsz=IMGSZ["rim"], name="rim@world-fallback")
+    return YoloDetector.open_vocab(BALL_WORLD_CLASSES, device=device, imgsz=IMGSZ["ball"], name="ball@world-fallback")
+```
+(Keep whatever the existing function does for the trained path and the ball fallback; only the `profile` parameter and the template branch are new. The import is inside the function so `detectors` does not import `rim_templates` at module load.)
+
+- [ ] **Step 6: Run the tests to verify they pass**
+
+Run: `uv run pytest tests/test_rim_templates.py tests/test_detectors.py -v`
+Expected: all pass. If a position assertion fails by a few pixels, print the detected box and adjust only the `rim_offset` numbers in the JSON (the template match position is what it is); record the measured boxes in the report. Then `uv run pytest -q` for the whole suite.
+
+- [ ] **Step 7: Commit**
+
+```bash
+git add film/perceive/rim_templates.py film/perceive/profiles film/perceive/detectors.py tests/test_rim_templates.py tests/test_detectors.py
+git commit -m "Template rim detector for the fixed Hudl camera
+
+Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
+```
 
 ---
 
