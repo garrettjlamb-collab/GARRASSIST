@@ -137,7 +137,7 @@ def create_app() -> FastAPI:
         if event_id not in {e.id for e in load_events(gd)}:
             raise HTTPException(404, "no such event")
         try:
-            return save_decision(gd, event_id, decision.model_dump(exclude_none=True))
+            return save_decision(gd, event_id, decision.model_dump(exclude_unset=True))
         except ValueError as exc:
             raise HTTPException(400, str(exc))
 

@@ -128,3 +128,18 @@ def test_one_broken_game_does_not_blank_the_list(synthetic_video, tmp_path, monk
     by_id = {g["game_id"]: g for g in r.json()}
     assert by_id[game_id]["events"] == 2 and "error" not in by_id[game_id]
     assert set(by_id["2026-01-02-broken"]) == {"game_id", "error"} and by_id["2026-01-02-broken"]["error"]
+
+
+def test_an_explicit_null_team_persists_and_an_omitted_one_does_not(synthetic_video, tmp_path, monkeypatch):
+    _env(monkeypatch, tmp_path)
+    game_id, gd = _game(synthetic_video)
+    events = [Event(id=f"shot-{i:06d}-r1", type="shot", t=1.0 + i, rim_id=1, quarter=1, clock_s=100.0, team="home",
+                    made=True, confidence=0.9, clip={"start": 0.5, "end": 1.5}, signals={}, flags=[]) for i in range(2)]
+    save_events(gd, events)
+    client = TestClient(create_app())
+    r = client.post(f"/api/games/{game_id}/decisions/shot-000000-r1", json={"status": "confirmed", "made": True, "team": None})
+    assert r.status_code == 200 and "team" in r.json() and r.json()["team"] is None
+    client.post(f"/api/games/{game_id}/decisions/shot-000001-r1", json={"status": "confirmed"})
+    first, second = client.get(f"/api/games/{game_id}/events").json()
+    assert first["team"] is None                    # the coach cleared it
+    assert second["team"] == "home" and "team" not in second["decision"]
