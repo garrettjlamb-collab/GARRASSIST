@@ -15,7 +15,8 @@ FIELDS = ["id", "t", "quarter", "clock_s", "team", "made", "confidence", "status
 def reviewed_shots(game_id: str, statuses=("confirmed", "unsure")) -> list[dict]:
     gd = game_dir(game_id)
     merged = apply_decisions([e.to_json() for e in load_events(gd)], load_decisions(gd))
-    rows = [e for e in merged if e["type"] == "shot" and e.get("decision") and e["decision"]["status"] in statuses]
+    # The coach's decision is what makes it a shot: a confirmed "unknown" event counts too.
+    rows = [e for e in merged if e.get("decision") and e["decision"]["status"] in statuses]
     return sorted(rows, key=lambda e: e["t"])
 
 

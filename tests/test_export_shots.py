@@ -38,3 +38,16 @@ def test_export_reel_uses_confirmed_only(synthetic_video, tmp_path, monkeypatch)
         cut_clip(synthetic_video, 0.5, 1.5, clip_path(gd, f"shot-{i:06d}-r1"))
     reel = export_reel(game_id)
     assert reel is not None and reel.exists() and reel.name.endswith(".reel.mp4")
+
+
+def test_a_confirmed_unknown_event_is_a_shot(synthetic_video, tmp_path, monkeypatch):
+    game_id, gd = _game(synthetic_video, tmp_path, monkeypatch)
+    from film.interpret.events import load_events
+
+    unknown = Event(id="shot-000030-r2", type="unknown", t=3.0, rim_id=2, quarter=2, clock_s=100.0, team=None,
+                    made=None, confidence=0.2, clip={"start": 0.0, "end": 3.0}, signals={}, flags=["clf-none"])
+    save_events(gd, load_events(gd) + [unknown])
+    save_decision(gd, "shot-000030-r2", {"status": "confirmed", "made": True})
+    rows = list(csv.DictReader(export_shots(game_id)[0].open()))
+    assert [r["id"] for r in rows] == ["shot-000000-r1", "shot-000002-r1", "shot-000030-r2"]
+    assert rows[2]["made"] == "True" and rows[2]["status"] == "confirmed"
