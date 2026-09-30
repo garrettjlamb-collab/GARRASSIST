@@ -61,3 +61,12 @@ def test_load_detector_prefers_trained_then_falls_back(monkeypatch, tmp_path):
     assert load_detector("ball", "cpu") == "world"
     assert calls[0] == ("weights", str(tmp_path / "best.pt"), 640, "rim@v3")
     assert calls[1] == ("world", D.BALL_WORLD_CLASSES, 320, "ball@world-fallback")
+
+
+def test_load_detector_falls_back_to_open_vocab_without_templates(monkeypatch):
+    calls = []
+    monkeypatch.setattr(D.registry, "latest", lambda name: None)
+    monkeypatch.setattr(YoloDetector, "open_vocab", classmethod(lambda cls, classes, device, imgsz, conf=0.15, name="", weights="": calls.append(name) or "world"))
+    assert load_detector("rim", "cpu") == "world"
+    assert load_detector("rim", "cpu", profile="test") == "world"
+    assert calls == ["rim@world-fallback", "rim@world-fallback"]

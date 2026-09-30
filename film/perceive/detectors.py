@@ -107,11 +107,18 @@ class YoloDetector:
         return boxes_from_result(results[0], self.cls_map)
 
 
-def load_detector(kind: str, device: str) -> YoloDetector:
-    """The latest trained detector of this kind, else the open-vocabulary fallback so the pipeline still runs."""
+def load_detector(kind: str, device: str, profile: str | None = None):
+    """The latest trained detector of this kind, else (rims only) a template detector for the camera
+    profile, else the open-vocabulary fallback so the pipeline still runs."""
     found = registry.latest(kind)
     if found is not None:
         version, folder = found
         return YoloDetector.from_weights(folder / "best.pt", device, IMGSZ[kind], name=f"{kind}@{version}")
+    if kind == "rim" and profile:
+        from film.perceive.rim_templates import TemplateRimDetector
+
+        templates = TemplateRimDetector.for_profile(profile)
+        if templates is not None:
+            return templates
     classes = RIM_WORLD_CLASSES if kind == "rim" else BALL_WORLD_CLASSES
     return YoloDetector.open_vocab(classes, device, IMGSZ[kind], name=f"{kind}@world-fallback")

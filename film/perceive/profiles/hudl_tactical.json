@@ -9,5 +9,12 @@
     "period":     {"color": "green", "cells": [[189, 954, 20, 34]]},
     "home_fouls": {"color": "green", "cells": [[45, 1012, 20, 34]]},
     "away_fouls": {"color": "green", "cells": [[296, 1012, 20, 34]]}
+  },
+  "rims": {
+    "band": [40, 320],
+    "templates": [
+      {"name": "left", "file": "hudl_tactical_rim_left.png", "threshold": 0.68, "rim_offset": [30, 93, 97, 109]},
+      {"name": "right", "file": "hudl_tactical_rim_right.png", "threshold": 0.70, "rim_offset": [40, 116, 125, 130]}
+    ]
   }
 }
