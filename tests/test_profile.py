@@ -24,13 +24,13 @@ def test_hudl_frames_show_the_overlay():
         led, panel = overlay_features(load(name))
         assert led > 0.02, (name, led)
         assert panel > 0.35, (name, panel)
-        assert overlay_correlation(load(name)) > 0.4, name
-    assert overlay_correlation(load("hudl_tactical_t2400.jpg")) > 0.95
+        assert overlay_correlation(load(name)) > 0.9, name
+    assert overlay_correlation(load("hudl_tactical_t2400.jpg")) > 0.99
 
 
 def test_nfhs_auto_frames_do_not():
     for name in NFHS_AUTO:
-        assert overlay_correlation(load(name)) < 0.2, name
+        assert overlay_correlation(load(name)) < 0.3, name
     assert overlay_features(load("nfhs_auto_t1500.jpg"))[1] < 0.05
 
 

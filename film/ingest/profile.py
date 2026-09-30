@@ -11,17 +11,24 @@ PROFILES = ("hudl-tactical", "nfhs-auto", "nfhs-broadcast", "handheld")
 # The Hudl Focus scoreboard overlay, in a 1920x1080 frame: x1, y1, x2, y2.
 HUDL_OVERLAY_REGION = (0, 880, 340, 1080)
 PANEL_MIN = 0.35
-CORR_MIN = 0.3
+CORR_MIN = 0.6
 
 _template: np.ndarray | None = None
+_mask: np.ndarray | None = None
 
 
-def _overlay_template() -> np.ndarray:
-    global _template
-    if _template is None:
-        data = resources.files("film.ingest").joinpath("hudl_overlay.png").read_bytes()
-        _template = cv2.imdecode(np.frombuffer(data, np.uint8), cv2.IMREAD_GRAYSCALE)
-    return _template
+def _load_gray(name: str) -> np.ndarray:
+    data = resources.files("film.ingest").joinpath(name).read_bytes()
+    return cv2.imdecode(np.frombuffer(data, np.uint8), cv2.IMREAD_GRAYSCALE)
+
+
+def _overlay_template() -> tuple[np.ndarray, np.ndarray]:
+    """The overlay artwork and a mask that is zero over the changing digits and indicators."""
+    global _template, _mask
+    if _template is None or _mask is None:
+        _template = _load_gray("hudl_overlay.png")
+        _mask = _load_gray("hudl_overlay_mask.png") > 0
+    return _template, _mask
 
 
 def overlay_features(frame_bgr: np.ndarray, region=HUDL_OVERLAY_REGION) -> tuple[float, float]:
@@ -38,14 +45,19 @@ def overlay_features(frame_bgr: np.ndarray, region=HUDL_OVERLAY_REGION) -> tuple
 
 
 def overlay_correlation(frame_bgr: np.ndarray, region=HUDL_OVERLAY_REGION) -> float:
-    """Pearson correlation of the region's grayscale pixels with the Hudl overlay template."""
+    """Pearson correlation of the region's static-artwork pixels with the Hudl overlay template."""
     x1, y1, x2, y2 = region
     h, w = frame_bgr.shape[:2]
     if h < y2 or w < x2:
         return 0.0
     crop = cv2.cvtColor(frame_bgr[y1:y2, x1:x2], cv2.COLOR_BGR2GRAY).astype(np.float32).ravel()
-    tmpl = _overlay_template().astype(np.float32).ravel()
-    if crop.shape != tmpl.shape or crop.std() == 0 or tmpl.std() == 0:
+    template, mask = _overlay_template()
+    tmpl = template.astype(np.float32).ravel()
+    keep = mask.ravel()
+    if crop.shape != tmpl.shape or keep.shape != tmpl.shape:
+        return 0.0
+    crop, tmpl = crop[keep], tmpl[keep]
+    if crop.std() == 0 or tmpl.std() == 0:
         return 0.0
     return float(np.corrcoef(crop, tmpl)[0, 1])
 
