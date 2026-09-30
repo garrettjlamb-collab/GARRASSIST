@@ -137,7 +137,7 @@ def scoreboard_only_events(timeline: list[ScoreboardRead], events: list[Event]) 
     """A made basket for every scoreboard rise that no event explains.
 
     Walks the reads that carry both scores; a rise of 1 to 3 points by exactly one team, with no event
-    (at any rim) in the SB_ONLY_LOOKBACK_S before it, becomes a shot placed SB_ONLY_LEAD_S before the
+    (at any rim) in the SB_ONLY_LOOKBACK_S before it (or less than SCORE_LEAD_S after it), becomes a shot placed SB_ONLY_LEAD_S before the
     rise. It has no rim, so no montage and no classifier; the coach places it."""
     arrival_times = sorted(e.t for e in events)
     out: list[Event] = []
@@ -149,7 +149,9 @@ def scoreboard_only_events(timeline: list[ScoreboardRead], events: list[Event]) 
             dh, da = read.home - prev.home, read.away - prev.away
             if (dh in (1, 2, 3) and da == 0) or (da in (1, 2, 3) and dh == 0):
                 rise_t = read.t
-                explained = any(rise_t - SB_ONLY_LOOKBACK_S <= t <= rise_t for t in arrival_times)
+                # score_change credits an arrival with a rise up to SCORE_LEAD_S before it, so an arrival
+                # that close after the rise has already claimed it.
+                explained = any(rise_t - SB_ONLY_LOOKBACK_S <= t < rise_t + SCORE_LEAD_S for t in arrival_times)
                 if not explained:
                     out.append(_scoreboard_only_event(timeline, rise_t, dh, da))
         prev = read

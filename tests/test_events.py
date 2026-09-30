@@ -126,7 +126,11 @@ def test_a_rise_already_explained_by_an_arrival_gives_no_scoreboard_only_event()
     tl = timeline_with_home_score_at(20)
     events = build_shot_events([A(17.0, rim_id=2)], tl, [None], "g")
     assert scoreboard_only_events(tl, events) == []
-    later = build_shot_events([A(21.0)], tl, [None], "g")         # after the rise: explains nothing
+    just_after = build_shot_events([A(20.5)], tl, [None], "g")    # within SCORE_LEAD_S after: it was credited the rise
+    assert just_after[0].signals["points"] == 2
+    assert scoreboard_only_events(tl, just_after) == []
+    later = build_shot_events([A(21.0)], tl, [None], "g")         # a full lead after the rise: explains nothing
+    assert later[0].signals["points"] == 0
     assert len(scoreboard_only_events(tl, later)) == 1
     early = build_shot_events([A(12.0)], tl, [None], "g")         # 8 s before: too early
     assert len(scoreboard_only_events(tl, early)) == 1
