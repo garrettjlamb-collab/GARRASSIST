@@ -22,7 +22,8 @@ uv run film eval 2025-02-05-jv-vs-marcos-tactical
 ```
 
 `film run` is `ingest` + `perceive` + `interpret` + `clips`. Each can be re-run alone. Add `--limit-s 120`
-for a two-minute smoke test, `--fps 5` on the 8 GB laptop. A full 90-minute game takes about half an hour
+for a two-minute smoke test (a later run without it redoes the whole game; `--force` re-runs every stage
+regardless), `--fps 5` on the 8 GB laptop. A full 90-minute game takes about half an hour
 on the laptop.
 
 ## Making it better: label, then train

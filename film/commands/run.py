@@ -35,14 +35,22 @@ def run(args) -> int:
 
         print(unknown_profile_message(), file=sys.stderr)
         return 2
+
     def done(stage: str) -> bool:
         return m.stages.get(stage, {}).get("status") == "done" and not args.force
 
-    if done("perceive"):
+    # A perceive done under --limit-s covers only that stretch: it counts as done for a run with the
+    # same limit, and a full perceive counts for any run, but a limited one never stands in for a full one.
+    recorded_limit = m.stages.get("perceive", {}).get("limit_s")
+    perceive_done = done("perceive") and (recorded_limit is None or recorded_limit == args.limit_s)
+    if done("perceive") and not perceive_done:
+        print(f"perceive was done with --limit-s {recorded_limit:g} only; re-running "
+              f"{'the whole game' if args.limit_s is None else f'with --limit-s {args.limit_s:g}'}")
+    if perceive_done:
         print("perceive already done, skipped (--force to re-run)")
     else:
         perceive_mod.perceive(m.game_id, device=args.device, limit_s=args.limit_s)
-    if done("perceive") and done("interpret"):          # new tracks always get a fresh interpret
+    if perceive_done and done("interpret"):             # new tracks always get a fresh interpret
         print("interpret already done, skipped (--force to re-run)")
     else:
         interpret_mod.interpret(m.game_id, device=args.device)

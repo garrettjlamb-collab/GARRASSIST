@@ -28,7 +28,7 @@ def test_perceive_writes_tracks_motion_and_marks_stage(synthetic_video, tmp_path
     assert len(motion) == len(rim_rows)
     assert not (gd / "scoreboard.jsonl").exists()
     saved = Manifest.load(gd)
-    assert saved.stages["perceive"]["status"] == "done"
+    assert saved.stages["perceive"]["status"] == "done" and saved.stages["perceive"]["limit_s"] is None
     assert saved.model_versions == {"rim": "rim@fake", "ball": "ball@fake"}
     assert info["frames"] == len(rim_rows)
 

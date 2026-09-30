@@ -58,7 +58,7 @@ def perceive(game_id: str, device: str | None = None, rim_detector=None, ball_de
         n_scoreboard = len(kept)
     m.model_versions.update({"rim": rim_detector.name, "ball": ball_detector.name})
     m.mark("perceive", "done", frames=n_frames, rims=len(rim_rows), balls=len(ball_rows),
-           scoreboard=n_scoreboard, seconds=round(time.time() - started, 1), device=device)
+           scoreboard=n_scoreboard, seconds=round(time.time() - started, 1), device=device, limit_s=limit_s)
     m.save(gd)
     log(f"done: {n_frames} frames, {len(rim_rows)} rim rows, {len(ball_rows)} ball rows, {n_scoreboard} scoreboard reads in {m.stages['perceive']['seconds']}s")
     fraction = len(rim_rows) / n_frames if n_frames else 0.0

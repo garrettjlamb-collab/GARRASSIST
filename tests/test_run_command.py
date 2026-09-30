@@ -109,3 +109,34 @@ def test_a_fresh_perceive_always_gets_a_fresh_interpret(synthetic_video, tmp_pat
     _stub_stages(monkeypatch, calls)
     assert main(["run", str(synthetic_video), "--date", "2026-01-01", "--profile", "handheld"]) == 0
     assert calls == ["perceive", "interpret", "clips"]
+
+
+def test_a_stage_done_under_a_limit_is_rerun_by_a_full_run(synthetic_video, tmp_path, monkeypatch, capsys):
+    from film.common.manifest import Manifest
+
+    gd = _done_game(synthetic_video, tmp_path, monkeypatch)
+    m = Manifest.load(gd)
+    m.stages["perceive"]["limit_s"] = 2.0
+    m.save(gd)
+    calls = []
+    _stub_stages(monkeypatch, calls)
+    assert main(["run", str(synthetic_video), "--date", "2026-01-01", "--profile", "handheld"]) == 0
+    assert calls == ["perceive", "interpret", "clips"]
+    assert "--limit-s 2" in capsys.readouterr().out
+    calls.clear()
+    assert main(["run", str(synthetic_video), "--date", "2026-01-01", "--profile", "handheld", "--limit-s", "2"]) == 0
+    assert calls == ["clips"]                               # the same limit again: nothing new to do
+
+
+def test_a_full_perceive_is_skipped_by_any_later_run(synthetic_video, tmp_path, monkeypatch):
+    from film.common.manifest import Manifest
+
+    gd = _done_game(synthetic_video, tmp_path, monkeypatch)
+    m = Manifest.load(gd)
+    m.stages["perceive"]["limit_s"] = None
+    m.save(gd)
+    calls = []
+    _stub_stages(monkeypatch, calls)
+    assert main(["run", str(synthetic_video), "--date", "2026-01-01", "--profile", "handheld"]) == 0
+    assert main(["run", str(synthetic_video), "--date", "2026-01-01", "--profile", "handheld", "--limit-s", "2"]) == 0
+    assert calls == ["clips", "clips"]
