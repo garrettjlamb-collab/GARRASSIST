@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import json
-from dataclasses import asdict, dataclass, field
+from dataclasses import asdict, dataclass, field, fields
 from pathlib import Path
 
 from film.interpret.arrivals import Arrival
@@ -35,7 +35,8 @@ class Event:
 
     @classmethod
     def from_json(cls, data: dict) -> "Event":
-        return cls(**data)
+        known = {f.name for f in fields(cls)}
+        return cls(**{k: v for k, v in data.items() if k in known})
 
 
 def event_id(t: float, rim_id: int) -> str:

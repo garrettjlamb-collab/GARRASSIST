@@ -94,3 +94,9 @@ def test_ambiguous_scoreboard_is_no_evidence_not_a_miss():
     [c] = build_shot_events([A(10.0)], both, [None], "g")
     assert c.made is None and c.confidence == 0.3
     assert "no-classifier" in c.flags and "scoreboard-ambiguous" in c.flags
+
+
+def test_event_from_json_ignores_unknown_keys():
+    e = Event(id="shot-000010-r1", type="shot", t=1.0, rim_id=1, quarter=1, clock_s=400.0, team=None, made=None,
+              confidence=0.3, clip={"start": 0.0, "end": 2.5}, signals={})
+    assert Event.from_json(e.to_json() | {"added_later": 1}) == e

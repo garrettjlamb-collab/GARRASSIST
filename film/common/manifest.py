@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 import json
-from dataclasses import asdict, dataclass, field
+import os
+from dataclasses import asdict, dataclass, field, fields
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -22,13 +23,17 @@ class Manifest:
 
     @classmethod
     def load(cls, game_dir: Path) -> "Manifest":
-        return cls(**json.loads((Path(game_dir) / "manifest.json").read_text()))
+        data = json.loads((Path(game_dir) / "manifest.json").read_text(encoding="utf-8"))
+        known = {f.name for f in fields(cls)}
+        return cls(**{k: v for k, v in data.items() if k in known})
 
     def save(self, game_dir: Path) -> Path:
         game_dir = Path(game_dir)
         game_dir.mkdir(parents=True, exist_ok=True)
         path = game_dir / "manifest.json"
-        path.write_text(json.dumps(asdict(self), indent=2))
+        tmp = game_dir / "manifest.json.tmp"
+        tmp.write_text(json.dumps(asdict(self), indent=2), encoding="utf-8")
+        os.replace(tmp, path)
         return path
 
     def mark(self, stage: str, status: str, **info) -> None:

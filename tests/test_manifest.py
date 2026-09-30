@@ -19,3 +19,28 @@ def test_roundtrip(tmp_path):
     assert loaded.stages["ingest"]["status"] == "done"
     assert loaded.stages["ingest"]["samples"] == 5
     assert "at" in loaded.stages["ingest"]
+
+
+def test_save_is_atomic_and_leaves_no_temp_file(tmp_path, monkeypatch):
+    import film.common.manifest as manifest_mod
+
+    moves = []
+    real_replace = manifest_mod.os.replace
+    monkeypatch.setattr(manifest_mod.os, "replace", lambda a, b: moves.append((str(a), str(b))) or real_replace(a, b))
+    m = _manifest()
+    m.save(tmp_path / "game")
+    assert moves == [(str(tmp_path / "game" / "manifest.json.tmp"), str(tmp_path / "game" / "manifest.json"))]
+    m.mark("perceive", "done")
+    m.save(tmp_path / "game")
+    assert sorted(p.name for p in (tmp_path / "game").iterdir()) == ["manifest.json"]
+    assert Manifest.load(tmp_path / "game").stages["perceive"]["status"] == "done"
+
+
+def test_load_ignores_unknown_keys(tmp_path):
+    import json
+    from dataclasses import asdict
+
+    m = _manifest()
+    data = asdict(m) | {"written_by_a_newer_version": True}
+    (tmp_path / "manifest.json").write_text(json.dumps(data), encoding="utf-8")
+    assert Manifest.load(tmp_path) == m
