@@ -32,12 +32,17 @@ detection for the ball) and the scoreboard alone. On Hudl film the rim detector 
 training, because it matches templates of this gym's backboards, so the ball and made-or-missed labels are
 the ones that matter most. Each of these makes it faster and more accurate:
 
-1. `uv run film prelabel rim <game_id>` then the **Label rim** tab, on two or three games, at least 150 frames. Then `uv run film train rim` (overnight).
-2. `uv run film prelabel ball <game_id>` on a game with events, then **Label ball**, at least 300 crops. Then `uv run film train ball`.
-3. `uv run film prelabel rimclf <game_id>` then **Label clips** (made / missed / not a shot). Then `uv run film train rimclf`.
+1. `uv run film prelabel ball <game_id>` on a game with events, then **Label ball**, at least 300 crops. Then `uv run film train ball`.
+2. `uv run film prelabel rimclf <game_id>` then **Label clips** (made / missed / not a shot). Then `uv run film train rimclf`.
+3. The rim detector, and **not on Hudl film**: the template matcher is already near-perfect there, and a
+   trained model would take its place (see below). Rim training is for the other camera
+   profiles (rung 4): `uv run film prelabel rim <game_id>` then the **Label rim** tab, on two or three
+   games, at least 150 frames. Then `uv run film train rim` (overnight).
 
 New versions land in `models/<name>/vN/` and are picked up automatically. Re-run `film perceive` and
-`film interpret` on a game to use them.
+`film interpret` on a game to use them. A trained rim model outranks the templates once it exists; set
+`FILM_RIM_DETECTOR=template` to force the templates on a profile that has them (`trained`, or unset,
+keeps the default order: trained, then templates, then open-vocabulary).
 
 ## Where things live
 

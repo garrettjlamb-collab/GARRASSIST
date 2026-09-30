@@ -1,6 +1,7 @@
 import types
 
 import numpy as np
+import pytest
 
 from film.perceive import detectors as D
 from film.perceive.detectors import Box, FakeDetector, YoloDetector, boxes_from_result, load_detector
@@ -89,3 +90,22 @@ def test_open_vocab_loads_world_weights_from_models_base(monkeypatch, tmp_path):
     det = YoloDetector.open_vocab(D.BALL_WORLD_CLASSES, "cpu", 320)
     assert seen["weights"] == str(tmp_path / "models" / "base" / D.WORLD_WEIGHTS)
     assert det.cls_map == D.BALL_WORLD_CLASSES
+
+
+def test_film_rim_detector_env_picks_templates_or_trained(monkeypatch, tmp_path):
+    from film.perceive.rim_templates import TemplateRimDetector
+
+    monkeypatch.setattr(D.registry, "latest", lambda name: ("v2", tmp_path) if name == "rim" else None)
+    monkeypatch.setattr(YoloDetector, "from_weights", classmethod(lambda cls, w, device, imgsz, conf=0.25, name="": "trained"))
+    monkeypatch.setattr(YoloDetector, "open_vocab", classmethod(lambda cls, classes, device, imgsz, conf=0.15, name="", weights=None: "world"))
+    monkeypatch.delenv("FILM_RIM_DETECTOR", raising=False)
+    assert load_detector("rim", "cpu", profile="hudl-tactical") == "trained"      # the ladder: trained outranks templates
+    monkeypatch.setenv("FILM_RIM_DETECTOR", "template")
+    assert isinstance(load_detector("rim", "cpu", profile="hudl-tactical"), TemplateRimDetector)
+    assert load_detector("rim", "cpu", profile="test") == "trained"              # no templates for this profile: the ladder
+    assert load_detector("ball", "cpu") == "world"                                 # the ball is unaffected
+    monkeypatch.setenv("FILM_RIM_DETECTOR", "trained")
+    assert load_detector("rim", "cpu", profile="hudl-tactical") == "trained"
+    monkeypatch.setenv("FILM_RIM_DETECTOR", "templates")
+    with pytest.raises(ValueError, match="FILM_RIM_DETECTOR"):
+        load_detector("rim", "cpu", profile="hudl-tactical")
