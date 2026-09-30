@@ -53,7 +53,7 @@ Per-game working directory, `games/<game-id>/`:
 | File | Written by | Contents |
 |---|---|---|
 | `manifest.json` | Ingest | source path, duration, resolution, fps, camera profile, frame rate used, model versions used by later stages, stage status |
-| `frames/` | Ingest | JPEG frames at the working frame rate. Temporary: deleted after Perceive unless `--keep-frames` (used for labeling). |
+| `motion.parquet` | Perceive | one record per rim per frame: `frame, t, rim_id, energy, energy_global`, the motion-energy fallback signal |
 | `scoreboard.jsonl` | Perceive | one record per second: `t, period, clock_s, home, away, home_fouls, away_fouls, conf` |
 | `tracks.parquet` | Perceive | one record per detected object per frame: `frame, t, kind (person/rim/ball), track_id, x1, y1, x2, y2, conf, on_court, court_x, court_y, team, model_version`. `on_court` is false for bench, crowd and table people, who are kept so the substitution rule can see players leave and enter. Court coordinates are the tracker's half-court feet (section 6) and are null where geometry is unavailable or the person is off court. |
 | `events.json` | Interpret | list of events (section 7) |
@@ -69,12 +69,12 @@ The tracks file is the contract between the halves. Everything above it (Interpr
 - Input: a path to an `.mp4` or `.mov`.
 - Probes duration, resolution and fps with `ffprobe`.
 - Samples the first three minutes to choose the camera profile: `hudl-tactical` if the Hudl scoreboard overlay is detected in the bottom-left region; `nfhs-broadcast` if a score bug is detected along the bottom; `nfhs-auto` if the NFHS watermark is detected top-right; otherwise `handheld`. The profile can be overridden on the command line.
-- Decodes frames with `ffmpeg` at the working frame rate: 10 fps by default, 5 fps on the laptop (`--fps`).
+- Records the working frame rate: 10 fps by default, 5 fps on the laptop (`--fps`). No frames are written to disk; every later stage decodes on the fly with PyAV at that rate, so a game costs no intermediate storage.
 - Writes the manifest. Runs on any machine, no graphics cores needed.
 
 ## 6. Perceive
 
-Runtime: Python 3.12, PyTorch on the Metal backend, Ultralytics YOLO for detectors, OpenCV for image work. Device chosen by flag; `mps` by default on a Mac.
+Runtime: Python 3.12, PyAV for decoding, PyTorch on the Metal backend, Ultralytics YOLO for detectors (with YOLO-World open-vocabulary prompts as the fallback before anything is trained), OpenCV for image work. Device chosen by flag; `mps` by default on a Mac. Perceive is a single streaming pass: rims, the ball near each rim, motion energy at each rim, and the scoreboard once a second, all from one decode.
 
 - **Scoreboard reading**, once per second, on the profile's crop box. `hudl-tactical` uses a small seven-segment digit classifier (template or tiny CNN) because the digits are a fixed LED font. `nfhs-broadcast` uses a general OCR model on the bug region. `nfhs-auto` and `handheld` produce no scoreboard timeline. Output is cleaned: within a period the clock must be non-increasing, scores non-decreasing, and single-second outliers are dropped.
 - **People and rims, full frame**, every kept frame, at 640 px input. One detector with classes `person`, `rim`, `backboard`. People are tracked with ByteTrack so each gets a stable `track_id`. People whose feet fall outside the court polygon (bench, crowd, table) are kept in the tracks file with `on_court = false`, so the substitution rule (section 7) can see players leaving and entering; every other rule ignores them.
@@ -177,7 +177,7 @@ Shot records carry every field the tracker's `saveShot` writes, with the coachin
 - Missing geometry: shots carry a null location and `needs_location`; the shot card asks the coach to place the dot.
 - Lost tracks: re-link where possible, otherwise the identity queue.
 - Anything unclassifiable: an `unknown` event with a timestamp, never a silent drop.
-- Frames are the only large intermediate; they are deleted after Perceive unless kept for labeling, and can always be regenerated from the film.
+- No frames are stored; anything that needs pixels again (montages for the classifier, clips for review, frames for labeling) seeks into the film and decodes the few seconds it needs.
 - The laptop path: same code, `--fps 5`, nano models, and a warning printed with the expected runtime.
 
 ## 12. Testing
@@ -199,24 +199,25 @@ Each rung is useful on its own and shippable alone.
 
 Rungs 1 and 2 are the late-November commitment. Rung 3 is likely by then. Rungs 4 and 5 are in-season work.
 
-Each rung gets its own implementation plan under `docs/superpowers/plans/`, written from this spec when that rung starts. The first plan covers rungs 1 and 2 together.
+Each rung gets its own implementation plan under `docs/superpowers/plans/`, written from this spec when that rung starts. The first plan, `2026-09-30-rung-1-shot-times.md`, covers rung 1; rung 2 and the tracker changes of section 9 follow as their own plans.
 
 ## 14. Stack and repo layout
 
-Python 3.12 managed with `uv`; `ffmpeg` and `ffprobe` from Homebrew; PyTorch (Metal backend); `ultralytics`; `opencv-python`; `numpy`; `pandas` and `pyarrow`; `fastapi` and `uvicorn` for the review server; `pytest`. A single CLI, `film`, with subcommands `ingest`, `perceive`, `interpret`, `review`, `export`, `eval`, `train`, `prelabel`.
+Python 3.12 managed with `uv`; PyAV for decoding and probing and the ffmpeg binary bundled with `imageio-ffmpeg` for cutting clips (no Homebrew needed); PyTorch (Metal backend); `ultralytics`; `opencv-python`; `numpy`; `pandas` and `pyarrow`; `fastapi` and `uvicorn` for the review server; `pytest`. A single CLI, `film`, with subcommands `ingest`, `perceive`, `interpret`, `review`, `export`, `eval`, `train`, `prelabel`.
 
 ```
 basketball-film-pipeline/
   pyproject.toml
   film/
     cli.py
-    ingest/        probe, profile detection, frame extraction
+    commands/      one file per subcommand
+    ingest/        probe, profile detection
     perceive/      scoreboard, detector, tracker, ball, court, colours
     interpret/     rules, events, lineups, stats
     review/        FastAPI app + static single-page review UI
     export/        tracker export
     train/         fine-tuning and eval
-    common/        manifest, paths, device selection, court model (ported from the tracker)
+    common/        manifest, paths, device selection, video decoding, model registry, court model (ported from the tracker)
   models/          versioned weights (git-ignored except manifests)
   games/           per-game working directories (git-ignored)
   fixtures/        fixture scripts and expected outputs (clips git-ignored)
