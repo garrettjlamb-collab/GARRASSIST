@@ -27,3 +27,8 @@ def test_iter_frames_window(synthetic_video):
     assert 9 <= len(frames) <= 12
     assert frames[0][0] >= 0.95
     assert frames[-1][0] <= 2.05
+    # The first frame must be the source frame at 1.0 s (i=30): bar at x=150..160.
+    t_first, img = frames[0]
+    assert 0.95 <= t_first <= 1.1
+    assert img[:, 152].mean() > 200
+    assert img[:, 20].mean() < 40
