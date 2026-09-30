@@ -9,6 +9,7 @@ from film.perceive.scoreboard import (
 
 FIXTURES = Path(__file__).resolve().parents[1] / "fixtures" / "frames"
 EXPECTED = {
+    "hudl_tactical_t60.jpg": dict(home=0, away=0, clock_s=303.0, period=1, home_fouls=0, away_fouls=0),
     "hudl_tactical_t1500.jpg": dict(home=32, away=11, clock_s=278.0, period=2, home_fouls=0, away_fouls=0),
     "hudl_tactical_t2400.jpg": dict(home=35, away=23, clock_s=150.0, period=3, home_fouls=0, away_fouls=0),
     "hudl_tactical_t4800.jpg": dict(home=0, away=0, clock_s=0.0, period=1, home_fouls=0, away_fouls=0),

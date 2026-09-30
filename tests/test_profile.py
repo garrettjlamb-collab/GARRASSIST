@@ -16,7 +16,7 @@ def load(name: str):
 
 
 def test_fixture_sets_are_complete():
-    assert len(HUDL) == 5 and len(NFHS_AUTO) == 3
+    assert len(HUDL) == 6 and len(NFHS_AUTO) == 3
 
 
 def test_hudl_frames_show_the_overlay():

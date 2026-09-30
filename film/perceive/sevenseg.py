@@ -11,14 +11,14 @@ SEGMENT_ZONES: dict[str, tuple[float, float, float, float]] = {
     "d": (0.25, 0.83, 0.75, 0.97),
     "e": (0.02, 0.53, 0.24, 0.85),
     "f": (0.02, 0.15, 0.24, 0.47),
-    "g": (0.25, 0.42, 0.75, 0.58),
+    "g": (0.32, 0.44, 0.68, 0.56),
 }
 DIGIT_PATTERNS: dict[str, int] = {
     "abcdef": 0, "bc": 1, "abdeg": 2, "abcdg": 3, "bcfg": 4,
     "acdfg": 5, "acdefg": 6, "abc": 7, "abcdefg": 8, "abcdfg": 9,
 }
 # OpenCV hue runs 0..180.
-HUE_RANGES = {"red": [(0, 12), (165, 180)], "amber": [(13, 40)], "green": [(50, 95)]}
+HUE_RANGES = {"red": [(0, 30), (150, 180)], "amber": [(13, 40)], "green": [(50, 95)]}
 
 
 def led_mask(frame_bgr: np.ndarray, color: str) -> np.ndarray:

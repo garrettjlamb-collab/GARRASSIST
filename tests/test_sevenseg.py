@@ -53,13 +53,19 @@ def test_decode_number_is_right_aligned():
 
 
 def test_colour_masks_are_selective():
-    img = np.zeros((10, 10, 3), np.uint8)
-    img[:] = (47, 160, 211)   # BGR of the amber clock digits
-    assert led_mask(img, "amber").all()
-    assert not led_mask(img, "red").any()
-    assert not led_mask(img, "green").any()
-    img[:] = (159, 213, 48)   # BGR of the green period digit
-    assert led_mask(img, "green").all()
+    amber, green, blue = (47, 160, 211), (159, 213, 48), (200, 80, 20)   # BGR: clock digits, period digit, panel
+    red = (90, 90, 230)
+    def sample(bgr):
+        img = np.zeros((10, 10, 3), np.uint8)
+        img[:] = bgr
+        return img
+    # red and amber overlap on purpose: each mask is only read inside its own field's cells
+    assert led_mask(sample(amber), "amber").all()
+    assert led_mask(sample(green), "green").all()
+    assert led_mask(sample(red), "red").all()
+    for colour, others in (("red", (green, blue)), ("amber", (green, blue)), ("green", (red, blue))):
+        for other in others:
+            assert not led_mask(sample(other), colour).any(), (colour, other)
 
 
 def test_real_frame_home_score_and_period():
@@ -73,3 +79,10 @@ def test_real_frame_home_score_and_period():
     amber = led_mask(frame, clock["color"])
     assert box_fraction(amber, clock["sep_top"]) >= 0.2
     assert box_fraction(amber, clock["sep_bottom"]) >= 0.2
+
+
+def test_real_frame_dim_home_zero():
+    profile = json.loads(PROFILE.read_text())
+    frame = cv2.imread(str(FIXTURES / "hudl_tactical_t60.jpg"))
+    home = profile["fields"]["home"]
+    assert decode_number(led_mask(frame, home["color"]), [tuple(c) for c in home["cells"]]) == 0
