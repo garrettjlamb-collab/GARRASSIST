@@ -28,8 +28,9 @@ def gray_tile(frame_bgr: np.ndarray, box: tuple[int, int, int, int], size: tuple
 class MotionEnergy:
     """Mean absolute frame difference in a tight box around each rim, alongside the whole-frame difference."""
 
-    def __init__(self):
-        self.prev_rim: dict[int, np.ndarray] = {}
+    def __init__(self, max_gap_frames: int = 30) -> None:
+        self.max_gap_frames = max_gap_frames
+        self.prev_rim: dict[int, tuple[np.ndarray, int]] = {}  # rim_id -> (tile, frame_number)
         self.prev_global: np.ndarray | None = None
 
     def update(self, frame_bgr: np.ndarray, rims: list[tuple[int, Box]], frame: int, t: float) -> list[dict]:
@@ -40,8 +41,18 @@ class MotionEnergy:
         rows = []
         for rim_id, rim in rims:
             tile = gray_tile(frame_bgr, zone_box(rim, w, h), (TILE, TILE)).astype(np.int16)
-            prev = self.prev_rim.get(rim_id)
-            energy = float(np.abs(tile - prev).mean()) if prev is not None else 0.0
-            self.prev_rim[rim_id] = tile
+            prev_data = self.prev_rim.get(rim_id)
+
+            if prev_data is not None:
+                prev_tile, prev_frame = prev_data
+                # Check if the rim was out of frame for too long; if so, treat as first observation
+                if frame - prev_frame > self.max_gap_frames:
+                    energy = 0.0
+                else:
+                    energy = float(np.abs(tile - prev_tile).mean())
+            else:
+                energy = 0.0
+
+            self.prev_rim[rim_id] = (tile, frame)
             rows.append({"frame": frame, "t": t, "rim_id": rim_id, "energy": energy, "energy_global": energy_global})
         return rows
