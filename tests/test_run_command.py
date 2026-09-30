@@ -45,3 +45,67 @@ def test_perceive_refuses_an_unknown_profile(synthetic_video, tmp_path, monkeypa
     assert m.profile == "unknown"
     assert main(["perceive", m.game_id]) == 2
     assert calls == [] and "--profile" in capsys.readouterr().err
+
+
+def _done_game(synthetic_video, tmp_path, monkeypatch):
+    from film.common.paths import game_dir
+    from film.ingest.run import ingest
+
+    monkeypatch.setenv("FILM_GAMES_DIR", str(tmp_path / "games"))
+    m = ingest(synthetic_video, date="2026-01-01", profile="handheld")
+    m.mark("perceive", "done")
+    m.mark("interpret", "done")
+    gd = game_dir(m.game_id)
+    m.save(gd)
+    return gd
+
+
+def test_run_skips_stages_already_done(synthetic_video, tmp_path, monkeypatch):
+    _done_game(synthetic_video, tmp_path, monkeypatch)
+    calls = []
+    _stub_stages(monkeypatch, calls)
+    assert main(["run", str(synthetic_video), "--date", "2026-01-01", "--profile", "handheld"]) == 0
+    assert calls == ["clips"]
+
+
+def test_run_force_reruns_every_stage(synthetic_video, tmp_path, monkeypatch):
+    _done_game(synthetic_video, tmp_path, monkeypatch)
+    calls = []
+    _stub_stages(monkeypatch, calls)
+    assert main(["run", str(synthetic_video), "--date", "2026-01-01", "--profile", "handheld", "--force"]) == 0
+    assert calls == ["perceive", "interpret", "clips"]
+
+
+def test_run_prunes_stale_clips_and_counts_orphaned_decisions(synthetic_video, tmp_path, monkeypatch, capsys):
+    from film.interpret.events import Event, save_events
+    from film.review.decisions import save_decision
+
+    gd = _done_game(synthetic_video, tmp_path, monkeypatch)
+    save_events(gd, [Event(id="shot-000010-r1", type="shot", t=1.0, rim_id=1, quarter=None, clock_s=None, team=None,
+                           made=None, confidence=0.3, clip={"start": 0.0, "end": 2.5}, signals={})])
+    clips = gd / "clips"
+    clips.mkdir()
+    for name in ("shot-000010-r1.mp4", "shot-000099-r7.mp4", "shot-000099-r7.part.mp4", "shot-000050-r3.part.mp4"):
+        (clips / name).write_bytes(b"x")
+    save_decision(gd, "shot-000010-r1", {"status": "confirmed"})
+    save_decision(gd, "shot-000099-r7", {"status": "rejected"})
+    calls = []
+    _stub_stages(monkeypatch, calls)
+    assert main(["run", str(synthetic_video), "--date", "2026-01-01", "--profile", "handheld"]) == 0
+    assert sorted(p.name for p in clips.iterdir()) == ["shot-000010-r1.mp4"]
+    out = capsys.readouterr().out
+    assert "pruned 3 stale clip files" in out and "1 review decision no longer matches an event" in out
+    assert (gd / "review.json").exists() and "shot-000099-r7" in (gd / "review.json").read_text()
+
+
+def test_a_fresh_perceive_always_gets_a_fresh_interpret(synthetic_video, tmp_path, monkeypatch):
+    from film.common.manifest import Manifest
+
+    gd = _done_game(synthetic_video, tmp_path, monkeypatch)
+    m = Manifest.load(gd)
+    m.stages["perceive"]["status"] = "failed"
+    m.save(gd)
+    calls = []
+    _stub_stages(monkeypatch, calls)
+    assert main(["run", str(synthetic_video), "--date", "2026-01-01", "--profile", "handheld"]) == 0
+    assert calls == ["perceive", "interpret", "clips"]

@@ -36,6 +36,19 @@ def ingest(source: Path, date: str | None = None, profile: str | None = None, fp
         duration_s=info.duration_s, width=info.width, height=info.height,
         src_fps=info.fps, fps=fps, profile=profile,
     )
+    gd = game_dir(manifest.game_id)
+    previous = _previous(gd)
+    if previous is not None and (previous.source, previous.profile, previous.fps) == (manifest.source, profile, fps):
+        # Same file, profile and frame rate: the later stages' outputs still hold, so keep their record.
+        manifest.stages = dict(previous.stages)
+        manifest.model_versions = dict(previous.model_versions)
     manifest.mark("ingest", "done", samples=len(samples))
-    manifest.save(game_dir(manifest.game_id))
+    manifest.save(gd)
     return manifest
+
+
+def _previous(gd: Path) -> Manifest | None:
+    try:
+        return Manifest.load(gd) if (gd / "manifest.json").exists() else None
+    except (ValueError, TypeError, OSError):
+        return None
