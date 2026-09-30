@@ -62,3 +62,16 @@ def test_boxes_without_a_side_still_go_through_the_tracker_from_first_id():
     assert detect_rims(img, det, tr, frame=0, t=0.0, model_version="rim@v1")[0]["track_id"] == 3
     assert detect_rims(img, det, tr, frame=50, t=5.0, model_version="rim@v1")[0]["track_id"] == 4
 
+
+
+def test_smooth_rims_treats_each_visit_separately():
+    def row(f, x):
+        b = rim(x)
+        return {"frame": f, "t": f / 10, "kind": "rim", "track_id": 1, "ref_id": None, "x1": b.x1, "y1": b.y1,
+                "x2": b.x2, "y2": b.y2, "conf": 0.9, "on_court": None, "court_x": None, "court_y": None,
+                "team": None, "model_version": "x"}
+
+    rows = [row(f, 100) for f in range(10)] + [row(110, 900), row(111, 900)]   # the camera panned back, 100 frames later
+    df = smooth_rims(rows_to_frame(rows))
+    assert df.loc[df["frame"] == 110, "x1"].item() == 900
+    assert df.loc[df["frame"] == 9, "x1"].item() == 100

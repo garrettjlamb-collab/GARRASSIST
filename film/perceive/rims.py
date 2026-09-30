@@ -64,10 +64,14 @@ def detect_rims(frame_bgr: np.ndarray, detector: Detector, tracker: RimTracker,
     return [rim_row(frame, t, tid, box, model_version) for tid, box in sorted(fixed + tracked, key=lambda p: p[0])]
 
 
-def smooth_rims(df: pd.DataFrame, window: int = 5) -> pd.DataFrame:
+def smooth_rims(df: pd.DataFrame, window: int = 5, max_gap: int = 30) -> pd.DataFrame:
+    """Rolling median of each rim's box, within each visit: a gap of more than max_gap frames starts a
+    new visit, so a rim re-acquired after a pan is not pulled toward where it was minutes earlier."""
     if df.empty:
         return df
     df = df.sort_values(["track_id", "frame"]).copy()
+    visit = df.groupby("track_id")["frame"].diff().gt(max_gap).groupby(df["track_id"]).cumsum()
+    keys = [df["track_id"], visit]
     for col in ("x1", "y1", "x2", "y2"):
-        df[col] = df.groupby("track_id")[col].transform(lambda s: s.rolling(window, center=True, min_periods=1).median())
+        df[col] = df.groupby(keys)[col].transform(lambda s: s.rolling(window, center=True, min_periods=1).median())
     return df.sort_values("frame", kind="stable").reset_index(drop=True)
