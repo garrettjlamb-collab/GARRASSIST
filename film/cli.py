@@ -2,6 +2,9 @@ from __future__ import annotations
 
 import argparse
 import importlib
+import os
+
+import certifi
 
 from film import __version__
 
@@ -10,6 +13,7 @@ COMMANDS = [
     "film.commands.ingest",
     "film.commands.calibrate",
     "film.commands.scoreboard",
+    "film.commands.perceive",
 ]
 
 
@@ -23,6 +27,7 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def main(argv: list[str] | None = None) -> int:
+    os.environ.setdefault("SSL_CERT_FILE", certifi.where())
     parser = build_parser()
     args = parser.parse_args(argv)
     if getattr(args, "func", None) is None:

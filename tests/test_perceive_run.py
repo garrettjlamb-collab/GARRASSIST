@@ -1,0 +1,33 @@
+import pandas as pd
+
+from film.common.manifest import Manifest
+from film.common.paths import game_dir
+from film.ingest.run import ingest
+from film.perceive.detectors import Box, FakeDetector
+from film.perceive.run import perceive
+from film.perceive.tracks import read_tracks
+
+
+def test_perceive_writes_tracks_motion_and_marks_stage(synthetic_video, tmp_path, monkeypatch):
+    monkeypatch.setenv("FILM_GAMES_DIR", str(tmp_path / "games"))
+    m = ingest(synthetic_video, date="2026-01-01", profile="test", fps=10.0)
+    rim = Box(100, 60, 150, 90, 0.9, "rim")
+    rims = FakeDetector(fn=lambda img, i: [rim], name="rim@fake")
+    balls = FakeDetector(fn=lambda img, i: [Box(10, 10, 20, 20, 0.7, "ball")] if i % 3 == 0 else [], name="ball@fake")
+    info = perceive(m.game_id, device="cpu", rim_detector=rims, ball_detector=balls, log=lambda *a: None)
+    gd = game_dir(m.game_id)
+    rim_rows = read_tracks(gd, "rim")
+    ball_rows = read_tracks(gd, "ball")
+    assert 28 <= len(rim_rows) <= 31
+    assert rim_rows["track_id"].nunique() == 1
+    assert 9 <= len(ball_rows) <= 11
+    assert (ball_rows["ref_id"] == 1).all()
+    assert ball_rows["x1"].iloc[0] == 15 and ball_rows["y1"].iloc[0] == 10   # crop origin is (5, 0), see note
+    motion = pd.read_parquet(gd / "motion.parquet")
+    assert list(motion.columns) == ["frame", "t", "rim_id", "energy", "energy_global"]
+    assert len(motion) == len(rim_rows)
+    assert not (gd / "scoreboard.jsonl").exists()
+    saved = Manifest.load(gd)
+    assert saved.stages["perceive"]["status"] == "done"
+    assert saved.model_versions == {"rim": "rim@fake", "ball": "ball@fake"}
+    assert info["frames"] == len(rim_rows)

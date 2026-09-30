@@ -75,6 +75,7 @@ version = "0.1.0"
 source = { editable = "." }
 dependencies = [
     { name = "av" },
+    { name = "certifi" },
     { name = "clip" },
     { name = "fastapi" },
     { name = "imageio-ffmpeg" },
@@ -98,6 +99,7 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "av", specifier = ">=14" },
+    { name = "certifi", specifier = ">=2026.7.22" },
     { name = "clip", git = "https://github.com/ultralytics/CLIP.git" },
     { name = "fastapi", specifier = ">=0.115" },
     { name = "httpx", marker = "extra == 'dev'", specifier = ">=0.27" },
