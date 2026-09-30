@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import shutil
+import zlib
 from pathlib import Path
 
 import cv2
@@ -56,9 +57,14 @@ def remove_pending(dataset: str, image_id: str) -> None:
 
 # ---- YOLO box datasets ----
 
-def yolo_line(cls_idx: int, box: Box, w: int, h: int) -> str:
-    cx, cy = (box.x1 + box.x2) / 2 / w, (box.y1 + box.y2) / 2 / h
-    return f"{cls_idx} {cx:.6f} {cy:.6f} {box.w / w:.6f} {box.h / h:.6f}"
+def yolo_line(cls_idx: int, box: Box, w: int, h: int) -> str | None:
+    """One YOLO label line, clamped to the image. None for a box under 1 px wide or tall once clamped
+    (Ultralytics drops the whole image when a label falls outside [0, 1])."""
+    x1, x2 = sorted((min(max(box.x1, 0.0), w), min(max(box.x2, 0.0), w)))
+    y1, y2 = sorted((min(max(box.y1, 0.0), h), min(max(box.y2, 0.0), h)))
+    if x2 - x1 < 1 or y2 - y1 < 1:
+        return None
+    return f"{cls_idx} {(x1 + x2) / 2 / w:.6f} {(y1 + y2) / 2 / h:.6f} {(x2 - x1) / w:.6f} {(y2 - y1) / h:.6f}"
 
 
 def data_yaml(dataset: str) -> Path:
@@ -75,21 +81,44 @@ def split_for(index: int, val_every: int = VAL_EVERY) -> str:
     return "val" if index % val_every == 0 else "train"
 
 
+def split_for_id(image_id: str, val_every: int = VAL_EVERY) -> str:
+    """The split is a pure function of the id, so accepting or storing the same image twice never moves it."""
+    return "val" if zlib.crc32(image_id.encode()) % val_every == 0 else "train"
+
+
 def count_accepted(dataset: str) -> int:
     root = datasets_dir() / dataset / "images"
     return sum(1 for split in ("train", "val") for _ in (root / split).glob("*.jpg")) if root.exists() else 0
 
 
+def _accepted_split(dataset: str, image_id: str) -> str | None:
+    root = datasets_dir() / dataset / "images"
+    for split in ("train", "val"):
+        if (root / split / f"{image_id}.jpg").exists():
+            return split
+    return None
+
+
 def accept_boxes(dataset: str, image_id: str, boxes: list[Box]) -> str:
-    """Move a pending image into the YOLO dataset with its final boxes. Returns the split it went to."""
+    """Move a pending image into the YOLO dataset with its final boxes. Returns the split it went to.
+    Idempotent: if the pending entry is gone but the image is already accepted, returns its split."""
+    if not (pending_dir(dataset) / f"{image_id}.json").exists():
+        done = _accepted_split(dataset, image_id)
+        if done is not None:
+            return done
     data = read_pending(dataset, image_id)
     names = CLASS_NAMES[dataset]
-    split = split_for(count_accepted(dataset))
+    split = split_for_id(image_id)
     root = datasets_dir() / dataset
+    for other in ("train", "val"):
+        if other != split:
+            for stale in (root / "images" / other / f"{image_id}.jpg", root / "labels" / other / f"{image_id}.txt"):
+                stale.unlink(missing_ok=True)
     (root / "images" / split).mkdir(parents=True, exist_ok=True)
     (root / "labels" / split).mkdir(parents=True, exist_ok=True)
     shutil.copy(data["image"], root / "images" / split / f"{image_id}.jpg")
-    lines = [yolo_line(names.index(b.cls), b, data["width"], data["height"]) for b in boxes if b.cls in names]
+    lines = [ln for b in boxes if b.cls in names
+             for ln in [yolo_line(names.index(b.cls), b, data["width"], data["height"])] if ln is not None]
     (root / "labels" / split / f"{image_id}.txt").write_text("\n".join(lines) + ("\n" if lines else ""))
     remove_pending(dataset, image_id)
     return split
@@ -97,26 +126,41 @@ def accept_boxes(dataset: str, image_id: str, boxes: list[Box]) -> str:
 
 # ---- class datasets (ImageFolder layout) ----
 
-def _class_split(dataset: str, cls: str) -> str:
+def find_class_images(dataset: str, image_id: str) -> list[Path]:
     root = datasets_dir() / dataset
-    if not any((root / "val" / cls).glob("*.jpg")):
-        return "val"
-    total = sum(1 for _ in root.glob("*/*/*.jpg"))
-    return split_for(total)
+    return sorted(root.glob(f"*/*/{image_id}.jpg")) if root.exists() else []
 
 
 def store_class_image(dataset: str, image_id: str, image_bgr: np.ndarray, cls: str) -> Path:
-    split = _class_split(dataset, cls)
-    folder = datasets_dir() / dataset / split / cls
-    folder.mkdir(parents=True, exist_ok=True)
-    path = folder / f"{image_id}.jpg"
+    """Store an image under its class. An id lives in exactly one class folder and one split: an existing copy
+    in this class is overwritten in place, copies in other classes are removed. The split is the id's own,
+    except that the first image of a class goes to val if val holds none of that class yet, so val always
+    has every class."""
+    root = datasets_dir() / dataset
+    same = [p for p in find_class_images(dataset, image_id) if p.parts[-2] == cls]
+    for p in find_class_images(dataset, image_id):
+        if p not in same:
+            p.unlink()
+    if same:
+        path = same[0]
+    else:
+        val_has_cls = any((root / "val" / cls).glob("*.jpg"))
+        split = split_for_id(image_id) if val_has_cls else "val"
+        path = root / split / cls / f"{image_id}.jpg"
+    path.parent.mkdir(parents=True, exist_ok=True)
     cv2.imwrite(str(path), np.ascontiguousarray(image_bgr))
     return path
 
 
 def accept_class(dataset: str, image_id: str, cls: str) -> str:
+    """Idempotent: with no pending entry, an existing copy is returned (moved to cls if the class changed)."""
+    if not (pending_dir(dataset) / f"{image_id}.json").exists():
+        existing = find_class_images(dataset, image_id)
+        if existing:
+            if existing[0].parts[-2] == cls:
+                return existing[0].parts[-3]
+            return store_class_image(dataset, image_id, cv2.imread(str(existing[0])), cls).parts[-3]
     data = read_pending(dataset, image_id)
-    image = cv2.imread(data["image"])
-    path = store_class_image(dataset, image_id, image, cls)
+    path = store_class_image(dataset, image_id, cv2.imread(data["image"]), cls)
     remove_pending(dataset, image_id)
     return path.parts[-3]

@@ -9,7 +9,7 @@ from film.common.manifest import Manifest
 from film.common.paths import game_dir
 from film.interpret.events import load_events
 from film.perceive.tracks import read_tracks
-from film.train.datasets import store_class_image, write_pending
+from film.train.datasets import find_class_images, list_pending, store_class_image, write_pending
 from film.train.montage import build_montage
 
 EVENT_EXCLUSION_S = 3.0
@@ -42,10 +42,16 @@ def build_rimclf_candidates(game_id: str, n_none: int = 40, seed: int = 0, margi
     source = Path(m.source)
     events = load_events(gd)
     rims = read_tracks(gd, "rim")
-    counts = {"made_auto": 0, "pending": 0, "none_auto": 0}
+    counts = {"made_auto": 0, "pending": 0, "none_auto": 0, "already": 0, "no_rim": 0}
+    queued = set(list_pending("rimclf"))
     for e in events:
+        if e.id in queued or find_class_images("rimclf", e.id):
+            counts["already"] += 1
+            continue
         box = rim_box_at(rims, int(round(e.t * m.fps)), e.rim_id)
         if box is None:
+            counts["no_rim"] += 1
+            log(f"rimclf: no rim box near {e.id}, skipped")
             continue
         montage = build_montage(source, e.t, box, m.width, m.height)
         if _auto_made(e):
@@ -58,7 +64,8 @@ def build_rimclf_candidates(game_id: str, n_none: int = 40, seed: int = 0, margi
     rng = random.Random(seed)
     event_times = [e.t for e in events]
     tries = 0
-    while counts["none_auto"] < n_none and tries < n_none * 20 and m.duration_s > 2 * margin_s:
+    none_seen = 0
+    while counts["none_auto"] + none_seen < n_none and tries < n_none * 20 and m.duration_s > 2 * margin_s:
         tries += 1
         t = rng.uniform(margin_s, m.duration_s - margin_s)
         if any(abs(t - et) < exclusion_s for et in event_times):
@@ -66,7 +73,12 @@ def build_rimclf_candidates(game_id: str, n_none: int = 40, seed: int = 0, margi
         box = rim_box_at(rims, int(round(t * m.fps)))
         if box is None:
             continue
-        store_class_image("rimclf", f"none-{game_id}-{int(round(t * 10)):06d}", build_montage(source, t, box, m.width, m.height), "none")
+        none_id = f"none-{game_id}-{int(round(t * 10)):06d}"
+        if none_id in queued or find_class_images("rimclf", none_id):
+            none_seen += 1
+            counts["already"] += 1
+            continue
+        store_class_image("rimclf", none_id, build_montage(source, t, box, m.width, m.height), "none")
         counts["none_auto"] += 1
     log(f"rimclf candidates for {game_id}: {counts}")
     return counts
