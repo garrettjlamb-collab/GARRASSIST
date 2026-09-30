@@ -1,0 +1,15 @@
+.venv/
+__pycache__/
+*.pyc
+*.egg-info/
+.pytest_cache/
+.DS_Store
+games/
+datasets/
+labels/
+models/
+!models/**/manifest.json
+fixtures/clips/
+*.pt
+runs/
+.superpowers/
