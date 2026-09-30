@@ -2,12 +2,14 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from film.ingest.profile import PROFILES
+
 
 def register(sub) -> None:
     parser = sub.add_parser("ingest", help="probe a game file, pick its camera profile, write the manifest")
     parser.add_argument("source", type=Path)
     parser.add_argument("--date", help="game date YYYY-MM-DD (default: file modification date)")
-    parser.add_argument("--profile", help="override the camera profile (hudl-tactical, nfhs-auto, nfhs-broadcast, handheld)")
+    parser.add_argument("--profile", choices=PROFILES, help="override the camera profile")
     parser.add_argument("--fps", type=float, default=10.0, help="working frame rate (use 5 on the laptop)")
     parser.set_defaults(func=run)
 

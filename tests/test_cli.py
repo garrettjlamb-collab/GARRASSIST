@@ -21,3 +21,19 @@ def test_main_sets_ssl_cert_file(monkeypatch):
     monkeypatch.delenv("SSL_CERT_FILE", raising=False)
     main(["doctor"])
     assert os.path.isfile(os.environ["SSL_CERT_FILE"])
+
+
+@pytest.mark.parametrize("cmd", ["ingest", "run"])
+def test_profile_flag_rejects_unknown_names(cmd, capsys):
+    from film.cli import build_parser
+
+    with pytest.raises(SystemExit):
+        build_parser().parse_args([cmd, "x.mp4", "--profile", "hudl"])
+    assert "invalid choice" in capsys.readouterr().err
+
+
+@pytest.mark.parametrize("cmd", ["ingest", "run"])
+def test_profile_flag_accepts_known_names(cmd):
+    from film.cli import build_parser
+
+    assert build_parser().parse_args([cmd, "x.mp4", "--profile", "hudl-tactical"]).profile == "hudl-tactical"
