@@ -19,6 +19,8 @@ COMMANDS = [
     "film.commands.train",
     "film.commands.clips",
     "film.commands.review",
+    "film.commands.export",
+    "film.commands.eval",
 ]
 
 
