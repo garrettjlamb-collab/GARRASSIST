@@ -96,10 +96,10 @@ def build_timeline(source: Path, profile: dict, limit_s: float | None = None) ->
 
 
 def _plausible(read: ScoreboardRead, last: ScoreboardRead) -> bool:
-    if read.period is not None and last.period is not None and read.period < last.period:
-        return False
     if read.t - last.t > RECENT_S:
         return True
+    if read.period is not None and last.period is not None and read.period < last.period:
+        return False
     same_period = read.period == last.period
     if same_period and read.clock_s is not None and last.clock_s is not None and read.clock_s > last.clock_s + 0.5:
         return False
