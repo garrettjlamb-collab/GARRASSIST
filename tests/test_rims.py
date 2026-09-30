@@ -42,3 +42,23 @@ def test_smooth_rims_removes_a_spike():
     df = smooth_rims(rows_to_frame(rows))
     assert df.loc[df["frame"] == 4, "x1"].item() == 100
     assert smooth_rims(rows_to_frame([])).empty
+
+
+def test_template_boxes_keep_their_physical_id_across_gaps():
+    left = Box(100, 100, 150, 130, 0.9, "rim", side="left")
+    right = Box(1700, 100, 1750, 130, 0.8, "rim", side="right")
+    det = FakeDetector(per_call=[[left], [right, left], [], [], [left.shifted(900, 0)]])
+    tr = RimTracker(max_gap_frames=5, first_id=3)
+    img = np.zeros((4, 4, 3), np.uint8)
+    frames = [0, 1, 2, 3, 200]                                  # a long gap, then the left rim far across the frame
+    ids = [[r["track_id"] for r in detect_rims(img, det, tr, frame=f, t=f / 10, model_version="rim@template")] for f in frames]
+    assert ids == [[1], [1, 2], [], [], [1]]
+
+
+def test_boxes_without_a_side_still_go_through_the_tracker_from_first_id():
+    det = FakeDetector(per_call=[[rim(100)], [rim(100)]])
+    tr = RimTracker(max_gap_frames=5, first_id=3)
+    img = np.zeros((4, 4, 3), np.uint8)
+    assert detect_rims(img, det, tr, frame=0, t=0.0, model_version="rim@v1")[0]["track_id"] == 3
+    assert detect_rims(img, det, tr, frame=50, t=5.0, model_version="rim@v1")[0]["track_id"] == 4
+

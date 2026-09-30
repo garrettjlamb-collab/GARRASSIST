@@ -12,7 +12,7 @@ from film.common.video import iter_frames
 from film.perceive.ball import detect_ball_near_rim
 from film.perceive.detectors import Box, load_detector
 from film.perceive.motion import MotionEnergy
-from film.perceive.rims import RimTracker, detect_rims, smooth_rims
+from film.perceive.rims import TRACKED_FIRST_ID, RimTracker, detect_rims, smooth_rims
 from film.perceive.scoreboard import clean_timeline, has_scoreboard, load_profile, read_scoreboard, save_timeline
 from film.perceive.tracks import replace_kind, rows_to_frame
 
@@ -28,7 +28,7 @@ def perceive(game_id: str, device: str | None = None, rim_detector=None, ball_de
     rim_detector = rim_detector or load_detector("rim", device, profile=m.profile)
     ball_detector = ball_detector or load_detector("ball", device)
     profile = load_profile(m.profile) if has_scoreboard(m.profile) else None
-    tracker, motion = RimTracker(), MotionEnergy()
+    tracker, motion = RimTracker(first_id=TRACKED_FIRST_ID), MotionEnergy()
     rim_rows, ball_rows, motion_rows, reads = [], [], [], []
     last_second, n_frames, started = -1, 0, time.time()
     report_every = max(1, int(60 * m.fps))

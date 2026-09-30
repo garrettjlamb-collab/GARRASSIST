@@ -73,7 +73,7 @@ class TemplateRimDetector:
             if score < t["threshold"]:
                 continue
             ox1, oy1, ox2, oy2 = t["rim_offset"]
-            found.append(Box(x + ox1, y + y0 + oy1, x + ox2, y + y0 + oy2, float(score), "rim"))
+            found.append(Box(x + ox1, y + y0 + oy1, x + ox2, y + y0 + oy2, float(score), "rim", side=t["name"]))
         found.sort(key=lambda b: -b.conf)
         kept: list[Box] = []
         for box in found:

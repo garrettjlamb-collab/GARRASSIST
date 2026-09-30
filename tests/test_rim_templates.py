@@ -21,17 +21,17 @@ def test_left_basket_is_found_where_it_is():
     det = TemplateRimDetector.for_profile("hudl-tactical")
     assert det.name == "rim@template-hudl-tactical"
     rims = det.detect(load("hudl_tactical_t1500.jpg"))
-    assert len(rims) == 1 and rims[0].cls == "rim" and rims[0].conf >= 0.8
+    assert len(rims) == 1 and rims[0].cls == "rim" and rims[0].conf >= 0.8 and rims[0].side == "left"
     assert abs(rims[0].x1 - 378) <= 8 and abs(rims[0].y1 - 177) <= 8
     rims = det.detect(load("hudl_tactical_t4800.jpg"))
-    assert len(rims) == 1 and rims[0].conf >= 0.95
+    assert len(rims) == 1 and rims[0].conf >= 0.95 and rims[0].side == "left"
     assert abs(rims[0].x1 - 455) <= 4 and abs(rims[0].y1 - 198) <= 4
 
 
 def test_right_basket_is_found_where_it_is():
     det = TemplateRimDetector.for_profile("hudl-tactical")
     rims = det.detect(load("hudl_tactical_t3600.jpg"))
-    assert len(rims) == 1 and rims[0].conf >= 0.9
+    assert len(rims) == 1 and rims[0].conf >= 0.9 and rims[0].side == "right"
     assert abs(rims[0].x1 - 1470) <= 4 and abs(rims[0].y1 - 186) <= 4
 
 

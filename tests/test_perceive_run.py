@@ -19,9 +19,9 @@ def test_perceive_writes_tracks_motion_and_marks_stage(synthetic_video, tmp_path
     rim_rows = read_tracks(gd, "rim")
     ball_rows = read_tracks(gd, "ball")
     assert 28 <= len(rim_rows) <= 31
-    assert rim_rows["track_id"].nunique() == 1
+    assert set(rim_rows["track_id"]) == {3}          # no template side: a tracker id, above the fixed 1 and 2
     assert 9 <= len(ball_rows) <= 11
-    assert (ball_rows["ref_id"] == 1).all()
+    assert (ball_rows["ref_id"] == 3).all()
     assert ball_rows["x1"].iloc[0] == 15 and ball_rows["y1"].iloc[0] == 10   # crop origin is (5, 0), see note
     motion = pd.read_parquet(gd / "motion.parquet")
     assert list(motion.columns) == ["frame", "t", "rim_id", "energy", "energy_global"]

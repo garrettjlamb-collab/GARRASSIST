@@ -22,6 +22,7 @@ class Box:
     y2: float
     conf: float
     cls: str
+    side: str | None = None          # a fixed-camera template's physical basket: "left" or "right"
 
     @property
     def w(self) -> float:
