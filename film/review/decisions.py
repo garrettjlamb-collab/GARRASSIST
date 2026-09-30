@@ -1,9 +1,12 @@
 from __future__ import annotations
 
 import json
+import os
+import threading
 from datetime import datetime, timezone
 from pathlib import Path
 
+_LOCK = threading.Lock()
 STATUSES = ("confirmed", "rejected", "unsure")
 
 
@@ -24,10 +27,14 @@ def save_decision(game_dir: Path, event_id: str, decision: dict) -> dict:
     for key in ("made", "team"):
         if key in decision:
             entry[key] = decision[key]
-    everything = load_decisions(game_dir)
-    everything[event_id] = entry
     Path(game_dir).mkdir(parents=True, exist_ok=True)
-    decisions_path(game_dir).write_text(json.dumps(everything, indent=1))
+    path = decisions_path(game_dir)
+    with _LOCK:
+        everything = load_decisions(game_dir)
+        everything[event_id] = entry
+        tmp = path.with_name(path.name + ".tmp")
+        tmp.write_text(json.dumps(everything, indent=1))
+        os.replace(tmp, path)
     return entry
 
 

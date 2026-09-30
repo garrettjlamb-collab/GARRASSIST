@@ -77,3 +77,40 @@ def test_label_flow(synthetic_video, tmp_path, monkeypatch):
     assert client.post("/api/label/rimclf/m_1/class", json={"cls": "hit"}).status_code == 400
     assert client.post("/api/label/rimclf/m_1/class", json={"cls": "missed"}).json()["split"] == "val"  # the first image of a class seeds val (store_class_image)
     assert client.get("/").status_code == 200
+
+
+def test_video_ranges(synthetic_video, tmp_path, monkeypatch):
+    from pathlib import Path
+
+    _env(monkeypatch, tmp_path)
+    game_id, gd = _game(synthetic_video)
+    client = TestClient(create_app())
+    data = Path(synthetic_video).read_bytes()
+    size = len(data)
+    url = f"/video/{game_id}"
+    tail = client.get(url, headers={"Range": "bytes=-100"})
+    assert tail.status_code == 206 and tail.content == data[-100:]
+    assert tail.headers["content-range"] == f"bytes {size - 100}-{size - 1}/{size}"
+    rest = client.get(url, headers={"Range": "bytes=100-"})
+    assert rest.status_code == 206 and rest.content == data[100:]
+    clamped = client.get(url, headers={"Range": f"bytes=0-{size + 500}"})
+    assert clamped.status_code == 206 and clamped.content == data
+    for bad in ("bytes=-", "bytes=900-100", f"bytes={size}-", "bytes=abc"):
+        r = client.get(url, headers={"Range": bad})
+        assert r.status_code == 416 and r.headers["content-range"] == f"bytes */{size}", bad
+
+
+def test_label_validation(synthetic_video, tmp_path, monkeypatch):
+    _env(monkeypatch, tmp_path)
+    client = TestClient(create_app())
+    assert client.get("/api/label/nope/next").status_code == 404
+    assert client.post("/api/label/nope/x/skip").status_code == 404
+    ds.write_pending("rim", "g_1", np.zeros((100, 200, 3), np.uint8), [])
+    assert client.post("/api/label/rim/g_1/class", json={"cls": "made"}).status_code == 400
+    bad = {"boxes": [{"cls": "ball", "x1": 1, "y1": 1, "x2": 5, "y2": 5}]}
+    assert client.post("/api/label/rim/g_1/boxes", json=bad).status_code == 400
+    ok = {"boxes": [{"cls": "rim", "x1": 1, "y1": 1, "x2": 5, "y2": 5}]}
+    assert client.post("/api/label/rim/missing/boxes", json=ok).status_code == 404
+    assert client.post("/api/label/rimclf/missing/class", json={"cls": "made"}).status_code == 404
+    assert client.post("/api/label/rim/missing/skip").status_code == 404
+    assert not (tmp_path / "datasets" / "nope").exists()

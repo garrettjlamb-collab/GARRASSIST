@@ -58,17 +58,40 @@ def _summary(gd: Path) -> dict:
             "stages": {name: info.get("status") for name, info in m.stages.items()}}
 
 
+def _dataset(dataset: str) -> str:
+    if dataset not in ds.CLASS_NAMES and dataset != "rimclf":
+        raise HTTPException(404, f"no dataset {dataset}")
+    return dataset
+
+
+def _known_image(dataset: str, image_id: str) -> None:
+    """404 unless the image is pending or was already accepted (accepts are idempotent)."""
+    if image_id in ds.list_pending(dataset):
+        return
+    accepted = ds._accepted_split(dataset, image_id) if dataset in ds.CLASS_NAMES else (
+        ds.find_class_images(dataset, image_id) and "x")
+    if not accepted:
+        raise HTTPException(404, f"no image {image_id} in {dataset}")
+
+
 def _range_response(path: Path, range_header: str | None):
     size = path.stat().st_size
     if not range_header:
         return FileResponse(path, media_type="video/mp4", headers={"Accept-Ranges": "bytes"})
-    match = re.match(r"bytes=(\d*)-(\d*)", range_header)
-    if not match:
-        raise HTTPException(416, "bad range")
-    start = int(match.group(1) or 0)
-    end = min(int(match.group(2) or size - 1), size - 1)
-    if start > end:
-        raise HTTPException(416, "bad range")
+    match = re.fullmatch(r"bytes=(\d*)-(\d*)", range_header.strip())
+    unsatisfiable = {"Content-Range": f"bytes */{size}"}
+    if not match or (not match.group(1) and not match.group(2)):
+        raise HTTPException(416, "bad range", headers=unsatisfiable)
+    if not match.group(1):
+        n = int(match.group(2))
+        if n == 0:
+            raise HTTPException(416, "bad range", headers=unsatisfiable)
+        start, end = max(size - n, 0), size - 1
+    else:
+        start = int(match.group(1))
+        end = min(int(match.group(2)), size - 1) if match.group(2) else size - 1
+    if start > end or start >= size:
+        raise HTTPException(416, "bad range", headers=unsatisfiable)
 
     def body():
         with path.open("rb") as f:
@@ -124,6 +147,7 @@ def create_app() -> FastAPI:
 
     @app.get("/api/label/{dataset}/next")
     def label_next(dataset: str):
+        _dataset(dataset)
         ids = ds.list_pending(dataset)
         if not ids:
             return {"done": True, "remaining": 0}
@@ -134,6 +158,7 @@ def create_app() -> FastAPI:
 
     @app.get("/labels/{dataset}/{image_id}.jpg")
     def label_image(dataset: str, image_id: str):
+        _dataset(dataset)
         path = ds.pending_images_dir(dataset) / f"{image_id}.jpg"
         if not path.exists():
             raise HTTPException(404, "no such pending image")
@@ -141,19 +166,37 @@ def create_app() -> FastAPI:
 
     @app.post("/api/label/{dataset}/{image_id}/boxes")
     def label_boxes(dataset: str, image_id: str, body: BoxLabel):
+        _dataset(dataset)
         if dataset not in ds.CLASS_NAMES:
             raise HTTPException(400, f"{dataset} is not a box dataset")
+        bad = sorted({b.cls for b in body.boxes} - set(ds.CLASS_NAMES[dataset]))
+        if bad:
+            raise HTTPException(400, f"cls {bad} not in {ds.CLASS_NAMES[dataset]}")
+        _known_image(dataset, image_id)
         boxes = [Box(b.x1, b.y1, b.x2, b.y2, 1.0, b.cls) for b in body.boxes]
-        return {"split": ds.accept_boxes(dataset, image_id, boxes)}
+        try:
+            return {"split": ds.accept_boxes(dataset, image_id, boxes)}
+        except FileNotFoundError:
+            raise HTTPException(404, f"no image {image_id} in {dataset}")
 
     @app.post("/api/label/{dataset}/{image_id}/class")
     def label_class(dataset: str, image_id: str, body: ClassLabel):
+        _dataset(dataset)
+        if dataset != "rimclf":
+            raise HTTPException(400, f"{dataset} is not a class dataset")
         if body.cls not in CLASSES:
             raise HTTPException(400, f"cls must be one of {CLASSES}")
-        return {"split": ds.accept_class(dataset, image_id, body.cls)}
+        _known_image(dataset, image_id)
+        try:
+            return {"split": ds.accept_class(dataset, image_id, body.cls)}
+        except FileNotFoundError:
+            raise HTTPException(404, f"no image {image_id} in {dataset}")
 
     @app.post("/api/label/{dataset}/{image_id}/skip")
     def label_skip(dataset: str, image_id: str):
+        _dataset(dataset)
+        if image_id not in ds.list_pending(dataset):
+            raise HTTPException(404, f"no pending image {image_id} in {dataset}")
         ds.remove_pending(dataset, image_id)
         return {"skipped": image_id}
 

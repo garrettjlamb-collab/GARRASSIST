@@ -20,3 +20,14 @@ def test_save_and_apply(tmp_path):
 def test_bad_status_rejected(tmp_path):
     with pytest.raises(ValueError):
         save_decision(tmp_path, "shot-1", {"status": "maybe"})
+
+
+def test_save_is_atomic_and_threadsafe(tmp_path):
+    from concurrent.futures import ThreadPoolExecutor
+
+    with ThreadPoolExecutor(20) as pool:
+        list(pool.map(lambda i: save_decision(tmp_path, f"shot-{i}", {"status": "unsure"}), range(20)))
+    assert set(load_decisions(tmp_path)) == {f"shot-{i}" for i in range(20)}
+    assert not list(tmp_path.glob("*.tmp"))
+    import json
+    json.loads((tmp_path / "review.json").read_text())
