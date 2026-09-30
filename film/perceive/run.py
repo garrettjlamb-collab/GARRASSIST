@@ -61,9 +61,10 @@ def perceive(game_id: str, device: str | None = None, rim_detector=None, ball_de
            scoreboard=n_scoreboard, seconds=round(time.time() - started, 1), device=device, limit_s=limit_s)
     m.save(gd)
     log(f"done: {n_frames} frames, {len(rim_rows)} rim rows, {len(ball_rows)} ball rows, {n_scoreboard} scoreboard reads in {m.stages['perceive']['seconds']}s")
-    fraction = len(rim_rows) / n_frames if n_frames else 0.0
+    rim_frames = len({r["frame"] for r in rim_rows})
+    fraction = rim_frames / n_frames if n_frames else 1.0
     if fraction < LOW_RIM_FRACTION:
-        log(f"WARNING: rims found in only {fraction:.0%} of frames ({len(rim_rows)} rim rows, {n_frames} frames) with "
+        log(f"WARNING: rims found in only {fraction:.0%} of frames ({rim_frames} of {n_frames} frames) with "
             f"{rim_detector.name}. The rim templates may not match this gym or camera; few rims means few shots. "
             f"Check the camera profile ({m.profile}) before trusting the events.")
     return m.stages["perceive"]

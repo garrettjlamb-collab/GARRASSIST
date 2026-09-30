@@ -37,7 +37,8 @@ def test_perceive_warns_loudly_when_rims_are_rare(synthetic_video, tmp_path, mon
     monkeypatch.setenv("FILM_GAMES_DIR", str(tmp_path / "games"))
     m = ingest(synthetic_video, date="2026-01-01", profile="test", fps=10.0)
     rim = Box(100, 60, 150, 90, 0.9, "rim")
-    rims = FakeDetector(fn=lambda img, i: [rim] if i < 2 else [], name="rim@fake")
+    other = Box(250, 60, 300, 90, 0.8, "rim")
+    rims = FakeDetector(fn=lambda img, i: [rim, other] if i < 2 else [], name="rim@fake")   # 4 rows, 2 frames
     lines = []
     perceive(m.game_id, device="cpu", rim_detector=rims, ball_detector=FakeDetector(name="ball@fake"), log=lines.append)
     warning = [line for line in lines if "WARNING" in line]
@@ -46,3 +47,15 @@ def test_perceive_warns_loudly_when_rims_are_rare(synthetic_video, tmp_path, mon
     perceive(m.game_id, device="cpu", rim_detector=FakeDetector(fn=lambda img, i: [rim], name="rim@fake"),
              ball_detector=FakeDetector(name="ball@fake"), log=quiet.append)
     assert not [line for line in quiet if "WARNING" in line]
+
+
+def test_perceive_of_no_frames_does_not_warn(synthetic_video, tmp_path, monkeypatch):
+    import film.perceive.run as run_mod
+
+    monkeypatch.setenv("FILM_GAMES_DIR", str(tmp_path / "games"))
+    m = ingest(synthetic_video, date="2026-01-01", profile="test", fps=10.0)
+    monkeypatch.setattr(run_mod, "iter_frames", lambda *a, **kw: iter(()))
+    lines = []
+    info = perceive(m.game_id, device="cpu", rim_detector=FakeDetector(name="rim@fake"),
+                    ball_detector=FakeDetector(name="ball@fake"), log=lines.append)
+    assert info["frames"] == 0 and not [line for line in lines if "WARNING" in line]
