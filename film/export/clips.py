@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 import subprocess
 from pathlib import Path
 
@@ -14,12 +15,22 @@ from film.interpret.events import load_events
 def cut_clip(source: Path, start: float, end: float, out_path: Path, width: int = 640) -> Path:
     out_path = Path(out_path)
     out_path.parent.mkdir(parents=True, exist_ok=True)
+    part = out_path.with_suffix(".part.mp4")
     base = [ffmpeg_exe(), "-y", "-loglevel", "error", "-ss", f"{max(0.0, start):.3f}", "-i", str(source),
             "-t", f"{max(0.1, end - start):.3f}", "-vf", f"scale={width}:-2", "-an", "-movflags", "+faststart"]
-    try:
-        subprocess.run(base + ["-c:v", "libx264", "-preset", "veryfast", "-crf", "28", str(out_path)], check=True, capture_output=True)
-    except subprocess.CalledProcessError:
-        subprocess.run(base + ["-c:v", "mpeg4", "-q:v", "5", str(out_path)], check=True, capture_output=True)
+
+    def run(codec_args: list[str]) -> str | None:
+        """Return None on success, else ffmpeg's decoded stderr."""
+        result = subprocess.run(base + codec_args + [str(part)], capture_output=True)
+        return None if result.returncode == 0 else result.stderr.decode(errors="replace").strip()
+
+    err = run(["-c:v", "libx264", "-preset", "veryfast", "-crf", "28"])
+    if err is not None and ("Unknown encoder" in err or "libx264" in err):
+        err = run(["-c:v", "mpeg4", "-q:v", "5"])
+    if err is not None:
+        part.unlink(missing_ok=True)
+        raise RuntimeError(f"ffmpeg failed cutting {source} {start:.2f}-{end:.2f}: {err}")
+    os.replace(part, out_path)
     return out_path
 
 
