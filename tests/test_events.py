@@ -1,5 +1,7 @@
 from film.interpret.arrivals import Arrival
-from film.interpret.events import Event, build_shot_events, event_id, load_events, save_events, score_change
+from film.interpret.events import (
+    Event, build_shot_events, event_id, load_events, save_events, score_change, scoreboard_only_events,
+)
 from film.perceive.scoreboard import ScoreboardRead
 
 RIM = (900.0, 500.0, 950.0, 530.0)
@@ -100,3 +102,46 @@ def test_event_from_json_ignores_unknown_keys():
     e = Event(id="shot-000010-r1", type="shot", t=1.0, rim_id=1, quarter=1, clock_s=400.0, team=None, made=None,
               confidence=0.3, clip={"start": 0.0, "end": 2.5}, signals={})
     assert Event.from_json(e.to_json() | {"added_later": 1}) == e
+
+
+def test_a_rise_with_no_arrival_becomes_a_scoreboard_only_event():
+    tl = [R(t, home=0, away=(2 if t >= 20 else 0)) for t in range(60)]
+    [e] = scoreboard_only_events(tl, [])
+    assert e.id == "shot-000180-sb" and e.type == "shot" and e.t == 18.0 and e.rim_id == -1
+    assert e.made is True and e.team == "away" and e.confidence == 0.5 and e.needs_location is True
+    assert e.flags == ["scoreboard-only"]
+    assert e.signals == {"source": "scoreboard", "score_delta": [0, 2], "scoreboard": "made", "points": 2}
+    assert e.clip == {"start": 15.0, "end": 19.5}
+    assert e.quarter == 2 and e.clock_s == 282.0
+
+
+def test_a_one_point_rise_is_flagged_as_a_possible_free_throw_and_t_never_goes_negative():
+    tl = [R(t, home=(1 if t >= 1 else 0)) for t in range(10)]
+    [e] = scoreboard_only_events(tl, [])
+    assert e.t == 0.0 and e.team == "home" and e.signals["points"] == 1
+    assert e.flags == ["scoreboard-only", "free-throw?"] and e.clip == {"start": 0.0, "end": 1.5}
+
+
+def test_a_rise_already_explained_by_an_arrival_gives_no_scoreboard_only_event():
+    tl = timeline_with_home_score_at(20)
+    events = build_shot_events([A(17.0, rim_id=2)], tl, [None], "g")
+    assert scoreboard_only_events(tl, events) == []
+    later = build_shot_events([A(21.0)], tl, [None], "g")         # after the rise: explains nothing
+    assert len(scoreboard_only_events(tl, later)) == 1
+    early = build_shot_events([A(12.0)], tl, [None], "g")         # 8 s before: too early
+    assert len(scoreboard_only_events(tl, early)) == 1
+
+
+def test_jumps_that_are_not_one_basket_give_no_scoreboard_only_event():
+    four = timeline_with_home_score_at(20, points=4)
+    assert scoreboard_only_events(four, []) == []
+    both = [R(t, home=(2 if t >= 20 else 0), away=(1 if t >= 20 else 0)) for t in range(60)]
+    assert scoreboard_only_events(both, []) == []
+    down = [R(t, home=(0 if t >= 20 else 2)) for t in range(60)]
+    assert scoreboard_only_events(down, []) == []
+
+
+def test_a_blank_read_does_not_hide_a_rise():
+    blank = [R(t, home=(None if t == 20 else (2 if t > 20 else 0))) for t in range(60)]
+    [e] = scoreboard_only_events(blank, [])
+    assert e.t == 19.0 and e.signals["score_delta"] == [2, 0]

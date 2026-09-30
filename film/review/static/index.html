@@ -109,7 +109,7 @@ function renderShots() {
     <div class="card">
       <video src="/clips/${esc(state.game)}/${esc(e.id)}.mp4" autoplay loop muted playsinline></video>
       <div style="margin-top:8px">${madeBadge}<span class="badge none">${esc(e.type)}</span>${dec}
-        <b>Q${e.quarter ?? "?"} ${clock(e.clock_s)}</b> <span class="muted">t=${e.t.toFixed(1)}s · team ${esc(e.team ?? "?")} · conf ${e.confidence} · rim ${e.rim_id}</span></div>
+        <b>Q${e.quarter ?? "?"} ${clock(e.clock_s)}</b> <span class="muted">t=${e.t.toFixed(1)}s · team ${esc(e.team ?? "?")} · conf ${e.confidence} · ${e.rim_id < 0 ? "scoreboard only" : "rim " + e.rim_id}</span></div>
       <div class="muted" style="margin-top:4px">${esc((e.flags || []).join(" ") || "no flags")} · ${esc(JSON.stringify(e.signals))}</div>
       <div class="keys"><kbd>Enter</kbd> confirm <kbd>M</kbd> toggle made <kbd>T</kbd> team <kbd>X</kbd> reject <kbd>U</kbd> unsure <kbd>L</kbd> open film <kbd>J</kbd>/<kbd>K</kbd> prev/next</div>
     </div>

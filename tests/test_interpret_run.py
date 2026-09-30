@@ -43,3 +43,24 @@ def test_interpret_without_classifier(synthetic_video, tmp_path, monkeypatch):
     _tracks(game_dir(m.game_id))
     [e] = interpret(m.game_id, use_classifier=False, log=lambda *a: None)
     assert e.made is None and e.confidence == 0.3 and "no-classifier" in e.flags
+
+
+def test_interpret_adds_scoreboard_only_events_without_calling_the_classifier(synthetic_video, tmp_path, monkeypatch):
+    from film.perceive.scoreboard import ScoreboardRead, save_timeline
+
+    monkeypatch.setenv("FILM_GAMES_DIR", str(tmp_path / "games"))
+    m = ingest(synthetic_video, date="2026-01-01", profile="test", fps=10.0)
+    gd = game_dir(m.game_id)
+    _tracks(gd)
+    reads = [ScoreboardRead(t=float(t), period=1, clock_s=400.0 - t, home=(3 if t >= 30 else 0), away=0,
+                            home_fouls=0, away_fouls=0, conf=1.0) for t in range(60)]
+    save_timeline(reads, gd / "scoreboard.jsonl")
+    clf = FakeClassifier([("missed", 0.9)])
+    lines = []
+    events = interpret(m.game_id, classifier=clf, log=lines.append)
+    assert [e.rim_id for e in events] == [1, -1]
+    assert clf.calls == 1
+    sb = events[1]
+    assert sb.id == "shot-000280-sb" and sb.team == "home" and sb.signals["points"] == 3
+    assert "1 scoreboard-only" in lines[-1]
+    assert Manifest.load(gd).stages["interpret"]["scoreboard_only"] == 1

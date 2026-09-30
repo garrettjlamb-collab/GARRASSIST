@@ -12,6 +12,9 @@ CLIP_AFTER_S = 1.5
 SCORE_WINDOW_S = 6.0
 NEXT_ARRIVAL_MARGIN_S = 0.5
 SCORE_LEAD_S = 1.0
+SB_ONLY_LOOKBACK_S = 7.0
+SB_ONLY_LEAD_S = 2.0
+SB_ONLY_RIM_ID = -1
 
 
 @dataclass
@@ -126,6 +129,44 @@ def build_shot_events(arrivals: list[Arrival], timeline: list[ScoreboardRead],
             signals=signals, flags=flags,
         ))
     return events
+
+
+def scoreboard_only_events(timeline: list[ScoreboardRead], events: list[Event]) -> list[Event]:
+    """A made basket for every scoreboard rise that no event explains.
+
+    Walks the reads that carry both scores; a rise of 1 to 3 points by exactly one team, with no event
+    (at any rim) in the SB_ONLY_LOOKBACK_S before it, becomes a shot placed SB_ONLY_LEAD_S before the
+    rise. It has no rim, so no montage and no classifier; the coach places it."""
+    arrival_times = sorted(e.t for e in events)
+    out: list[Event] = []
+    prev: ScoreboardRead | None = None
+    for read in timeline:
+        if read.home is None or read.away is None:
+            continue
+        if prev is not None:
+            dh, da = read.home - prev.home, read.away - prev.away
+            if (dh in (1, 2, 3) and da == 0) or (da in (1, 2, 3) and dh == 0):
+                rise_t = read.t
+                explained = any(rise_t - SB_ONLY_LOOKBACK_S <= t <= rise_t for t in arrival_times)
+                if not explained:
+                    out.append(_scoreboard_only_event(timeline, rise_t, dh, da))
+        prev = read
+    return out
+
+
+def _scoreboard_only_event(timeline: list[ScoreboardRead], rise_t: float, dh: int, da: int) -> Event:
+    t = round(max(0.0, rise_t - SB_ONLY_LEAD_S), 2)
+    points = dh or da
+    read = lookup(timeline, t)
+    flags = ["scoreboard-only"] + (["free-throw?"] if points == 1 else [])
+    return Event(
+        id=f"shot-{int(round(t * 10)):06d}-sb", type="shot", t=t, rim_id=SB_ONLY_RIM_ID,
+        quarter=read.period if read else None, clock_s=read.clock_s if read else None,
+        team="home" if dh else "away", made=True, confidence=0.5,
+        clip={"start": round(max(0.0, t - CLIP_BEFORE_S), 2), "end": round(t + CLIP_AFTER_S, 2)},
+        signals={"source": "scoreboard", "score_delta": [dh, da], "scoreboard": "made", "points": points},
+        flags=flags, needs_location=True,
+    )
 
 
 def save_events(game_dir: Path, events: list[Event]) -> Path:
