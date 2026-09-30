@@ -17,6 +17,7 @@ COMMANDS = [
     "film.commands.interpret",
     "film.commands.prelabel",
     "film.commands.train",
+    "film.commands.clips",
 ]
 
 
