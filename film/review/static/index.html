@@ -1,1 +1,252 @@
-<!doctype html><meta charset="utf-8"><title>Film review</title><p>The review page arrives in Task 19.</p>
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Film review</title>
+<style>
+  :root { --bg:#0f1218; --panel:#171c26; --line:#2a3242; --text:#e6e9ef; --muted:#8b95a7; --ok:#3ddc84; --bad:#ff5c5c; --accent:#4c8dff; }
+  * { box-sizing:border-box; }
+  body { margin:0; font:14px/1.4 -apple-system, system-ui, sans-serif; background:var(--bg); color:var(--text); display:grid; grid-template-columns:260px 1fr; height:100vh; }
+  aside { border-right:1px solid var(--line); padding:12px; overflow:auto; }
+  main { padding:16px; overflow:auto; }
+  h1 { font-size:16px; margin:0 0 12px; }
+  .game { padding:8px; border:1px solid var(--line); border-radius:6px; margin-bottom:8px; cursor:pointer; }
+  .game.sel { border-color:var(--accent); }
+  .game small { color:var(--muted); display:block; }
+  nav button { background:var(--panel); color:var(--text); border:1px solid var(--line); padding:6px 12px; border-radius:6px; cursor:pointer; margin-right:6px; }
+  nav button.sel { border-color:var(--accent); }
+  .card { background:var(--panel); border:1px solid var(--line); border-radius:8px; padding:12px; margin-top:12px; max-width:960px; }
+  video { width:100%; max-width:640px; background:#000; border-radius:6px; }
+  .badge { display:inline-block; padding:2px 8px; border-radius:10px; font-weight:600; margin-right:6px; }
+  .made { background:var(--ok); color:#062; } .miss { background:var(--bad); color:#400; } .none { background:var(--line); }
+  .muted { color:var(--muted); }
+  .keys { color:var(--muted); font-size:12px; margin-top:8px; }
+  kbd { background:var(--line); padding:1px 5px; border-radius:4px; font-family:inherit; }
+  canvas { max-width:100%; border:1px solid var(--line); border-radius:6px; cursor:crosshair; }
+  .row { display:flex; gap:12px; align-items:center; flex-wrap:wrap; }
+  .btn { background:var(--accent); color:#fff; border:0; padding:6px 12px; border-radius:6px; cursor:pointer; }
+  .list { margin-top:12px; max-height:240px; overflow:auto; font-size:12px; max-width:960px; }
+  .list div { padding:3px 6px; border-bottom:1px solid var(--line); cursor:pointer; }
+  .list div.sel { background:#22304a; }
+</style>
+</head>
+<body>
+<aside>
+  <h1>Games</h1>
+  <div id="games"></div>
+</aside>
+<main>
+  <nav>
+    <button data-tab="shots" class="sel">Shots</button>
+    <button data-tab="rim">Label rim</button>
+    <button data-tab="ball">Label ball</button>
+    <button data-tab="rimclf">Label clips</button>
+  </nav>
+  <section id="shots"></section>
+  <section id="label" hidden></section>
+</main>
+<script>
+const state = { game: null, tab: "shots", events: [], index: 0, label: null, boxes: [], selected: -1, drawing: null, img: null };
+const CLASSES = { rim: ["rim", "backboard"], ball: ["ball"] };
+const $ = (sel) => document.querySelector(sel);
+const api = async (url, opts) => { const r = await fetch(url, opts); if (!r.ok) throw new Error(await r.text()); return r.json(); };
+const post = (url, body) => api(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body || {}) });
+const clock = (s) => s == null ? "--" : `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, "0")}`;
+const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+
+async function loadGames() {
+  const games = await api("/api/games");
+  $("#games").innerHTML = games.map(g => `<div class="game ${g.game_id === state.game ? "sel" : ""}" data-id="${esc(g.game_id)}"><b>${esc(g.game_id)}</b><small>${esc(g.profile)} · ${g.decided}/${g.events} decided</small></div>`).join("")
+    || "<div class='muted'>No games yet. Run: film run &lt;file&gt;</div>";
+  document.querySelectorAll(".game").forEach(el => el.onclick = () => selectGame(el.dataset.id));
+  if (!state.game && games.length) selectGame(games[0].game_id);
+}
+
+async function selectGame(id) {
+  state.game = id;
+  state.events = await api(`/api/games/${id}/events`);
+  state.events.sort((a, b) => (!!a.decision - !!b.decision) || (a.confidence - b.confidence));
+  state.index = 0;
+  await loadGames();
+  render();
+}
+
+function render() {
+  document.querySelectorAll("nav button").forEach(b => b.classList.toggle("sel", b.dataset.tab === state.tab));
+  $("#shots").hidden = state.tab !== "shots";
+  $("#label").hidden = state.tab === "shots";
+  if (state.tab === "shots") renderShots(); else loadLabel();
+}
+
+function renderShots() {
+  const el = $("#shots");
+  if (!state.game) { el.innerHTML = "<p class='muted'>Pick a game.</p>"; return; }
+  const decided = state.events.filter(e => e.decision).length;
+  const e = state.events[state.index];
+  if (!e) { el.innerHTML = `<p>No events for this game yet.</p>`; return; }
+  const madeBadge = e.made === true ? "<span class='badge made'>MADE</span>" : e.made === false ? "<span class='badge miss'>MISSED</span>" : "<span class='badge none'>UNKNOWN</span>";
+  const dec = e.decision ? `<span class='badge none'>${esc(e.decision.status)}</span>` : "";
+  el.innerHTML = `
+    <div class="row"><b>${decided}/${state.events.length} decided</b><span class="muted">${state.index + 1} of ${state.events.length}</span>
+      <button class="btn" id="confirm-high">Confirm all above 0.9</button></div>
+    <div class="card">
+      <video src="/clips/${esc(state.game)}/${esc(e.id)}.mp4" autoplay loop muted playsinline></video>
+      <div style="margin-top:8px">${madeBadge}<span class="badge none">${esc(e.type)}</span>${dec}
+        <b>Q${e.quarter ?? "?"} ${clock(e.clock_s)}</b> <span class="muted">t=${e.t.toFixed(1)}s · team ${esc(e.team ?? "?")} · conf ${e.confidence} · rim ${e.rim_id}</span></div>
+      <div class="muted" style="margin-top:4px">${esc((e.flags || []).join(" ") || "no flags")} · ${esc(JSON.stringify(e.signals))}</div>
+      <div class="keys"><kbd>Enter</kbd> confirm <kbd>M</kbd> toggle made <kbd>T</kbd> team <kbd>X</kbd> reject <kbd>U</kbd> unsure <kbd>L</kbd> open film <kbd>J</kbd>/<kbd>K</kbd> prev/next</div>
+    </div>
+    <div class="list">${state.events.map((x, i) => `<div class="${i === state.index ? "sel" : ""}" data-i="${i}">${x.decision ? "✓" : "·"} ${esc(x.id)} Q${x.quarter ?? "?"} ${clock(x.clock_s)} ${x.made === true ? "made" : x.made === false ? "missed" : "?"} ${x.confidence}</div>`).join("")}</div>`;
+  $("#confirm-high").onclick = confirmHigh;
+  document.querySelectorAll(".list div").forEach(d => d.onclick = () => { state.index = +d.dataset.i; renderShots(); });
+}
+
+async function decide(status) {
+  const e = state.events[state.index];
+  if (!e) return;
+  e.decision = await post(`/api/games/${state.game}/decisions/${e.id}`, { status, made: e.made, team: e.team });
+  state.index = Math.min(state.index + 1, state.events.length - 1);
+  renderShots();
+  loadGames();
+}
+
+async function confirmHigh() {
+  for (const e of state.events) {
+    if (!e.decision && e.type === "shot" && e.confidence >= 0.9) {
+      e.decision = await post(`/api/games/${state.game}/decisions/${e.id}`, { status: "confirmed", made: e.made, team: e.team });
+    }
+  }
+  renderShots();
+  loadGames();
+}
+
+function shotKeys(ev) {
+  const e = state.events[state.index];
+  if (!e) return;
+  const k = ev.key.toLowerCase();
+  if (ev.key === "Enter") decide("confirmed");
+  else if (k === "m") { e.made = e.made !== true; renderShots(); }
+  else if (k === "t") { e.team = e.team === "home" ? "away" : e.team === "away" ? null : "home"; renderShots(); }
+  else if (k === "x") decide("rejected");
+  else if (k === "u") decide("unsure");
+  else if (k === "l") window.open(`/video/${state.game}#t=${Math.max(0, e.t - 5).toFixed(1)}`, "_blank");
+  else if (k === "j") { state.index = Math.max(0, state.index - 1); renderShots(); }
+  else if (k === "k") { state.index = Math.min(state.events.length - 1, state.index + 1); renderShots(); }
+  else return;
+  ev.preventDefault();
+}
+
+async function loadLabel() {
+  const dataset = state.tab;
+  state.label = await api(`/api/label/${dataset}/next`);
+  if (state.label.done) {
+    $("#label").innerHTML = `<p>Nothing pending for <b>${esc(dataset)}</b>. Queue more with: film prelabel ${esc(dataset)} &lt;game_id&gt;</p>`;
+    return;
+  }
+  if (dataset === "rimclf") renderClipLabel(); else renderBoxLabel();
+}
+
+function renderClipLabel() {
+  const l = state.label;
+  $("#label").innerHTML = `<div class="row"><b>${l.remaining} pending</b><span class="muted">${esc(l.image_id)} · suggested: ${esc(l.suggested || "?")}</span></div>
+    <div class="card"><img src="${l.image_url}" style="width:576px;max-width:100%">
+    <div class="keys">Nine frames, left to right then top to bottom, 0.2 s apart, starting 0.4 s before the ball reaches the rim.
+    <kbd>1</kbd> made <kbd>2</kbd> missed <kbd>3</kbd> not a shot <kbd>K</kbd> skip</div></div>`;
+}
+
+async function clipKeys(ev) {
+  const l = state.label;
+  if (!l || l.done) return;
+  const map = { "1": "made", "2": "missed", "3": "none" };
+  if (map[ev.key]) await post(`/api/label/rimclf/${l.image_id}/class`, { cls: map[ev.key] });
+  else if (ev.key.toLowerCase() === "k") await post(`/api/label/rimclf/${l.image_id}/skip`);
+  else return;
+  ev.preventDefault();
+  loadLabel();
+}
+
+function renderBoxLabel() {
+  const l = state.label;
+  const names = CLASSES[state.tab];
+  state.boxes = l.boxes.map(b => ({ cls: b.cls, x1: b.x1, y1: b.y1, x2: b.x2, y2: b.y2 }));
+  state.selected = -1;
+  state.img = null;
+  $("#label").innerHTML = `<div class="row"><b>${l.remaining} pending</b><span class="muted">${esc(l.image_id)}</span></div>
+    <div class="card"><canvas id="cv" width="${l.width}" height="${l.height}"></canvas>
+    <div class="keys">Drag to draw a box. Click a box to select it. <kbd>Delete</kbd> remove
+    ${names.map((n, i) => `<kbd>${i + 1}</kbd> ${esc(n)}`).join(" ")} <kbd>S</kbd> save <kbd>K</kbd> skip</div></div>`;
+  const img = new Image();
+  img.onload = () => { state.img = img; drawBoxes(); };
+  img.src = l.image_url;
+  const cv = $("#cv");
+  const pos = (ev) => { const r = cv.getBoundingClientRect(); return { x: (ev.clientX - r.left) * cv.width / r.width, y: (ev.clientY - r.top) * cv.height / r.height }; };
+  cv.onmousedown = (ev) => {
+    const p = pos(ev);
+    const hit = state.boxes.findIndex(b => p.x >= b.x1 && p.x <= b.x2 && p.y >= b.y1 && p.y <= b.y2);
+    if (hit >= 0) { state.selected = hit; drawBoxes(); return; }
+    state.drawing = { x1: p.x, y1: p.y, x2: p.x, y2: p.y };
+  };
+  cv.onmousemove = (ev) => { if (!state.drawing) return; const p = pos(ev); state.drawing.x2 = p.x; state.drawing.y2 = p.y; drawBoxes(); };
+  cv.onmouseup = () => {
+    const d = state.drawing;
+    state.drawing = null;
+    if (!d) return;
+    const b = { cls: names[0], x1: Math.min(d.x1, d.x2), y1: Math.min(d.y1, d.y2), x2: Math.max(d.x1, d.x2), y2: Math.max(d.y1, d.y2) };
+    if (b.x2 - b.x1 > 3 && b.y2 - b.y1 > 3) { state.boxes.push(b); state.selected = state.boxes.length - 1; }
+    drawBoxes();
+  };
+}
+
+function drawBoxes() {
+  const cv = $("#cv");
+  if (!cv || !state.img) return;
+  const ctx = cv.getContext("2d");
+  ctx.drawImage(state.img, 0, 0);
+  const colours = { rim: "#3ddc84", backboard: "#4c8dff", ball: "#ffc857" };
+  ctx.font = "14px sans-serif";
+  state.boxes.forEach((b, i) => {
+    ctx.lineWidth = i === state.selected ? 4 : 2;
+    ctx.strokeStyle = colours[b.cls] || "#fff";
+    ctx.strokeRect(b.x1, b.y1, b.x2 - b.x1, b.y2 - b.y1);
+    ctx.fillStyle = ctx.strokeStyle;
+    ctx.fillText(b.cls, b.x1 + 2, Math.max(12, b.y1 - 4));
+  });
+  if (state.drawing) {
+    const d = state.drawing;
+    ctx.setLineDash([6, 4]);
+    ctx.strokeStyle = "#fff";
+    ctx.strokeRect(Math.min(d.x1, d.x2), Math.min(d.y1, d.y2), Math.abs(d.x2 - d.x1), Math.abs(d.y2 - d.y1));
+    ctx.setLineDash([]);
+  }
+}
+
+async function boxKeys(ev) {
+  const l = state.label;
+  if (!l || l.done) return;
+  const names = CLASSES[state.tab];
+  const k = ev.key.toLowerCase();
+  if (ev.key === "Delete" || ev.key === "Backspace") {
+    if (state.selected >= 0) { state.boxes.splice(state.selected, 1); state.selected = -1; drawBoxes(); }
+  } else if (names[+ev.key - 1]) {
+    if (state.selected >= 0) { state.boxes[state.selected].cls = names[+ev.key - 1]; drawBoxes(); }
+  } else if (k === "s") {
+    await post(`/api/label/${state.tab}/${l.image_id}/boxes`, { boxes: state.boxes });
+    loadLabel();
+  } else if (k === "k") {
+    await post(`/api/label/${state.tab}/${l.image_id}/skip`);
+    loadLabel();
+  } else return;
+  ev.preventDefault();
+}
+
+document.addEventListener("keydown", (ev) => {
+  if (ev.metaKey || ev.ctrlKey || ev.altKey) return;
+  if (state.tab === "shots") shotKeys(ev);
+  else if (state.tab === "rimclf") clipKeys(ev);
+  else boxKeys(ev);
+});
+document.querySelectorAll("nav button").forEach(b => b.onclick = () => { state.tab = b.dataset.tab; render(); });
+loadGames();
+</script>
+</body>
+</html>

@@ -18,6 +18,7 @@ COMMANDS = [
     "film.commands.prelabel",
     "film.commands.train",
     "film.commands.clips",
+    "film.commands.review",
 ]
 
 
