@@ -54,20 +54,26 @@ def find_ball_arrivals(ball_df: pd.DataFrame, rim_df: pd.DataFrame, fps: float, 
 
 def find_motion_arrivals(motion_df: pd.DataFrame, rim_df: pd.DataFrame, fps: float,
                          z: float = MOTION_Z, min_gap_s: float = MIN_GAP_S) -> list[Arrival]:
-    """Local peaks of rim motion energy (above the whole-frame energy) more than z standard deviations out."""
+    """Local peaks of rim motion energy (above the whole-frame energy) more than z standard deviations out.
+
+    The mean and spread are the whole game's, over every rim id: a short-lived id (a brief false rim,
+    or a rim re-acquired after a pan) has too few rows for its own statistics to mean anything."""
     if motion_df.empty or rim_df.empty:
         return []
     rims = _rim_lookup(rim_df)
     half = max(1, int(round(0.5 * fps)))
+    all_rel = (motion_df["energy"] - motion_df["energy_global"]).to_numpy(dtype=float)
+    if all_rel.std() == 0:
+        return []
+    threshold = all_rel.mean() + z * all_rel.std()
     out: list[Arrival] = []
     for rim_id, group in motion_df.sort_values("frame").groupby("rim_id"):
         rim_id = int(rim_id)
         rel = (group["energy"] - group["energy_global"]).to_numpy(dtype=float)
         frames = group["frame"].to_numpy()
         times = group["t"].to_numpy(dtype=float)
-        if len(rel) < 3 or rel.std() == 0:
+        if len(rel) < 3:
             continue
-        threshold = rel.mean() + z * rel.std()
         last_t = -math.inf
         for i in range(len(rel)):
             if rel[i] < threshold or rel[i] < rel[max(0, i - half): i + half + 1].max():

@@ -77,3 +77,30 @@ def test_merge_keeps_ball_arrivals_and_adds_distant_motion_ones():
               Arrival(t=11.0, frame=110, rim_id=2, rim_box=RIM, source="motion", conf=0.4)]
     merged = merge_arrivals(ball, motion)
     assert [(a.t, a.rim_id, a.source) for a in merged] == [(10.0, 1, "ball"), (11.0, 2, "motion"), (30.0, 1, "motion")]
+
+
+def test_motion_threshold_is_game_wide_not_per_rim():
+    busy = np.where(np.arange(200) % 2 == 0, 2.0, 7.0)          # a rim with a lot of ordinary motion
+    busy[120] = 61.0                                             # and one real arrival
+    quiet = np.full(30, 2.0)                                     # a short-lived id: flat, then a modest bump
+    quiet[15] = 6.0
+    motion = pd.concat([
+        pd.DataFrame({"frame": range(200), "t": np.arange(200) / FPS, "rim_id": 1, "energy": busy, "energy_global": 1.0}),
+        pd.DataFrame({"frame": range(300, 330), "t": np.arange(300, 330) / FPS, "rim_id": 7, "energy": quiet, "energy_global": 1.0}),
+    ])
+    rims = rows_to_frame(rim_rows(range(0, 200)) + rim_rows(range(300, 330), track_id=7))
+    found = find_motion_arrivals(motion, rims, FPS)
+    assert [(a.rim_id, a.t) for a in found] == [(1, 12.0)]
+    alone = find_motion_arrivals(motion[motion["rim_id"] == 7], rims, FPS)
+    assert [(a.rim_id, a.t) for a in alone] == [(7, 31.5)]      # on its own, the bump does stand out
+
+
+def test_a_rim_id_with_fewer_than_three_rows_gives_nothing():
+    energy = np.full(100, 2.0)
+    energy[50] = 80.0
+    motion = pd.concat([
+        pd.DataFrame({"frame": range(100), "t": np.arange(100) / FPS, "rim_id": 1, "energy": np.full(100, 2.0), "energy_global": 1.0}),
+        pd.DataFrame({"frame": [200, 201], "t": [20.0, 20.1], "rim_id": 9, "energy": [2.0, 80.0], "energy_global": 1.0}),
+    ])
+    rims = rows_to_frame(rim_rows(range(0, 100)) + rim_rows([200, 201], track_id=9))
+    assert find_motion_arrivals(motion, rims, FPS) == []
