@@ -42,7 +42,8 @@ basketball-film-pipeline/
       registry.py                   latest(), new_version_dir(), write_manifest(), read_manifest()
       video.py                      VideoInfo, probe(), iter_frames()
     ingest/
-      profile.py                    led_fraction(), detect_profile()
+      profile.py                    overlay_features(), overlay_correlation(), detect_profile()
+      hudl_overlay.png              grayscale template of the Hudl overlay's static artwork (Task 4 fix round)
       run.py                        ingest()
     perceive/
       profiles/hudl_tactical.json   scoreboard cell geometry
