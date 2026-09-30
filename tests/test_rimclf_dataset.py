@@ -123,3 +123,21 @@ def test_scoreboard_only_events_have_no_rim_and_are_skipped(synthetic_video, tmp
     counts = build_rimclf_candidates(m.game_id, n_none=0, margin_s=0.2, log=lambda *a: None)
     assert counts["no_rim"] == 1 and counts["from_review"] == 0 and counts["made_auto"] == 0
     assert not list((tmp_path / "datasets").rglob("*.jpg")) and ds.list_pending("rimclf") == []
+
+
+def test_a_pending_montage_is_promoted_once_the_coach_decides(synthetic_video, tmp_path, monkeypatch):
+    _env(monkeypatch, tmp_path)
+    m = ingest(synthetic_video, date="2026-01-01", profile="test")
+    gd = game_dir(m.game_id)
+    _rims(gd)
+    save_events(gd, [_event("shot-000010-r1", 1.0), _event("shot-000015-r1", 1.5), _event("shot-000020-r1", 2.0)])
+    first = build_rimclf_candidates(m.game_id, n_none=0, margin_s=0.2, log=lambda *a: None)
+    assert first["pending"] == 3
+    save_decision(gd, "shot-000010-r1", {"status": "confirmed", "made": True})
+    save_decision(gd, "shot-000015-r1", {"status": "rejected"})
+    save_decision(gd, "shot-000020-r1", {"status": "unsure"})
+    second = build_rimclf_candidates(m.game_id, n_none=0, margin_s=0.2, log=lambda *a: None)
+    assert second["from_review"] == 2 and second["already"] == 1 and second["pending"] == 0
+    placed = {p.stem: p.parent.name for p in (tmp_path / "datasets" / "rimclf").glob("*/*/*.jpg")}
+    assert placed == {"shot-000010-r1": "made", "shot-000015-r1": "none"}
+    assert ds.list_pending("rimclf") == ["shot-000020-r1"]

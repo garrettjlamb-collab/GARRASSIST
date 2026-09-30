@@ -3,6 +3,7 @@ from __future__ import annotations
 import random
 from pathlib import Path
 
+import cv2
 import pandas as pd
 
 from film.common.manifest import Manifest
@@ -10,7 +11,9 @@ from film.common.paths import game_dir
 from film.interpret.events import load_events
 from film.perceive.tracks import read_tracks
 from film.review.decisions import load_decisions
-from film.train.datasets import find_class_images, list_pending, store_class_image, write_pending
+from film.train.datasets import (
+    find_class_images, list_pending, pending_images_dir, remove_pending, store_class_image, write_pending,
+)
 from film.train.montage import build_montage
 
 EVENT_EXCLUSION_S = 3.0
@@ -71,6 +74,15 @@ def build_rimclf_candidates(game_id: str, n_none: int = 40, seed: int = 0, margi
     counts = {"made_auto": 0, "pending": 0, "none_auto": 0, "already": 0, "no_rim": 0, "from_review": 0}
     queued = set(list_pending("rimclf"))
     for e in events:
+        if e.id in queued and e.id in decisions:
+            # Queued by an earlier run; if the coach has since given a class, promote the queued montage.
+            cls, _ = _route(e, decisions[e.id])
+            image = cv2.imread(str(pending_images_dir("rimclf") / f"{e.id}.jpg")) if cls is not None else None
+            if image is not None:
+                store_class_image("rimclf", e.id, image, cls)
+                remove_pending("rimclf", e.id)
+                counts["from_review"] += 1
+                continue
         if e.id in queued or find_class_images("rimclf", e.id):
             counts["already"] += 1
             continue
