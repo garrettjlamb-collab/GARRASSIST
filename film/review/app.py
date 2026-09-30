@@ -58,6 +58,14 @@ def _summary(gd: Path) -> dict:
             "stages": {name: info.get("status") for name, info in m.stages.items()}}
 
 
+def _safe_summary(gd: Path) -> dict:
+    """A game whose manifest or events cannot be read is listed with its error, not allowed to fail the list."""
+    try:
+        return _summary(gd)
+    except Exception as exc:  # noqa: BLE001 - any unreadable file, reported to the page
+        return {"game_id": gd.name, "error": f"{type(exc).__name__}: {exc}"}
+
+
 def _dataset(dataset: str) -> str:
     if dataset not in ds.CLASS_NAMES and dataset != "rimclf":
         raise HTTPException(404, f"no dataset {dataset}")
@@ -116,7 +124,7 @@ def create_app() -> FastAPI:
         root = games_dir()
         if not root.exists():
             return []
-        return [_summary(p) for p in sorted(root.iterdir()) if (p / "manifest.json").exists()]
+        return [_safe_summary(p) for p in sorted(root.iterdir()) if (p / "manifest.json").exists()]
 
     @app.get("/api/games/{game_id}/events")
     def events(game_id: str):

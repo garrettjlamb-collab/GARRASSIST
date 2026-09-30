@@ -114,3 +114,17 @@ def test_label_validation(synthetic_video, tmp_path, monkeypatch):
     assert client.post("/api/label/rimclf/missing/class", json={"cls": "made"}).status_code == 404
     assert client.post("/api/label/rim/missing/skip").status_code == 404
     assert not (tmp_path / "datasets" / "nope").exists()
+
+
+def test_one_broken_game_does_not_blank_the_list(synthetic_video, tmp_path, monkeypatch):
+    _env(monkeypatch, tmp_path)
+    game_id, _ = _game(synthetic_video)
+    broken = tmp_path / "games" / "2026-01-02-broken"
+    broken.mkdir(parents=True)
+    (broken / "manifest.json").write_text("{not json")
+    client = TestClient(create_app())
+    r = client.get("/api/games")
+    assert r.status_code == 200
+    by_id = {g["game_id"]: g for g in r.json()}
+    assert by_id[game_id]["events"] == 2 and "error" not in by_id[game_id]
+    assert set(by_id["2026-01-02-broken"]) == {"game_id", "error"} and by_id["2026-01-02-broken"]["error"]
