@@ -152,3 +152,11 @@ def test_arrivals_at_different_rims_do_not_share_one_basket():
     first, second = build_shot_events([A(10.0, rim_id=1), A(13.0, rim_id=2)], tl, [None, None], "g")
     assert first.signals["points"] == 0 and first.made is False
     assert second.signals["points"] == 2 and second.made is True
+
+
+def test_a_dropout_across_the_arrival_is_no_evidence():
+    gap = [R(t) for t in range(11)] + [R(t, home=2) for t in range(30, 40)]
+    assert score_change(gap, 10.5, 6.0) is None                 # the latest read is from before the arrival
+    assert score_change(gap, 8.0, 1.5) == (0, 0)                 # the after-read (t=9) is later than the arrival
+    [e] = build_shot_events([A(10.5)], gap, [None], "g")
+    assert e.made is None and e.signals["scoreboard"] == "unknown" and "no-scoreboard" in e.flags

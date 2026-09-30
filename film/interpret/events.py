@@ -47,10 +47,12 @@ def event_id(t: float, rim_id: int) -> str:
 
 
 def score_change(timeline: list[ScoreboardRead], t: float, window_s: float) -> tuple[int, int] | None:
-    """(home delta, away delta) between the read at t - SCORE_LEAD_S and the read at t + window_s."""
+    """(home delta, away delta) between the read at t - SCORE_LEAD_S and the read at t + window_s.
+
+    None when the "after" read is not later than t: a dropout across the arrival is no evidence."""
     before = lookup(timeline, t - SCORE_LEAD_S)
     after = lookup(timeline, t + window_s)
-    if before is None or after is None:
+    if before is None or after is None or after.t <= t:
         return None
     if None in (before.home, before.away, after.home, after.away):
         return None
