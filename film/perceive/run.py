@@ -17,6 +17,7 @@ from film.perceive.scoreboard import clean_timeline, has_scoreboard, load_profil
 from film.perceive.tracks import replace_kind, rows_to_frame
 
 MOTION_COLUMNS = ["frame", "t", "rim_id", "energy", "energy_global"]
+LOW_RIM_FRACTION = 0.15
 
 
 def perceive(game_id: str, device: str | None = None, rim_detector=None, ball_detector=None,
@@ -60,4 +61,9 @@ def perceive(game_id: str, device: str | None = None, rim_detector=None, ball_de
            scoreboard=n_scoreboard, seconds=round(time.time() - started, 1), device=device)
     m.save(gd)
     log(f"done: {n_frames} frames, {len(rim_rows)} rim rows, {len(ball_rows)} ball rows, {n_scoreboard} scoreboard reads in {m.stages['perceive']['seconds']}s")
+    fraction = len(rim_rows) / n_frames if n_frames else 0.0
+    if fraction < LOW_RIM_FRACTION:
+        log(f"WARNING: rims found in only {fraction:.0%} of frames ({len(rim_rows)} rim rows, {n_frames} frames) with "
+            f"{rim_detector.name}. The rim templates may not match this gym or camera; few rims means few shots. "
+            f"Check the camera profile ({m.profile}) before trusting the events.")
     return m.stages["perceive"]

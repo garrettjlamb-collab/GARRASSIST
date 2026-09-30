@@ -17,6 +17,8 @@ def register(sub) -> None:
 
 
 def run(args) -> int:
+    import sys
+
     from film.export import clips
     from film.ingest.run import ingest
     from film.interpret import run as interpret_mod
@@ -24,8 +26,11 @@ def run(args) -> int:
 
     m = ingest(args.source, date=args.date, profile=args.profile, fps=args.fps)
     print(f"ingest   {m.game_id}  profile={m.profile}  {m.duration_s:.0f}s")
-    if m.profile == "unknown":
-        print("warning: camera profile unknown, so no scoreboard will be read; pass --profile to set it")
+    if m.profile == "unknown" and args.profile is None:
+        from film.commands.perceive import unknown_profile_message
+
+        print(unknown_profile_message(), file=sys.stderr)
+        return 2
     perceive_mod.perceive(m.game_id, device=args.device, limit_s=args.limit_s)
     interpret_mod.interpret(m.game_id, device=args.device)
     clips.clips_for_game(m.game_id)

@@ -10,7 +10,22 @@ def register(sub) -> None:
 
 
 def run(args) -> int:
+    import sys
+
+    from film.common.manifest import Manifest
+    from film.common.paths import game_dir
     from film.perceive.run import perceive
 
+    if Manifest.load(game_dir(args.game_id)).profile == "unknown":
+        print(unknown_profile_message(), file=sys.stderr)
+        return 2
     perceive(args.game_id, device=args.device, limit_s=args.limit_s)
     return 0
+
+
+def unknown_profile_message() -> str:
+    from film.ingest.profile import PROFILES
+
+    return ("error: the camera profile is unknown, so perceive would run for about half an hour without a "
+            "scoreboard or rim templates. Re-run ingest (or `film run`) with --profile, one of: "
+            + ", ".join(PROFILES))

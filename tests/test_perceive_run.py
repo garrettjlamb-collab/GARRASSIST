@@ -31,3 +31,18 @@ def test_perceive_writes_tracks_motion_and_marks_stage(synthetic_video, tmp_path
     assert saved.stages["perceive"]["status"] == "done"
     assert saved.model_versions == {"rim": "rim@fake", "ball": "ball@fake"}
     assert info["frames"] == len(rim_rows)
+
+
+def test_perceive_warns_loudly_when_rims_are_rare(synthetic_video, tmp_path, monkeypatch):
+    monkeypatch.setenv("FILM_GAMES_DIR", str(tmp_path / "games"))
+    m = ingest(synthetic_video, date="2026-01-01", profile="test", fps=10.0)
+    rim = Box(100, 60, 150, 90, 0.9, "rim")
+    rims = FakeDetector(fn=lambda img, i: [rim] if i < 2 else [], name="rim@fake")
+    lines = []
+    perceive(m.game_id, device="cpu", rim_detector=rims, ball_detector=FakeDetector(name="ball@fake"), log=lines.append)
+    warning = [line for line in lines if "WARNING" in line]
+    assert len(warning) == 1 and "7%" in warning[0] and "template" in warning[0]
+    quiet = []
+    perceive(m.game_id, device="cpu", rim_detector=FakeDetector(fn=lambda img, i: [rim], name="rim@fake"),
+             ball_detector=FakeDetector(name="ball@fake"), log=quiet.append)
+    assert not [line for line in quiet if "WARNING" in line]
