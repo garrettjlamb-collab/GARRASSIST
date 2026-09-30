@@ -16,6 +16,7 @@ dependencies = [
   "imageio-ffmpeg>=0.5",
   "fastapi>=0.115",
   "uvicorn>=0.30",
+  "clip",
 ]
 
 [project.optional-dependencies]
@@ -34,3 +35,6 @@ packages = ["film"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 filterwarnings = ["ignore::DeprecationWarning"]
+
+[tool.uv.sources]
+clip = { git = "https://github.com/ultralytics/CLIP.git" }
