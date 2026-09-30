@@ -1,0 +1,66 @@
+from film.common.paths import game_dir
+from film.ingest.run import ingest
+from film.interpret.events import Event, save_events
+from film.perceive.tracks import replace_kind, rows_to_frame
+from film.train import datasets as ds
+from film.train.rimclf_dataset import build_rimclf_candidates, rim_box_at
+
+
+def _env(monkeypatch, tmp_path):
+    monkeypatch.setenv("FILM_GAMES_DIR", str(tmp_path / "games"))
+    monkeypatch.setenv("FILM_DATASETS_DIR", str(tmp_path / "datasets"))
+    monkeypatch.setenv("FILM_LABELS_DIR", str(tmp_path / "labels"))
+
+
+def _rims(gd, frames=range(30)):
+    rows = [{"frame": f, "t": f / 10, "kind": "rim", "track_id": 1, "ref_id": None, "x1": 100.0, "y1": 60.0, "x2": 150.0,
+             "y2": 90.0, "conf": 0.9, "on_court": None, "court_x": None, "court_y": None, "team": None, "model_version": "x"}
+            for f in frames]
+    replace_kind(gd, rows_to_frame(rows), "rim")
+
+
+def _event(eid, t, kind="shot", points=0, scoreboard=None):
+    signals = {"points": points, "score_delta": [points, 0] if points else None,
+               "scoreboard": scoreboard or ("made" if points else "unknown")}
+    return Event(id=eid, type=kind, t=t, rim_id=1, quarter=None, clock_s=None, team=None, made=None, confidence=0.5,
+                 clip={"start": t - 1, "end": t + 1}, signals=signals, flags=[])
+
+
+def test_rim_box_at_uses_nearest_frame(synthetic_video, tmp_path, monkeypatch):
+    _env(monkeypatch, tmp_path)
+    m = ingest(synthetic_video, date="2026-01-01", profile="test")
+    gd = game_dir(m.game_id)
+    _rims(gd, frames=[0, 1, 2, 20])
+    from film.perceive.tracks import read_tracks
+
+    rims = read_tracks(gd, "rim")
+    assert rim_box_at(rims, 2) == (100.0, 60.0, 150.0, 90.0)
+    assert rim_box_at(rims, 6) == (100.0, 60.0, 150.0, 90.0)     # frame 2 is within max_gap
+    assert rim_box_at(rims, 40) is None                          # nearest is frame 20, too far
+    assert rim_box_at(rims, 20, rim_id=1) == (100.0, 60.0, 150.0, 90.0) and rim_box_at(rims, 20, rim_id=9) is None
+
+
+def test_build_candidates_routes_made_pending_and_none(synthetic_video, tmp_path, monkeypatch):
+    _env(monkeypatch, tmp_path)
+    m = ingest(synthetic_video, date="2026-01-01", profile="test")
+    gd = game_dir(m.game_id)
+    _rims(gd)
+    save_events(gd, [_event("shot-000010-r1", 1.0, points=2), _event("shot-000020-r1", 2.0), _event("shot-000025-r1", 2.5, kind="unknown")])
+    counts = build_rimclf_candidates(m.game_id, n_none=2, seed=1, margin_s=0.2, exclusion_s=0.1, log=lambda *a: None)
+    assert counts == {"made_auto": 1, "pending": 2, "none_auto": 2}
+    root = tmp_path / "datasets" / "rimclf"
+    assert (root / "val" / "made" / "shot-000010-r1.jpg").exists()
+    assert sorted(p.parent.name for p in root.glob("*/none/*.jpg")) == ["none", "none"]
+    pending = {i: ds.read_pending("rimclf", i) for i in ds.list_pending("rimclf")}
+    assert pending["shot-000020-r1"]["suggested"] == "missed"
+    assert pending["shot-000025-r1"]["suggested"] == "none"
+
+
+def test_ambiguous_or_one_point_verdict_is_not_auto_made(synthetic_video, tmp_path, monkeypatch):
+    _env(monkeypatch, tmp_path)
+    m = ingest(synthetic_video, date="2026-01-01", profile="test")
+    gd = game_dir(m.game_id)
+    _rims(gd)
+    save_events(gd, [_event("shot-000010-r1", 1.0, points=2, scoreboard="ambiguous"), _event("shot-000020-r1", 2.0, points=1)])
+    counts = build_rimclf_candidates(m.game_id, n_none=0, margin_s=0.2, log=lambda *a: None)
+    assert counts == {"made_auto": 0, "pending": 2, "none_auto": 0}
