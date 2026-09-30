@@ -58,11 +58,11 @@ def score_change(timeline: list[ScoreboardRead], t: float, window_s: float) -> t
 
 
 def _window_for(i: int, arrivals: list[Arrival]) -> float:
-    this = arrivals[i]
-    for nxt in arrivals[i + 1:]:
-        if nxt.rim_id == this.rim_id:
-            return max(0.5, min(SCORE_WINDOW_S, nxt.t - this.t - NEXT_ARRIVAL_MARGIN_S))
-    return SCORE_WINDOW_S
+    """The score window, cut short at the next arrival at any rim, so one basket is credited once."""
+    if i + 1 >= len(arrivals):
+        return SCORE_WINDOW_S
+    gap = arrivals[i + 1].t - arrivals[i].t
+    return max(0.5, min(SCORE_WINDOW_S, gap - NEXT_ARRIVAL_MARGIN_S))
 
 
 def build_shot_events(arrivals: list[Arrival], timeline: list[ScoreboardRead],

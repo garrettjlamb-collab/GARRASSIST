@@ -145,3 +145,10 @@ def test_a_blank_read_does_not_hide_a_rise():
     blank = [R(t, home=(None if t == 20 else (2 if t > 20 else 0))) for t in range(60)]
     [e] = scoreboard_only_events(blank, [])
     assert e.t == 19.0 and e.signals["score_delta"] == [2, 0]
+
+
+def test_arrivals_at_different_rims_do_not_share_one_basket():
+    tl = timeline_with_home_score_at(15)
+    first, second = build_shot_events([A(10.0, rim_id=1), A(13.0, rim_id=2)], tl, [None, None], "g")
+    assert first.signals["points"] == 0 and first.made is False
+    assert second.signals["points"] == 2 and second.made is True
