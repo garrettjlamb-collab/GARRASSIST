@@ -14,6 +14,7 @@ COMMANDS = [
     "film.commands.calibrate",
     "film.commands.scoreboard",
     "film.commands.perceive",
+    "film.commands.interpret",
 ]
 
 
