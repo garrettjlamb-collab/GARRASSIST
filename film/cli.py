@@ -7,6 +7,7 @@ from film import __version__
 
 COMMANDS = [
     "film.commands.doctor",
+    "film.commands.ingest",
 ]
 
 
