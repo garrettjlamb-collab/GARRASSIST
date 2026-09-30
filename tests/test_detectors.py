@@ -70,3 +70,22 @@ def test_load_detector_falls_back_to_open_vocab_without_templates(monkeypatch):
     assert load_detector("rim", "cpu") == "world"
     assert load_detector("rim", "cpu", profile="test") == "world"
     assert calls == ["rim@world-fallback", "rim@world-fallback"]
+
+
+def test_open_vocab_loads_world_weights_from_models_base(monkeypatch, tmp_path):
+    import ultralytics
+
+    monkeypatch.setenv("FILM_MODELS_DIR", str(tmp_path / "models"))
+    seen = {}
+
+    class StubWorld:
+        def __init__(self, weights):
+            seen["weights"] = weights
+
+        def set_classes(self, classes):
+            seen["classes"] = classes
+
+    monkeypatch.setattr(ultralytics, "YOLOWorld", StubWorld)
+    det = YoloDetector.open_vocab(D.BALL_WORLD_CLASSES, "cpu", 320)
+    assert seen["weights"] == str(tmp_path / "models" / "base" / D.WORLD_WEIGHTS)
+    assert det.cls_map == D.BALL_WORLD_CLASSES

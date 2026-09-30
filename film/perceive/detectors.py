@@ -94,11 +94,12 @@ class YoloDetector:
 
     @classmethod
     def open_vocab(cls, classes: dict[str, str], device: str, imgsz: int, conf: float = 0.15,
-                   name: str = "world", weights: str = WORLD_WEIGHTS) -> "YoloDetector":
-        """YOLO-World with text prompts; `classes` maps prompt -> our class name. Downloads weights on first use."""
+                   name: str = "world", weights=None) -> "YoloDetector":
+        """YOLO-World with text prompts; `classes` maps prompt -> our class name. Downloads weights on
+        first use, into models/base."""
         from ultralytics import YOLOWorld
 
-        model = YOLOWorld(weights)
+        model = YOLOWorld(str(weights or registry.base_weights_path(WORLD_WEIGHTS)))
         model.set_classes(list(classes))
         return cls(model, device, imgsz, conf, dict(classes), name)
 

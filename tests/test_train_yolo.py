@@ -44,7 +44,7 @@ def test_train_detector_registers_a_version(monkeypatch, tmp_path):
     assert dataset_counts("rim") == {"train": 24, "val": 6}
     version, folder = train_detector("rim", device="cpu", epochs=3, yolo_cls=StubYOLO, log=lambda *a: None)
     assert version == "v1" and (folder / "best.pt").read_bytes() == b"weights"
-    assert StubYOLO.created[-1] == "yolo11n.pt"
+    assert StubYOLO.created[-1] == str(tmp_path / "models" / "base" / "yolo11n.pt")
     info = registry.read_manifest(folder)
     assert info["map50"] == 0.91 and info["epochs"] == 3 and info["imgsz"] == 640 and info["train_images"] == 24
     assert registry.latest("rim") == ("v1", folder)

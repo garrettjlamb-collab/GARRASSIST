@@ -34,7 +34,7 @@ def train_detector(name: str, device: str, epochs: int = 50, batch: int = 16, yo
     if yolo_cls is None:
         from ultralytics import YOLO as yolo_cls
     log(f"train {name} {version}: {counts} images, {epochs} epochs at {IMGSZ[name]} px on {device}")
-    model = yolo_cls(BASE_WEIGHTS[name])
+    model = yolo_cls(str(registry.base_weights_path(BASE_WEIGHTS[name])))
     results = model.train(data=str(yaml_path), epochs=epochs, imgsz=IMGSZ[name], device=device, batch=batch,
                           project=str(out), name="train", exist_ok=True, verbose=False, plots=False)
     best = out / "train" / "weights" / "best.pt"
