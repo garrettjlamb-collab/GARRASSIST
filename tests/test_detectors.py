@@ -77,6 +77,7 @@ def test_open_vocab_loads_world_weights_from_models_base(monkeypatch, tmp_path):
     import ultralytics
 
     monkeypatch.setenv("FILM_MODELS_DIR", str(tmp_path / "models"))
+    monkeypatch.chdir(tmp_path)              # never adopt the repo's own stray weights into a temp dir
     seen = {}
 
     class StubWorld:

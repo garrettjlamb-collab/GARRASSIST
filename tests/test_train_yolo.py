@@ -11,6 +11,7 @@ from film.train.train_yolo import class_counts, dataset_counts, train_detector, 
 
 def _env(monkeypatch, tmp_path):
     monkeypatch.setenv("FILM_MODELS_DIR", str(tmp_path / "models"))
+    monkeypatch.chdir(tmp_path)              # never adopt the repo's own stray weights into a temp dir
     monkeypatch.setenv("FILM_DATASETS_DIR", str(tmp_path / "datasets"))
 
 
