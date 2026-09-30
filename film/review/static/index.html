@@ -213,7 +213,6 @@ function renderBoxLabel() {
   img.onload = () => { state.img = img; drawBoxes(); };
   img.src = l.image_url;
   const cv = $("#cv");
-  const pos = (ev) => { const r = cv.getBoundingClientRect(); return { x: (ev.clientX - r.left) * cv.width / r.width, y: (ev.clientY - r.top) * cv.height / r.height }; };
   cv.onmousedown = (ev) => {
     const p = canvasPos(ev);
     state.drawing = { x1: p.x, y1: p.y, x2: p.x, y2: p.y, sx: ev.clientX, sy: ev.clientY };
