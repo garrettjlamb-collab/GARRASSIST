@@ -9,6 +9,7 @@ COMMANDS = [
     "film.commands.doctor",
     "film.commands.ingest",
     "film.commands.calibrate",
+    "film.commands.scoreboard",
 ]
 
 
