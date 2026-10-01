@@ -5,6 +5,8 @@ quarter and clock, confirmed on a local review page, exported as a shot list and
 confirmations become the training data that makes the next game better.
 
 - **New here? Read `docs/HANDOFF.md` first**: current state, measured results, what is not built, next steps.
+  The work in progress is the no-scoreboard path (NFHS camera and iPad film); its "Start here" section says
+  where to begin.
 - Design: `docs/superpowers/specs/2026-09-30-film-pipeline-design.md`.
 - Plan and execution ledger for what exists: `docs/superpowers/plans/`.
 

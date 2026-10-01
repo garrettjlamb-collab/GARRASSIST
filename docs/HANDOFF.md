@@ -4,6 +4,28 @@ Written 2026-10-01 for the next agent. Read this before touching anything. The d
 (`docs/superpowers/specs/2026-09-30-film-pipeline-design.md`) says what the system is meant to become;
 this file says where it actually is, what was learned running it on real film, and what to do next.
 
+## Start here
+
+**Your job is the no-scoreboard path**: making the pipeline work on film that has no burned-in Hudl
+scoreboard (the NFHS camera and iPad recordings). Garrett confirmed this priority on 2026-10-01. Do not
+process more Hudl games first; the pipeline already handles those.
+
+Do these in order. Details for each are under "Next steps" below.
+
+1. Check whether Garrett has reviewed the Cactus Shadows game: count the decisions in
+   `games/2025-02-05-arcadia-high-school-vs-cactus-shadows-boys-juniorvarsity-basketball-tactical/review.json`.
+   If the file is missing or nearly empty, ask him to review it (about 30 minutes, the first 125 cards)
+   and meanwhile start on step 2 with the Marcos data alone.
+2. Get the made-or-missed classifier (`rimclf`) past its quality gate. Without a scoreboard it is the only
+   way to know a shot went in. Redesign its input, retrain on every reviewed game.
+3. Train a rim detector that works from any camera angle (the current one is a template matcher that
+   only fits the Hudl view of the Arcadia gym).
+4. Add a no-scoreboard profile with manual quarter marks, and run `JV vs Deer Valley JV - Angle 1.mp4` as
+   the first test, then `Prescott vs Arcadia .mp4`, then `RKDA @ MDN 1:24.mp4`.
+
+Before any run longer than about a minute, tell Garrett what it is and how long it takes, and wait for
+his go-ahead: it slows his laptop.
+
 ## The project in one paragraph
 
 Garrett Lamb coaches JV basketball at Arcadia High School (the Titans). He charts games by hand in a
