@@ -1,13 +1,25 @@
 # Basketball film pipeline
 
-Turns a downloaded game film into shot data for the shot tracker. Rung 1 (this repo today): every shot's
-time, made or missed, quarter and clock, reviewed on a local page, exported as a shot list and a clip reel.
-The design is in `docs/superpowers/specs/2026-09-30-film-pipeline-design.md`.
+Turns a downloaded game film into shot data for the shot tracker: every shot's time, made or missed,
+quarter and clock, confirmed on a local review page, exported as a shot list and a clip reel. The coach's
+confirmations become the training data that makes the next game better.
+
+- **New here? Read `docs/HANDOFF.md` first**: current state, measured results, what is not built, next steps.
+- Design: `docs/superpowers/specs/2026-09-30-film-pipeline-design.md`.
+- Plan and execution ledger for what exists: `docs/superpowers/plans/`.
+
+## What it handles today
+
+| Film | Supported |
+|---|---|
+| Hudl Focus "Tactical" export from the Arcadia gym (burned-in scoreboard, bottom left) | Yes |
+| Anything without that overlay: NFHS Network camera, iPad recordings | Not yet; `film run` stops with a message instead of spending half an hour for nothing |
 
 ## Setup (once)
 
 ```bash
 curl -LsSf https://astral.sh/uv/install.sh | sh     # no Homebrew needed
+export PATH="$HOME/.local/bin:$PATH"                # every new terminal
 uv sync --extra dev
 uv run film doctor                                   # expect torch ... mps=True on a Mac
 ```
@@ -16,47 +28,74 @@ uv run film doctor                                   # expect torch ... mps=True
 
 ```bash
 uv run film run ~/Downloads/"JV vs Marcos - Tactical.mp4" --date 2025-02-05
-uv run film review                                   # opens http://127.0.0.1:8765
+uv run film review                                   # http://127.0.0.1:8765
 uv run film export 2025-02-05-jv-vs-marcos-tactical --reel
 uv run film eval 2025-02-05-jv-vs-marcos-tactical
 ```
 
-`film run` is `ingest` + `perceive` + `interpret` + `clips`. Each can be re-run alone. Add `--limit-s 120`
-for a two-minute smoke test (a later run without it redoes the whole game; `--force` re-runs every stage
-regardless), `--fps 5` on the 8 GB laptop. A full 90-minute game takes about half an hour
-on the laptop.
+`film run` is `ingest` + `perceive` + `interpret` + `clips`. A 90 to 100 minute game takes about half an
+hour on the 8 GB laptop, almost all of it in `perceive`. Finished stages are skipped on a re-run; `--force`
+redoes them. `--limit-s 120` is a two-minute smoke test (a later run without it redoes the whole game).
+`interpret` and `clips` re-run in seconds to minutes and are safe to repeat: review decisions follow each
+shot to its re-detected card and are never deleted.
+
+Nothing here uses the internet or any paid service once the weights are downloaded.
+
+## Reviewing
+
+`uv run film review` serves the page; add `#shots`, `#rim`, `#ball` or `#rimclf` to the address to open a
+tab directly. On the **Shots** tab each card loops an 11-second clip (8 s before the shot, 3 s after) that
+opens 3 s before the shot.
+
+| Key | Does |
+|---|---|
+| Enter | Confirm the card as shown |
+| M | Flip made / missed |
+| T | Cycle team: home, away, blank |
+| X | Reject: not a shot |
+| U | Unsure |
+| K / J | Next / previous without deciding (use K for a warmup clip) |
+| L | Open the full film at the start of the clip |
+| R | Replay the whole play from the start |
+| F | Playback speed: 1x, 1.5x, 2x |
+
+Cards come in game order: ball and scoreboard cards first, the weaker motion-only cards after, warmup
+cards last. Warmup time (pregame, breaks, halftime, post-game) is detected from the scoreboard clock;
+warmup cards never count in the export or in `film eval`.
 
 ## Making it better: label, then train
 
-Until you train, the pipeline runs on fallbacks (a template matcher for the rim, open-vocabulary
-detection for the ball) and the scoreboard alone. On Hudl film the rim detector already works without
-training, because it matches templates of this gym's backboards, so the ball and made-or-missed labels are
-the ones that matter most. Each of these makes it faster and more accurate:
+The detectors start from fallbacks and improve with labels. On Hudl film the rim needs no training (it is
+found by matching templates of this gym's backboards), so the labels that matter are the ball and the
+made-or-missed clips.
 
-1. `uv run film prelabel ball <game_id>` on a game with events, then **Label ball**, at least 300 crops. Then `uv run film train ball`.
-2. `uv run film prelabel rimclf <game_id>` then **Label clips** (made / missed / not a shot). Then `uv run film train rimclf`.
-3. The rim detector, and **not on Hudl film**: the template matcher is already near-perfect there, and a
-   trained model would take its place (see below). Rim training is for the other camera
-   profiles (rung 4): `uv run film prelabel rim <game_id>` then the **Label rim** tab, on two or three
-   games, at least 150 frames. Then `uv run film train rim` (overnight).
+1. **Review a game first.** Your decisions drive everything below.
+2. **Ball.** `uv run film prelabel ball <game_id>` queues rim crops from the moments around the shots you
+   confirmed; in **Label ball** drag a box round the ball and press S, or K when there is none (a skipped
+   crop is never shown again). Then `uv run film train ball`: about 15 minutes on the laptop.
+3. **Made or missed.** `uv run film prelabel rimclf <game_id>` files a clip for every decided card straight
+   into made, missed or none, and queues the rest for **Label clips** (1 / 2 / 3). Then
+   `uv run film train rimclf` (under a minute). A classifier that does not clearly beat guessing is kept
+   out of service and the scoreboard stays in charge; one game is not enough data yet.
+4. **Rim, and not on Hudl film.** For other cameras: `uv run film prelabel rim <game_id>`, the **Label rim**
+   tab, about 150 frames, `uv run film train rim`. A trained rim model outranks the templates once it
+   exists; set `FILM_RIM_DETECTOR=template` to keep the templates on Hudl film.
 
-New versions land in `models/<name>/vN/` and are picked up automatically. Re-run `film perceive` and
-`film interpret` on a game to use them. A trained rim model outranks the templates once it exists; set
-`FILM_RIM_DETECTOR=template` to force the templates on a profile that has them (`trained`, or unset,
-keeps the default order: trained, then templates, then open-vocabulary).
+New versions land in `models/<name>/vN/` and are picked up automatically. Re-run `film perceive` (half an
+hour) and `film interpret` on a game to use a new detector; `film interpret` alone for a new classifier.
 
 ## Where things live
 
 | Path | What |
 |---|---|
-| `games/<game_id>/` | manifest, tracks, motion, scoreboard, events, clips, review decisions, exports |
-| `labels/<dataset>/pending/` | what the Label tabs show next |
+| `games/<game_id>/` | manifest, tracks, motion, scoreboard, events, clips, `review.json` (the coach's decisions), exports |
+| `labels/<dataset>/pending/` | what the Label tabs show next; `skipped.txt` remembers skips |
 | `datasets/<dataset>/` | accepted labels in YOLO or ImageFolder layout |
-| `models/<name>/vN/` | trained weights and their manifest |
+| `models/<name>/vN/` | trained weights and their manifest; `models/base/` holds downloaded base weights |
 | `fixtures/frames/` | real frames used by the tests |
 
-Set `FILM_GAMES_DIR`, `FILM_MODELS_DIR`, `FILM_DATASETS_DIR`, `FILM_LABELS_DIR` to move any of these,
-for example onto an external drive.
+All four data roots are git-ignored. Set `FILM_GAMES_DIR`, `FILM_MODELS_DIR`, `FILM_DATASETS_DIR`,
+`FILM_LABELS_DIR` to move any of them, for example onto an external drive.
 
 ## Tests
 
