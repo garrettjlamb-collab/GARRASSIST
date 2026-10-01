@@ -51,3 +51,17 @@ def test_a_confirmed_unknown_event_is_a_shot(synthetic_video, tmp_path, monkeypa
     rows = list(csv.DictReader(export_shots(game_id)[0].open()))
     assert [r["id"] for r in rows] == ["shot-000000-r1", "shot-000002-r1", "shot-000030-r2"]
     assert rows[2]["made"] == "True" and rows[2]["status"] == "confirmed"
+
+
+def test_warmup_cards_never_reach_the_export(synthetic_video, tmp_path, monkeypatch):
+    monkeypatch.setenv("FILM_GAMES_DIR", str(tmp_path / "games"))
+    m = ingest(synthetic_video, date="2026-01-01", profile="test")
+    gd = game_dir(m.game_id)
+    events = [Event(id=f"shot-{i:06d}-r1", type="shot", t=1.0 + i, rim_id=1, quarter=1, clock_s=None, team=None,
+                    made=True, confidence=0.5, clip={"start": 0.0, "end": 1.0}, signals={},
+                    flags=(["warmup"] if i == 0 else [])) for i in range(2)]
+    save_events(gd, events)
+    for e in events:
+        save_decision(gd, e.id, {"status": "confirmed", "made": True})
+    _, json_path = export_shots(m.game_id)
+    assert [s["id"] for s in json.loads(json_path.read_text())["shots"]] == ["shot-000001-r1"]

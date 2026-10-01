@@ -7,8 +7,8 @@ from pathlib import Path
 from film.interpret.arrivals import Arrival
 from film.perceive.scoreboard import ScoreboardRead, lookup
 
-CLIP_BEFORE_S = 3.0
-CLIP_AFTER_S = 1.5
+CLIP_BEFORE_S = 8.0       # the clip shows the play building up to the shot...
+CLIP_AFTER_S = 3.0        # ...and ends once the ball is through or off the rim
 SCORE_WINDOW_S = 6.0
 NEXT_ARRIVAL_MARGIN_S = 0.5
 SCORE_LEAD_S = 1.0
@@ -185,3 +185,25 @@ def load_events(game_dir: Path) -> list[Event]:
     if not path.exists():
         return []
     return [Event.from_json(d) for d in json.loads(path.read_text())]
+
+
+def mark_dead_time(events: list[Event], phases) -> int:
+    """Flag events outside the game's quarters as warmups; returns how many.
+
+    Arrivals in pregame, breaks, halftime or post-game time are warmup shots. A scoreboard-only event
+    is a basket the operator posted, so it stays this game's even during a break, unless the board
+    had already been reset for the next game."""
+    from film.interpret.phases import is_live, is_this_game
+
+    marked = 0
+    for e in events:
+        if e.signals.get("source") == "scoreboard":
+            live = is_this_game(phases, e.t)
+        else:
+            live = is_live(phases, e.t)
+        e.signals["phase"] = "live" if live else "warmup"
+        if not live:
+            if "warmup" not in e.flags:
+                e.flags.append("warmup")
+            marked += 1
+    return marked
