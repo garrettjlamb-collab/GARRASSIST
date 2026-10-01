@@ -323,6 +323,9 @@ document.addEventListener("keydown", (ev) => {
   else boxKeys(ev);
 });
 document.querySelectorAll("nav button").forEach(b => b.onclick = () => { state.tab = b.dataset.tab; render(); });
+// A link such as /#ball opens straight on that tab.
+const wanted = location.hash.slice(1);
+if (["shots", "rim", "ball", "rimclf"].includes(wanted)) state.tab = wanted;
 loadGames();
 </script>
 </body>
