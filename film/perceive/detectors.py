@@ -8,7 +8,8 @@ import numpy as np
 
 from film.common import registry
 
-IMGSZ = {"rim": 640, "ball": 320}
+# The ball is about 12 px wide in the 320 px rim crop; running the crop at 640 doubles it for the detector.
+IMGSZ = {"rim": 640, "ball": 640}
 RIM_WORLD_CLASSES = {"basketball hoop": "rim", "backboard": "backboard"}
 BALL_WORLD_CLASSES = {"basketball": "ball"}
 WORLD_WEIGHTS = "yolov8s-worldv2.pt"
@@ -132,7 +133,10 @@ def load_detector(kind: str, device: str, profile: str | None = None):
     found = registry.latest(kind)
     if found is not None:
         version, folder = found
-        return YoloDetector.from_weights(folder / "best.pt", device, IMGSZ[kind], name=f"{kind}@{version}")
+        # A model runs at the size it was trained at, which its manifest records.
+        manifest = registry.read_manifest(folder) if (folder / "manifest.json").exists() else {}
+        imgsz = int(manifest.get("imgsz") or IMGSZ[kind])
+        return YoloDetector.from_weights(folder / "best.pt", device, imgsz, name=f"{kind}@{version}")
     if templates is not None:
         return templates
     classes = RIM_WORLD_CLASSES if kind == "rim" else BALL_WORLD_CLASSES

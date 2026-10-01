@@ -61,7 +61,7 @@ def test_load_detector_prefers_trained_then_falls_back(monkeypatch, tmp_path):
     assert load_detector("rim", "cpu") == "trained"
     assert load_detector("ball", "cpu") == "world"
     assert calls[0] == ("weights", str(tmp_path / "best.pt"), 640, "rim@v3")
-    assert calls[1] == ("world", D.BALL_WORLD_CLASSES, 320, "ball@world-fallback")
+    assert calls[1] == ("world", D.BALL_WORLD_CLASSES, 640, "ball@world-fallback")     # the 320 px crop, enlarged 2x
 
 
 def test_load_detector_falls_back_to_open_vocab_without_templates(monkeypatch):
@@ -110,3 +110,20 @@ def test_film_rim_detector_env_picks_templates_or_trained(monkeypatch, tmp_path)
     monkeypatch.setenv("FILM_RIM_DETECTOR", "templates")
     with pytest.raises(ValueError, match="FILM_RIM_DETECTOR"):
         load_detector("rim", "cpu", profile="hudl-tactical")
+
+
+def test_a_trained_model_runs_at_the_size_it_was_trained_at(tmp_path, monkeypatch):
+    monkeypatch.setenv("FILM_MODELS_DIR", str(tmp_path / "models"))
+    from film.common import registry
+    for version, size in (("v1", 320), ("v2", None)):
+        folder = tmp_path / "models" / "ball" / version
+        folder.mkdir(parents=True)
+        (folder / "best.pt").write_bytes(b"w")
+        registry.write_manifest(folder, name="ball", version=version, **({"imgsz": size} if size else {}))
+    seen = []
+    monkeypatch.setattr(YoloDetector, "from_weights", classmethod(lambda cls, w, device, imgsz, conf=0.25, name="": seen.append((name, imgsz)) or "trained"))
+    load_detector("ball", "cpu")
+    assert seen == [("ball@v2", D.IMGSZ["ball"])]              # no size recorded: the current default
+    (tmp_path / "models" / "ball" / "v2" / "best.pt").unlink()
+    load_detector("ball", "cpu")
+    assert seen[-1] == ("ball@v1", 320)                        # an older model keeps its own size
