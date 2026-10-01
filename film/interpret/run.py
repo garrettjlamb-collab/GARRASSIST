@@ -14,7 +14,7 @@ from film.perceive.run import MOTION_COLUMNS
 from film.perceive.scoreboard import load_timeline
 from film.perceive.tracks import read_tracks
 from film.review.decisions import carry_over_decisions
-from film.train.montage import build_montage
+from film.train.montage import build_montage, rim_follower
 from film.train.rimclf import RimClassifier
 
 
@@ -34,7 +34,8 @@ def interpret(game_id: str, classifier=None, use_classifier: bool = True, device
         if clf is None:
             preds.append(None)
             continue
-        montage = build_montage(Path(m.source), arrival.t, arrival.rim_box, m.width, m.height)
+        montage = build_montage(Path(m.source), arrival.t, arrival.rim_box, m.width, m.height,
+                                rim_at=rim_follower(rims, arrival.rim_id, m.fps))
         label, prob, _ = clf.predict(montage)
         preds.append((label, prob))
     events = build_shot_events(arrivals, timeline, preds, game_id)

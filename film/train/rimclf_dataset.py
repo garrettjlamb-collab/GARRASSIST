@@ -14,7 +14,7 @@ from film.review.decisions import load_decisions
 from film.train.datasets import (
     find_class_images, list_pending, pending_images_dir, remove_pending, store_class_image, write_pending,
 )
-from film.train.montage import build_montage
+from film.train.montage import build_montage, rim_follower
 
 EVENT_EXCLUSION_S = 3.0
 
@@ -94,7 +94,7 @@ def build_rimclf_candidates(game_id: str, n_none: int = 40, seed: int = 0, margi
             counts["no_rim"] += 1
             log(f"rimclf: no rim box near {e.id}, skipped")
             continue
-        montage = build_montage(source, e.t, box, m.width, m.height)
+        montage = build_montage(source, e.t, box, m.width, m.height, rim_at=rim_follower(rims, e.rim_id, m.fps))
         cls, suggested = _route(e, decisions.get(e.id))
         if cls is not None:
             store_class_image("rimclf", e.id, montage, cls)
@@ -119,7 +119,8 @@ def build_rimclf_candidates(game_id: str, n_none: int = 40, seed: int = 0, margi
             none_seen += 1
             counts["already"] += 1
             continue
-        store_class_image("rimclf", none_id, build_montage(source, t, box, m.width, m.height), "none")
+        store_class_image("rimclf", none_id,
+                          build_montage(source, t, box, m.width, m.height, rim_at=rim_follower(rims, None, m.fps)), "none")
         counts["none_auto"] += 1
     log(f"rimclf candidates for {game_id}: {counts}")
     return counts

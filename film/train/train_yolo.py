@@ -9,6 +9,7 @@ from film.perceive.detectors import IMGSZ
 from film.train.datasets import data_yaml
 from film.train.rimclf import CLASSES, train_rimclf
 
+MIN_GAIN_OVER_GUESSING = 0.10     # a classifier must beat the majority-class share of val by this much
 BASE_WEIGHTS = {"rim": "yolo11n.pt", "ball": "yolo11n.pt"}
 MIN_TRAIN, MIN_VAL = 20, 4
 
@@ -60,6 +61,18 @@ def train_rimclf_version(device: str, epochs: int = 8, log=print, **kwargs) -> t
     version, out = registry.new_version_dir("rimclf")
     log(f"train rimclf {version}: {counts}, {epochs} epochs on {device}")
     info = train_rimclf(datasets_dir() / "rimclf", out, device, epochs=epochs, **kwargs)
-    registry.write_manifest(out, name="rimclf", version=version, device=device, **info)
-    log(f"registered rimclf {version}: best val acc {info['best_val_acc']:.3f}")
+    # Always answering the commonest class scores this much on the held-out images. A classifier has to
+    # beat that clearly, or interpret is better off with the scoreboard alone.
+    val = counts["val"]
+    baseline = max(val.values()) / max(sum(val.values()), 1)
+    in_service = info["best_val_acc"] >= baseline + MIN_GAIN_OVER_GUESSING
+    if not in_service and (out / "best.pt").exists():
+        (out / "best.pt").rename(out / "not-good-enough.pt")          # latest() only sees best.pt
+    registry.write_manifest(out, name="rimclf", version=version, device=device,
+                            baseline_val_acc=round(baseline, 4), in_service=in_service, **info)
+    if in_service:
+        log(f"registered rimclf {version}: best val acc {info['best_val_acc']:.3f} (guessing scores {baseline:.3f})")
+    else:
+        log(f"rimclf {version} not put into service: val acc {info['best_val_acc']:.3f} does not clearly beat "
+            f"guessing ({baseline:.3f}); the scoreboard stays in charge of made-or-missed. Label more games and retrain.")
     return version, out

@@ -85,3 +85,32 @@ def test_train_rimclf_refuses_empty_class(monkeypatch, tmp_path):
     cv2.imwrite(str(root / "train" / "made" / "0.jpg"), np.zeros((96, 96, 3), np.uint8))
     with pytest.raises(ValueError, match="missed"):
         train_rimclf_version("cpu", epochs=1, arch="tiny", pretrained=False)
+
+
+def test_a_classifier_no_better_than_guessing_is_not_put_into_service(monkeypatch, tmp_path):
+    """A model that only matches 'always answer the commonest class' must not be picked up by interpret."""
+    _env(monkeypatch, tmp_path)
+    import film.train.train_yolo as T
+    root = tmp_path / "datasets" / "rimclf"
+    for split, counts in (("train", {"made": 2, "missed": 2, "none": 6}), ("val", {"made": 2, "missed": 2, "none": 6})):
+        for cls, n in counts.items():
+            (root / split / cls).mkdir(parents=True)
+            for i in range(n):
+                cv2.imwrite(str(root / split / cls / f"{i}.jpg"), np.zeros((32, 32, 3), np.uint8))
+
+    def fake_train(dataset_dir, out_dir, device, epochs=8, **kwargs):
+        out_dir.mkdir(parents=True, exist_ok=True)
+        (out_dir / "best.pt").write_bytes(b"weights")
+        return {"arch": "tiny", "epochs": epochs, "best_val_acc": fake_train.acc, "train_images": 10, "val_images": 10}
+
+    monkeypatch.setattr(T, "train_rimclf", fake_train)
+    lines = []
+    fake_train.acc = 0.62                                   # the commonest class is 60% of val: 0.62 is not a real gain
+    version, folder = train_rimclf_version("cpu", log=lines.append)
+    info = registry.read_manifest(folder)
+    assert registry.latest("rimclf") is None and not (folder / "best.pt").exists() and (folder / "not-good-enough.pt").exists()
+    assert info["in_service"] is False and info["baseline_val_acc"] == 0.6
+    assert any("not put into service" in line for line in lines)
+    fake_train.acc = 0.85
+    version, folder = train_rimclf_version("cpu", log=lines.append)
+    assert registry.latest("rimclf") == (version, folder) and registry.read_manifest(folder)["in_service"] is True
