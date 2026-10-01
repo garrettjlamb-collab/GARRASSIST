@@ -64,3 +64,23 @@ def test_interpret_adds_scoreboard_only_events_without_calling_the_classifier(sy
     assert sb.id == "shot-000280-sb" and sb.team == "home" and sb.signals["points"] == 3
     assert "1 scoreboard-only" in lines[-1]
     assert Manifest.load(gd).stages["interpret"]["scoreboard_only"] == 1
+
+
+def test_a_rerun_carries_the_coachs_decisions_onto_the_redetected_shot(synthetic_video, tmp_path, monkeypatch):
+    from film.interpret.events import Event, save_events
+    from film.review.decisions import load_decisions, save_decision
+    monkeypatch.setenv("FILM_GAMES_DIR", str(tmp_path / "games"))
+    m = ingest(synthetic_video, date="2026-01-01", profile="test", fps=10.0)
+    gd = game_dir(m.game_id)
+    _tracks(gd)
+    [fresh] = interpret(m.game_id, use_classifier=False, log=lambda *a: None)
+    # Pretend the previous run had put this shot half a second earlier, under another id, and the coach confirmed it.
+    old = Event.from_json({**fresh.to_json(), "id": "shot-earlier-r1", "t": round(fresh.t - 0.5, 2)})
+    save_events(gd, [old])
+    save_decision(gd, old.id, {"status": "confirmed", "made": True})
+    lines = []
+    [again] = interpret(m.game_id, use_classifier=False, log=lines.append)
+    decisions = load_decisions(gd)
+    assert again.id == fresh.id and decisions[fresh.id]["made"] is True and decisions[fresh.id]["moved_from"] == old.id
+    assert Manifest.load(gd).stages["interpret"]["decisions"] == {"kept": 0, "moved": 1, "orphaned": 0}
+    assert any("1 moved" in line for line in lines)
