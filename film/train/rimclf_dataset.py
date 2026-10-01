@@ -48,6 +48,9 @@ def _route(e, decision: dict | None) -> tuple[str | None, str | None]:
     if decision:
         status = decision.get("status")
         if status == "rejected":
+            # A rejected warmup card may only mean "not part of the game", not "nothing at the rim".
+            if "warmup" in e.flags:
+                return None, "none"
             return "none", None
         if status == "confirmed":
             made = decision["made"] if "made" in decision else e.made

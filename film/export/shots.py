@@ -16,7 +16,9 @@ def reviewed_shots(game_id: str, statuses=("confirmed", "unsure")) -> list[dict]
     gd = game_dir(game_id)
     merged = apply_decisions([e.to_json() for e in load_events(gd)], load_decisions(gd))
     # The coach's decision is what makes it a shot: a confirmed "unknown" event counts too.
-    rows = [e for e in merged if e.get("decision") and e["decision"]["status"] in statuses]
+    # Warmup shots (pregame, breaks, halftime, post-game) never count toward the game, whatever was pressed.
+    rows = [e for e in merged if e.get("decision") and e["decision"]["status"] in statuses
+            and "warmup" not in e.get("flags", [])]
     return sorted(rows, key=lambda e: e["t"])
 
 

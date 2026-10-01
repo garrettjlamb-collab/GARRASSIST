@@ -8,7 +8,8 @@ from film.common.device import pick_device
 from film.common.manifest import Manifest
 from film.common.paths import game_dir
 from film.interpret.arrivals import find_ball_arrivals, find_motion_arrivals, merge_arrivals
-from film.interpret.events import Event, build_shot_events, save_events, scoreboard_only_events
+from film.interpret.events import Event, build_shot_events, mark_dead_time, save_events, scoreboard_only_events
+from film.interpret.phases import game_phases
 from film.perceive.run import MOTION_COLUMNS
 from film.perceive.scoreboard import load_timeline
 from film.perceive.tracks import read_tracks
@@ -38,12 +39,13 @@ def interpret(game_id: str, classifier=None, use_classifier: bool = True, device
     events = build_shot_events(arrivals, timeline, preds, game_id)
     sb_only = scoreboard_only_events(timeline, events)
     events = sorted(events + sb_only, key=lambda e: (e.t, e.rim_id))
+    warmups = mark_dead_time(events, game_phases(timeline))
     save_events(gd, events)
     version = clf.version if clf is not None else "none"
     m.model_versions["rimclf"] = version
     m.mark("interpret", "done", arrivals=len(arrivals), events=len(events),
-           shots=sum(e.type == "shot" for e in events), scoreboard_only=len(sb_only), classifier=version, scoreboard_reads=len(timeline))
+           shots=sum(e.type == "shot" for e in events), scoreboard_only=len(sb_only), warmups=warmups, classifier=version, scoreboard_reads=len(timeline))
     m.save(gd)
     log(f"interpret {game_id}: {len(arrivals)} arrivals -> {len(events)} events ({m.stages['interpret']['shots']} shots, "
-        f"{len(sb_only)} scoreboard-only), classifier={version}")
+        f"{len(sb_only)} scoreboard-only, {warmups} in warmup time), classifier={version}")
     return events

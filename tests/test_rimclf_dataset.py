@@ -141,3 +141,19 @@ def test_a_pending_montage_is_promoted_once_the_coach_decides(synthetic_video, t
     placed = {p.stem: p.parent.name for p in (tmp_path / "datasets" / "rimclf").glob("*/*/*.jpg")}
     assert placed == {"shot-000010-r1": "made", "shot-000015-r1": "none"}
     assert ds.list_pending("rimclf") == ["shot-000020-r1"]
+
+
+def test_a_rejected_warmup_card_waits_for_a_label_instead_of_teaching_none(synthetic_video, tmp_path, monkeypatch):
+    _env(monkeypatch, tmp_path)
+    m = ingest(synthetic_video, date="2026-01-01", profile="test")
+    gd = game_dir(m.game_id)
+    _rims(gd)
+    warm_made, warm_rejected = _event("shot-000005-r1", 0.5), _event("shot-000008-r1", 0.8)
+    warm_made.flags, warm_rejected.flags = ["warmup"], ["warmup"]
+    save_events(gd, [warm_made, warm_rejected])
+    save_decision(gd, "shot-000005-r1", {"status": "confirmed", "made": True})   # a make is a make, warmup or not
+    save_decision(gd, "shot-000008-r1", {"status": "rejected"})                  # may only mean "not the game"
+    build_rimclf_candidates(m.game_id, n_none=0, margin_s=0.2, log=lambda *a: None)
+    placed = {p.stem: p.parent.name for p in (tmp_path / "datasets" / "rimclf").glob("*/*/*.jpg")}
+    assert placed == {"shot-000005-r1": "made"}
+    assert ds.list_pending("rimclf") == ["shot-000008-r1"]

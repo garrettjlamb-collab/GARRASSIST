@@ -20,7 +20,7 @@
   .card { background:var(--panel); border:1px solid var(--line); border-radius:8px; padding:12px; margin-top:12px; max-width:960px; }
   video { width:100%; max-width:640px; background:#000; border-radius:6px; }
   .badge { display:inline-block; padding:2px 8px; border-radius:10px; font-weight:600; margin-right:6px; }
-  .made { background:var(--ok); color:#062; } .miss { background:var(--bad); color:#400; } .none { background:var(--line); }
+  .made { background:var(--ok); color:#062; } .warm { background:#5a4a1a; color:#ffd27a; } .miss { background:var(--bad); color:#400; } .none { background:var(--line); }
   .muted { color:var(--muted); }
   .keys { color:var(--muted); font-size:12px; margin-top:8px; }
   kbd { background:var(--line); padding:1px 5px; border-radius:4px; font-family:inherit; }
@@ -50,7 +50,10 @@
   <section id="label" hidden></section>
 </main>
 <script>
-const state = { game: null, tab: "shots", events: [], index: 0, label: null, boxes: [], selected: -1, drawing: null, img: null, busy: false };
+const state = { game: null, tab: "shots", events: [], index: 0, label: null, boxes: [], selected: -1, drawing: null, img: null, busy: false, rate: 1 };
+const RATES = [1, 1.5, 2];
+const LEAD_IN_S = 3;   // each clip opens this long before the shot; R replays the whole play
+const isWarm = (e) => (e.flags || []).includes("warmup");
 const CLASSES = { rim: ["rim", "backboard"], ball: ["ball"] };
 const $ = (sel) => document.querySelector(sel);
 const api = async (url, opts) => { const r = await fetch(url, opts); if (!r.ok) throw new Error(await r.text()); return r.json(); };
@@ -86,7 +89,7 @@ async function loadGames() {
 async function selectGame(id) {
   state.game = id;
   state.events = await api(`/api/games/${id}/events`);
-  state.events.sort((a, b) => (!!a.decision - !!b.decision) || (a.confidence - b.confidence));
+  state.events.sort((a, b) => (isWarm(a) - isWarm(b)) || (!!a.decision - !!b.decision) || (a.confidence - b.confidence));
   state.index = 0;
   await loadGames();
   render();
@@ -107,18 +110,25 @@ function renderShots() {
   if (!e) { el.innerHTML = `<p>No events for this game yet.</p>`; return; }
   const madeBadge = e.made === true ? "<span class='badge made'>MADE</span>" : e.made === false ? "<span class='badge miss'>MISSED</span>" : "<span class='badge none'>UNKNOWN</span>";
   const dec = e.decision ? `<span class='badge none'>${esc(e.decision.status)}</span>` : "";
+  const warm = isWarm(e) ? "<span class='badge warm'>WARMUP · not counted</span>" : "";
   el.innerHTML = `
     <div class="row"><b>${decided}/${state.events.length} decided</b><span class="muted">${state.index + 1} of ${state.events.length}</span>
       <button class="btn" id="confirm-high">Confirm all above 0.9</button></div>
     <div class="card">
-      <video src="/clips/${esc(state.game)}/${esc(e.id)}.mp4" autoplay loop muted playsinline></video>
-      <div style="margin-top:8px">${madeBadge}<span class="badge none">${esc(e.type)}</span>${dec}
+      <video id="clip" src="/clips/${esc(state.game)}/${esc(e.id)}.mp4" autoplay loop muted playsinline></video>
+      <div style="margin-top:8px">${warm}${madeBadge}<span class="badge none">${esc(e.type)}</span>${dec}
         <b>Q${e.quarter ?? "?"} ${clock(e.clock_s)}</b> <span class="muted">t=${e.t.toFixed(1)}s · team ${esc(e.team ?? "?")} · conf ${e.confidence} · ${e.rim_id < 0 ? "scoreboard only" : "rim " + e.rim_id}</span></div>
       <div class="muted" style="margin-top:4px">${esc((e.flags || []).join(" ") || "no flags")} · ${esc(JSON.stringify(e.signals))}</div>
-      <div class="keys"><kbd>Enter</kbd> confirm <kbd>M</kbd> toggle made <kbd>T</kbd> team <kbd>X</kbd> reject <kbd>U</kbd> unsure <kbd>L</kbd> open film <kbd>J</kbd>/<kbd>K</kbd> prev/next</div>
+      <div class="keys"><kbd>Enter</kbd> confirm <kbd>M</kbd> toggle made <kbd>T</kbd> team <kbd>X</kbd> reject <kbd>U</kbd> unsure <kbd>L</kbd> open film <kbd>R</kbd> replay the play <kbd>F</kbd> speed <span id="rate">${state.rate}x</span> <kbd>J</kbd>/<kbd>K</kbd> prev/next</div>
     </div>
-    <div class="list">${state.events.map((x, i) => `<div class="${i === state.index ? "sel" : ""}" data-i="${i}">${x.decision ? "✓" : "·"} ${esc(x.id)} Q${x.quarter ?? "?"} ${clock(x.clock_s)} ${x.made === true ? "made" : x.made === false ? "missed" : "?"} ${x.confidence}</div>`).join("")}</div>`;
+    <div class="list">${state.events.map((x, i) => `<div class="${i === state.index ? "sel" : ""}" data-i="${i}">${x.decision ? "✓" : "·"}${isWarm(x) ? " warmup" : ""} ${esc(x.id)} Q${x.quarter ?? "?"} ${clock(x.clock_s)} ${x.made === true ? "made" : x.made === false ? "missed" : "?"} ${x.confidence}</div>`).join("")}</div>`;
   $("#confirm-high").onclick = confirmHigh;
+  const video = $("#clip");
+  video.onloadedmetadata = () => {
+    const shotAt = e.clip ? e.t - e.clip.start : 0;
+    video.currentTime = Math.max(0, shotAt - LEAD_IN_S);
+    video.playbackRate = state.rate;
+  };
   document.querySelectorAll(".list div").forEach(d => d.onclick = () => { state.index = +d.dataset.i; renderShots(); });
 }
 
@@ -157,7 +167,13 @@ function shotKeys(ev) {
   else if (k === "t") { e.team = e.team === "home" ? "away" : e.team === "away" ? null : "home"; renderShots(); }
   else if (k === "x") decide("rejected");
   else if (k === "u") decide("unsure");
-  else if (k === "l") window.open(`/video/${state.game}#t=${Math.max(0, e.t - 5).toFixed(1)}`, "_blank");
+  else if (k === "l") window.open(`/video/${state.game}#t=${Math.max(0, e.clip ? e.clip.start : e.t - 8).toFixed(1)}`, "_blank");
+  else if (k === "r") { const v = $("#clip"); if (v) { v.currentTime = 0; v.play(); } }
+  else if (k === "f") {
+    state.rate = RATES[(RATES.indexOf(state.rate) + 1) % RATES.length];
+    const v = $("#clip"); if (v) v.playbackRate = state.rate;
+    const r = $("#rate"); if (r) r.textContent = `${state.rate}x`;
+  }
   else if (k === "j") { state.index = Math.max(0, state.index - 1); renderShots(); }
   else if (k === "k") { state.index = Math.min(state.events.length - 1, state.index + 1); renderShots(); }
   else return;

@@ -37,3 +37,17 @@ def test_evaluate(synthetic_video, tmp_path, monkeypatch):
     with_ref = evaluate(m.game_id, reference_times=[10.5, 20.0, 60.0])
     assert with_ref["reference"] == 3 and with_ref["matched"] == 2
     assert with_ref["recall"] == 2 / 3 and with_ref["precision_vs_reference"] == 2 / 3      # machine = confirmed + unsure = 10, 20, 40
+
+
+def test_warmup_cards_do_not_count_against_precision(synthetic_video, tmp_path, monkeypatch):
+    monkeypatch.setenv("FILM_GAMES_DIR", str(tmp_path / "games"))
+    m = ingest(synthetic_video, date="2026-01-01", profile="test")
+    gd = game_dir(m.game_id)
+    events = [Event(id=f"shot-{i:06d}-r1", type="shot", t=10.0 * (i + 1), rim_id=1, quarter=1, clock_s=None, team=None,
+                    made=True, confidence=0.5, clip={"start": 0, "end": 1}, signals={},
+                    flags=(["warmup"] if i else [])) for i in range(3)]
+    save_events(gd, events)
+    save_decision(gd, "shot-000000-r1", {"status": "confirmed"})
+    save_decision(gd, "shot-000001-r1", {"status": "rejected"})
+    result = evaluate(m.game_id)
+    assert result["shots"] == 1 and result["warmups"] == 2 and result["precision"] == 1.0 and result["undecided"] == 0

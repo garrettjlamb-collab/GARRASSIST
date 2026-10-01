@@ -35,7 +35,7 @@ def test_agreement_gives_high_confidence_and_team():
     [e] = build_shot_events([A(10.0)], tl, [("made", 0.97)], "g")
     assert e.type == "shot" and e.made is True and e.team == "home" and e.confidence == 0.95 and e.flags == []
     assert e.quarter == 2 and e.clock_s == 290.0
-    assert e.clip == {"start": 7.0, "end": 11.5}
+    assert e.clip == {"start": 2.0, "end": 13.0}      # 8 s of build-up, 3 s for the finish
     assert e.signals["score_delta"] == [2, 0] and e.signals["points"] == 2
     [m] = build_shot_events([A(30.0)], tl, [("missed", 0.9)], "g")
     assert m.made is False and m.team is None and m.confidence == 0.9
@@ -111,7 +111,7 @@ def test_a_rise_with_no_arrival_becomes_a_scoreboard_only_event():
     assert e.made is True and e.team == "away" and e.confidence == 0.5 and e.needs_location is True
     assert e.flags == ["scoreboard-only"]
     assert e.signals == {"source": "scoreboard", "score_delta": [0, 2], "scoreboard": "made", "points": 2}
-    assert e.clip == {"start": 15.0, "end": 19.5}
+    assert e.clip == {"start": 10.0, "end": 21.0}
     assert e.quarter == 2 and e.clock_s == 282.0
 
 
@@ -119,7 +119,7 @@ def test_a_one_point_rise_is_flagged_as_a_possible_free_throw_and_t_never_goes_n
     tl = [R(t, home=(1 if t >= 1 else 0)) for t in range(10)]
     [e] = scoreboard_only_events(tl, [])
     assert e.t == 0.0 and e.team == "home" and e.signals["points"] == 1
-    assert e.flags == ["scoreboard-only", "free-throw?"] and e.clip == {"start": 0.0, "end": 1.5}
+    assert e.flags == ["scoreboard-only", "free-throw?"] and e.clip == {"start": 0.0, "end": 3.0}
 
 
 def test_a_rise_already_explained_by_an_arrival_gives_no_scoreboard_only_event():
@@ -164,3 +164,18 @@ def test_a_dropout_across_the_arrival_is_no_evidence():
     assert score_change(gap, 8.0, 1.5) == (0, 0)                 # the after-read (t=9) is later than the arrival
     [e] = build_shot_events([A(10.5)], gap, [None], "g")
     assert e.made is None and e.signals["scoreboard"] == "unknown" and "no-scoreboard" in e.flags
+
+
+def test_dead_time_marks_arrivals_as_warmups_but_keeps_late_posted_baskets():
+    from film.interpret.events import mark_dead_time
+    from film.interpret.phases import GamePhases
+    phases = GamePhases(quarter_length_s=480.0, live=[(100.0, 200.0)], known=True, game_over_t=300.0)
+    live, warm = build_shot_events([A(150.0), A(250.0)], [], [None, None], "g")
+    tl = [R(t, home=(2 if t >= 255 else 0)) for t in range(240, 260)] + [R(t, home=(2 if t < 320 else 0 if t < 325 else 2)) for t in range(305, 330)]   # reset, then the next game scores
+    late, after = scoreboard_only_events(tl, [])
+    marked = mark_dead_time([live, warm, late, after], phases)
+    assert marked == 2
+    assert "warmup" not in live.flags and live.signals.get("phase") == "live"
+    assert "warmup" in warm.flags and warm.signals["phase"] == "warmup"
+    assert "warmup" not in late.flags                    # a basket posted during a break is still this game's
+    assert "warmup" in after.flags                       # after the board reset it belongs to the next game
