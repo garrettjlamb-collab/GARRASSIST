@@ -11,9 +11,32 @@ from film.common.video import iter_frames
 from film.interpret.events import load_events
 from film.perceive.ball import crop, rim_crop_box
 from film.perceive.detectors import load_detector
-from film.train.datasets import CLASS_NAMES, write_pending
+from film.review.decisions import load_decisions
+from film.train.datasets import CLASS_NAMES, is_known, write_pending
 
 ARRIVAL_OFFSETS_S = (-0.6, -0.4, -0.2, 0.0, 0.2)
+# Around a shot the coach confirmed the ball is in the rim crop most of the time: sample it densely.
+CONFIRMED_OFFSETS_S = tuple(round(-1.4 + 0.2 * i, 1) for i in range(13))         # -1.4 ... +1.0, on the 0.1 s grid of the image ids
+SCOREBOARD_OFFSETS_S = tuple(round(-3.0 + 0.5 * i, 2) for i in range(13))        # the time is only approximate
+
+
+def spread(items: list, n: int) -> list:
+    """At most n items, taken evenly across the whole list rather than from its start."""
+    if len(items) <= n:
+        return list(items)
+    picks = sorted({int(round(i)) for i in np.linspace(0, len(items) - 1, n)})
+    return [items[i] for i in picks]
+
+
+def ball_sample_times(game_dir_path: Path) -> list[float]:
+    """Moments worth a ball label: around confirmed shots once the game has been reviewed, else around every live event."""
+    events = load_events(game_dir_path)
+    decisions = load_decisions(game_dir_path)
+    confirmed = [e for e in events if decisions.get(e.id, {}).get("status") == "confirmed"]
+    if confirmed:
+        return sorted({round(e.t + d, 2) for e in confirmed
+                       for d in (SCOREBOARD_OFFSETS_S if e.signals.get("source") == "scoreboard" else CONFIRMED_OFFSETS_S)})
+    return sorted({round(e.t + d, 2) for e in events if "warmup" not in e.flags for d in ARRIVAL_OFFSETS_S})
 
 
 def sample_times(duration_s: float, n: int, margin_s: float = 30.0) -> list[float]:
@@ -53,10 +76,8 @@ def prelabel_balls(game_id: str, n: int = 300, rim_detector=None, ball_detector=
     device = pick_device(device)
     rim_det = rim_detector or load_detector("rim", device, profile=m.profile)
     ball_det = ball_detector or load_detector("ball", device)
-    times = [e.t + d for e in load_events(gd) for d in ARRIVAL_OFFSETS_S]
-    if not times:
-        times = sample_times(m.duration_s, n, margin_s)
-    times = [t for t in times if 0.0 <= t < m.duration_s][:n]
+    times = ball_sample_times(gd) or sample_times(m.duration_s, n, margin_s)
+    times = spread([t for t in times if 0.0 <= t < m.duration_s], n)
     count = 0
     for t in times:
         frame = first_frame_at(Path(m.source), t, m.fps)
@@ -67,7 +88,10 @@ def prelabel_balls(game_id: str, n: int = 300, rim_detector=None, ball_detector=
         for i, rim in enumerate(rims):
             tile = crop(frame, rim_crop_box(rim, w, h))
             boxes = [b for b in ball_det.detect(tile) if b.cls == "ball"]
-            write_pending("ball", f"{game_id}_{int(round(t * 10)):06d}_r{i}", tile, boxes, extra={"t": t})
+            image_id = f"{game_id}_{int(round(t * 10)):06d}_r{i}"
+            if is_known("ball", image_id):                    # already queued, labeled or skipped on an earlier run
+                continue
+            write_pending("ball", image_id, tile, boxes, extra={"t": t})
             count += 1
     log(f"prelabel ball: {count} crops queued for {game_id}")
     return count

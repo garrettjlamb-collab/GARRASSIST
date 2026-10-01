@@ -99,6 +99,29 @@ def _accepted_split(dataset: str, image_id: str) -> str | None:
     return None
 
 
+def skipped_path(dataset: str) -> Path:
+    return labels_dir() / dataset / "skipped.txt"
+
+
+def skipped_ids(dataset: str) -> set[str]:
+    path = skipped_path(dataset)
+    return set(path.read_text(encoding="utf-8").split()) if path.exists() else set()
+
+
+def mark_skipped(dataset: str, image_id: str) -> None:
+    """Remember that the coach looked at this image and had nothing to label, so it is never queued again."""
+    path = skipped_path(dataset)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("a", encoding="utf-8") as f:
+        f.write(image_id + "\n")
+
+
+def is_known(dataset: str, image_id: str) -> bool:
+    """True when this image is waiting for a label, already has one, or was skipped."""
+    return ((pending_dir(dataset) / f"{image_id}.json").exists() or _accepted_split(dataset, image_id) is not None
+            or image_id in skipped_ids(dataset))
+
+
 def accept_boxes(dataset: str, image_id: str, boxes: list[Box]) -> str:
     """Move a pending image into the YOLO dataset with its final boxes. Returns the split it went to.
     Idempotent: if the pending entry is gone but the image is already accepted, returns its split."""

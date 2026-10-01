@@ -206,6 +206,7 @@ def create_app() -> FastAPI:
         if image_id not in ds.list_pending(dataset):
             raise HTTPException(404, f"no pending image {image_id} in {dataset}")
         ds.remove_pending(dataset, image_id)
+        ds.mark_skipped(dataset, image_id)
         return {"skipped": image_id}
 
     app.mount("/", StaticFiles(directory=STATIC, html=True), name="static")
