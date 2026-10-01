@@ -104,3 +104,20 @@ def test_a_rim_id_with_fewer_than_three_rows_gives_nothing():
     ])
     rims = rows_to_frame(rim_rows(range(0, 100)) + rim_rows([200, 201], track_id=9))
     assert find_motion_arrivals(motion, rims, FPS) == []
+
+
+def test_a_crossing_made_only_of_unsure_detections_is_not_an_arrival():
+    """Wall pads and banners get boxed at 0.25-0.33 on every frame; a real ball reaches 0.5 or more on its way in."""
+    rims = rows_to_frame(rim_rows(range(0, 60)))
+    weak = ball_rows(arc(0))
+    for row in weak:
+        row["conf"] = 0.3
+    assert find_ball_arrivals(rows_to_frame(weak), rims, FPS) == []
+    one_sure_look = ball_rows(arc(0))
+    for row in one_sure_look:
+        row["conf"] = 0.55 if row["frame"] == 4 else 0.3            # sure once, about half a second before the rim
+    assert len(find_ball_arrivals(rows_to_frame(one_sure_look), rims, FPS)) == 1
+    stale = ball_rows(arc(0, n=30))                                  # the sure look is 2 s before the crossing: too old
+    for row in stale:
+        row["conf"] = 0.55 if row["frame"] == 2 else 0.3
+    assert find_ball_arrivals(rows_to_frame(stale), rims, FPS) == []

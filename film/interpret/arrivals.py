@@ -7,6 +7,11 @@ import pandas as pd
 
 MIN_GAP_S = 1.5
 MAX_FRAME_GAP = 3
+# A real ball is detected with confidence at least once on its way to the rim; wall pads and banners
+# boxed while the camera pans never are. Measured on the Marcos game with ball@v4: false crossings
+# peak at 0.25-0.33, real ones at 0.5 or more.
+MIN_PEAK_CONF = 0.4
+PEAK_WINDOW_FRAMES = 8
 MOTION_Z = 3.0
 MERGE_WINDOW_S = 2.0
 
@@ -35,7 +40,9 @@ def find_ball_arrivals(ball_df: pd.DataFrame, rim_df: pd.DataFrame, fps: float, 
         rim_id = int(rim_id)
         prev: tuple[int, float] | None = None
         last_t = -math.inf
+        recent: list[tuple[int, float]] = []          # (frame, confidence) of the last detections at this rim
         for b in group.itertuples():
+            recent = [(f, c) for f, c in recent if int(b.frame) - f <= PEAK_WINDOW_FRAMES] + [(int(b.frame), float(b.conf))]
             rim = rims.get((int(b.frame), rim_id))
             if rim is None:
                 prev = None
@@ -45,7 +52,8 @@ def find_ball_arrivals(ball_df: pd.DataFrame, rim_df: pd.DataFrame, fps: float, 
             cx, cy = (float(b.x1) + float(b.x2)) / 2, (float(b.y1) + float(b.y2)) / 2
             over_rim = rx1 - width <= cx <= rx2 + width
             crossed = prev is not None and int(b.frame) - prev[0] <= MAX_FRAME_GAP and prev[1] < ry1 <= cy
-            if crossed and over_rim and float(b.t) - last_t >= min_gap_s:
+            sure = max(c for _, c in recent) >= MIN_PEAK_CONF
+            if crossed and over_rim and sure and float(b.t) - last_t >= min_gap_s:
                 out.append(Arrival(t=float(b.t), frame=int(b.frame), rim_id=rim_id, rim_box=rim, source="ball", conf=0.8))
                 last_t = float(b.t)
             prev = (int(b.frame), cy)
