@@ -87,3 +87,59 @@ def test_prelabel_balls_does_not_requeue_crops_already_labeled(synthetic_video, 
     ds.remove_pending("ball", skipped)
     ds.mark_skipped("ball", skipped)
     assert prelabel_balls(m.game_id, n=10, rim_detector=rims, ball_detector=balls, log=lambda *a: None) == 0   # a skip is remembered
+
+
+def _after_shot_game(synthetic_video, lost_at=(0.2, 0.4, 0.6, 0.8), made=True):
+    """A reviewed game with one confirmed shot at 1.0 s whose stored ball path loses the ball at the given moments."""
+    import json
+    from film.perceive.tracks import replace_kind, rows_to_frame
+    from film.review.decisions import save_decision
+
+    m = ingest(synthetic_video, date="2026-01-01", profile="test", fps=10.0)
+    gd = game_dir(m.game_id)
+    rows = [{"frame": f, "t": f / 10, "kind": "rim", "track_id": 1, "x1": 100.0, "y1": 60.0, "x2": 150.0, "y2": 90.0, "conf": 0.9}
+            for f in range(30)]
+    replace_kind(gd, rows_to_frame(rows), "rim")
+    save_events(gd, [_shot("shot-000010-r1", 1.0, source="ball")])
+    save_decision(gd, "shot-000010-r1", {"status": "confirmed", "made": made})
+    frames = [{"dt": round(-0.2 + 0.2 * i, 2), "balls": [] if round(-0.2 + 0.2 * i, 2) in lost_at else [[0.0, 0.3, 0.8]]}
+              for i in range(9)]                                # -0.2 ... 1.4
+    (gd / "ballpaths.json").write_text(json.dumps({"detector": "ball@x", "paths": {"10-r1": {"rim_w": 50.0, "frames": frames}}}))
+    return m, gd
+
+
+def test_after_shot_samples_are_the_moments_the_detector_lost_the_ball(synthetic_video, tmp_path, monkeypatch):
+    from film.train.prelabel import after_shot_samples
+
+    _env(monkeypatch, tmp_path)
+    m, gd = _after_shot_game(synthetic_video, lost_at=(-0.2, 0.4, 0.8, 1.2))
+    samples = after_shot_samples(gd, m.fps)
+    assert samples == [(1.4, 1), (1.8, 1)]           # after the arrival and within a second of it; not -0.2, not 1.2
+
+
+def test_after_shot_samples_take_more_from_a_make_than_from_a_miss(synthetic_video, tmp_path, monkeypatch):
+    from film.train.prelabel import after_shot_samples
+
+    _env(monkeypatch, tmp_path)
+    lost = (0.2, 0.4, 0.6, 0.8, 1.0)
+    m, gd = _after_shot_game(synthetic_video, lost_at=lost, made=True)
+    assert len(after_shot_samples(gd, m.fps)) == 4
+    from film.review.decisions import save_decision
+    save_decision(gd, "shot-000010-r1", {"status": "confirmed", "made": False})
+    assert len(after_shot_samples(gd, m.fps)) == 2
+
+
+def test_prelabel_balls_after_shots_queues_the_crop_the_path_reader_sees(synthetic_video, tmp_path, monkeypatch):
+    from film.interpret.ballpath import path_crop_box
+
+    _env(monkeypatch, tmp_path)
+    m, gd = _after_shot_game(synthetic_video, lost_at=(0.4, 0.8))
+    balls = FakeDetector(fn=lambda img, i: [Box(5, 5, 15, 15, 0.3, "ball")])
+    n = prelabel_balls(m.game_id, n=10, ball_detector=balls, after_shots=True, log=lambda *a: None)
+    assert balls.calls == 0                                    # its weak guesses here are mostly wrong: propose nothing
+    ids = ds.list_pending("ball")
+    assert n == 2 and ids == [f"{m.game_id}_0000140_p1", f"{m.game_id}_0000180_p1"]
+    x1, y1, x2, y2 = path_crop_box((100.0, 60.0, 150.0, 90.0), 320, 240)
+    pending = ds.read_pending("ball", ids[0])
+    assert (pending["width"], pending["height"]) == (x2 - x1, y2 - y1) and pending["boxes"] == []
+    assert prelabel_balls(m.game_id, n=10, ball_detector=balls, after_shots=True, log=lambda *a: None) == 0   # not queued twice

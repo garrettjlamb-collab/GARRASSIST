@@ -6,6 +6,8 @@ def register(sub) -> None:
     parser.add_argument("what", choices=["rim", "ball", "rimclf"])
     parser.add_argument("game_id")
     parser.add_argument("--n", type=int, default=None, help="how many to queue (rim 150, ball 300, rimclf none-samples 40)")
+    parser.add_argument("--after-shots", action="store_true",
+                        help="ball only: crops from just after confirmed shots where the detector lost the ball")
     parser.add_argument("--device", default=None)
     parser.set_defaults(func=run)
 
@@ -18,7 +20,7 @@ def run(args) -> int:
     elif args.what == "ball":
         from film.train.prelabel import prelabel_balls
 
-        prelabel_balls(args.game_id, n=args.n or 300, device=args.device)
+        prelabel_balls(args.game_id, n=args.n or 300, device=args.device, after_shots=args.after_shots)
     else:
         from film.train.rimclf_dataset import build_rimclf_candidates
 
