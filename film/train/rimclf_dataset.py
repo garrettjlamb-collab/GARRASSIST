@@ -31,11 +31,11 @@ def path_file(image_id: str) -> Path:
     return datasets_dir() / "rimclf" / "paths" / f"{image_id}.json"
 
 
-def save_path(image_id: str, path: dict, game_id: str, rim_id: int, t: float) -> None:
+def save_path(image_id: str, path: dict, game_id: str, rim_id: int, t: float, detector: str | None = None) -> None:
     """The ball path next to the montage: the montage is what the coach looks at, the path is what trains."""
     target = path_file(image_id)
     target.parent.mkdir(parents=True, exist_ok=True)
-    target.write_text(json.dumps({"game": game_id, "rim": int(rim_id), "t": round(float(t), 3), **path}))
+    target.write_text(json.dumps({"game": game_id, "rim": int(rim_id), "t": round(float(t), 3), "detector": detector, **path}))
 
 
 def load_path(image_id: str) -> dict | None:
@@ -111,9 +111,19 @@ def build_rimclf_candidates(game_id: str, n_none: int = 40, seed: int = 0, margi
 
     def store_path(image_id: str, t: float, box, rim_id: int) -> None:
         path = read_ball_path(source, t, box, m.width, m.height, detector, rim_at=rim_follower(rims, rim_id, m.fps))
-        save_path(image_id, path, game_id, rim_id, t)
+        save_path(image_id, path, game_id, rim_id, t, detector=detector.name)
 
-    counts = {"made_auto": 0, "pending": 0, "none_auto": 0, "already": 0, "no_rim": 0, "from_review": 0}
+    def refresh_path(image_id: str, t: float, rim_id: int) -> None:
+        """A path is only as good as the ball detector that read it: after a retrain, read it again."""
+        stored = load_path(image_id)
+        if stored is not None and stored.get("detector") == detector.name:
+            return
+        box = rim_box_at(rims, int(round(t * m.fps)), rim_id)
+        if box is not None:
+            store_path(image_id, t, box, rim_id)
+            counts["refreshed"] += 1
+
+    counts = {"made_auto": 0, "pending": 0, "none_auto": 0, "already": 0, "no_rim": 0, "from_review": 0, "refreshed": 0}
     queued = set(list_pending("rimclf"))
     for e in events:
         image_id = item_id(game_id, e.id)
@@ -124,9 +134,11 @@ def build_rimclf_candidates(game_id: str, n_none: int = 40, seed: int = 0, margi
             if image is not None:
                 store_class_image("rimclf", image_id, image, cls)
                 remove_pending("rimclf", image_id)
+                refresh_path(image_id, e.t, e.rim_id)
                 counts["from_review"] += 1
                 continue
         if image_id in queued or find_class_images("rimclf", image_id):
+            refresh_path(image_id, e.t, e.rim_id)
             counts["already"] += 1
             continue
         box = None if e.rim_id < 0 else rim_box_at(rims, int(round(e.t * m.fps)), e.rim_id)
@@ -157,6 +169,7 @@ def build_rimclf_candidates(game_id: str, n_none: int = 40, seed: int = 0, margi
             continue
         none_id = item_id(game_id, f"none-{int(round(t * 10)):06d}")
         if none_id in queued or find_class_images("rimclf", none_id):
+            refresh_path(none_id, t, _nearest_rim_id(rims, int(round(t * m.fps))))
             none_seen += 1
             counts["already"] += 1
             continue

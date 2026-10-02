@@ -62,7 +62,7 @@ def test_build_candidates_routes_made_pending_and_none(synthetic_video, tmp_path
     _rims(gd)
     save_events(gd, [_event("shot-000010-r1", 1.0, points=2), _event("shot-000020-r1", 2.0), _event("shot-000025-r1", 2.5, kind="unknown")])
     counts = build_rimclf_candidates(m.game_id, n_none=2, seed=1, margin_s=0.2, exclusion_s=0.1, log=lambda *a: None)
-    assert counts == {"made_auto": 1, "pending": 2, "none_auto": 2, "already": 0, "no_rim": 0, "from_review": 0}
+    assert counts == {"made_auto": 1, "pending": 2, "none_auto": 2, "already": 0, "no_rim": 0, "from_review": 0, "refreshed": 0}
     root = tmp_path / "datasets" / "rimclf"
     assert (root / "val" / "made" / f"{m.game_id}--shot-000010-r1.jpg").exists()
     assert sorted(p.parent.name for p in root.glob("*/none/*.jpg")) == ["none", "none"]
@@ -78,7 +78,7 @@ def test_ambiguous_or_one_point_verdict_is_not_auto_made(synthetic_video, tmp_pa
     _rims(gd)
     save_events(gd, [_event("shot-000010-r1", 1.0, points=2, scoreboard="ambiguous"), _event("shot-000020-r1", 2.0, points=1)])
     counts = build_rimclf_candidates(m.game_id, n_none=0, margin_s=0.2, log=lambda *a: None)
-    assert counts == {"made_auto": 0, "pending": 2, "none_auto": 0, "already": 0, "no_rim": 0, "from_review": 0}
+    assert counts == {"made_auto": 0, "pending": 2, "none_auto": 0, "already": 0, "no_rim": 0, "from_review": 0, "refreshed": 0}
 
 
 def test_rerun_adds_nothing_and_counts_no_rim(synthetic_video, tmp_path, monkeypatch):
@@ -117,7 +117,7 @@ def test_review_decisions_route_montages_before_the_scoreboard_rule(synthetic_vi
     save_decision(gd, "shot-000017-r1", {"status": "rejected"})
     save_decision(gd, "shot-000020-r1", {"status": "unsure"})
     counts = build_rimclf_candidates(m.game_id, n_none=0, margin_s=0.2, log=lambda *a: None)
-    assert counts == {"made_auto": 1, "pending": 3, "none_auto": 0, "already": 0, "no_rim": 0, "from_review": 3}
+    assert counts == {"made_auto": 1, "pending": 3, "none_auto": 0, "already": 0, "no_rim": 0, "from_review": 3, "refreshed": 0}
     placed = _placed(tmp_path)
     assert placed == {"shot-000005-r1": "made", "shot-000008-r1": "missed", "shot-000017-r1": "none", "shot-000023-r1": "made"}
     pending = _pending()
@@ -200,3 +200,22 @@ def test_rim_box_at_ignores_rows_without_a_box():
     rims = pd.DataFrame([{"frame": 10, "track_id": 1, "x1": float("nan"), "y1": float("nan"), "x2": float("nan"), "y2": float("nan")},
                          {"frame": 12, "track_id": 1, "x1": 30.0, "y1": 100.0, "x2": 40.0, "y2": 110.0}])
     assert rim_box_at(rims, 10) == (30.0, 100.0, 40.0, 110.0)
+
+
+def test_a_new_ball_detector_rereads_the_stored_paths(synthetic_video, tmp_path, monkeypatch):
+    """A path is only as good as the detector that read it; labels and montages stay, the paths are redone."""
+    _env(monkeypatch, tmp_path)
+    m = ingest(synthetic_video, date="2026-01-01", profile="test")
+    gd = game_dir(m.game_id)
+    _rims(gd)
+    save_events(gd, [_event("shot-000010-r1", 1.0, points=2), _event("shot-000020-r1", 2.0)])
+    kwargs = dict(n_none=1, seed=1, margin_s=0.2, exclusion_s=0.1, log=lambda *a: None)
+    old = FakeDetector(name="ball@v1")
+    _build(m.game_id, detector=old, **kwargs)
+    ids = [p.stem for p in (tmp_path / "datasets" / "rimclf").glob("*/*/*.jpg")] + ds.list_pending("rimclf")
+    assert len(ids) == 3 and all(load_path(i)["detector"] == "ball@v1" and load_path(i)["frames"][0]["balls"] == [] for i in ids)
+    assert _build(m.game_id, detector=old, **kwargs)["refreshed"] == 0
+    new = FakeDetector(per_call=[[Box(100.0, 100.0, 110.0, 110.0, 0.7, "ball")]], name="ball@v2")
+    counts = _build(m.game_id, detector=new, **kwargs)
+    assert counts["refreshed"] == 3 and counts["already"] == 3 and counts["pending"] == 0
+    assert all(load_path(i)["detector"] == "ball@v2" and len(load_path(i)["frames"][0]["balls"]) == 1 for i in ids)
