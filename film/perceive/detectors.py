@@ -50,6 +50,8 @@ class Detector(Protocol):
 
     def detect(self, image_bgr: np.ndarray) -> list[Box]: ...
 
+    def detect_many(self, images_bgr: list[np.ndarray]) -> list[list[Box]]: ...
+
 
 class FakeDetector:
     """Scripted detector for tests: per-call box lists (the last repeats), or a function of (image, call_index)."""
@@ -67,6 +69,9 @@ class FakeDetector:
         if self.fn is not None:
             return list(self.fn(image_bgr, i))
         return list(self.per_call[min(i, len(self.per_call) - 1)])
+
+    def detect_many(self, images_bgr: list[np.ndarray]) -> list[list[Box]]:
+        return [self.detect(image) for image in images_bgr]
 
 
 def boxes_from_result(result, cls_map: dict[str, str] | None = None) -> list[Box]:
@@ -109,6 +114,13 @@ class YoloDetector:
     def detect(self, image_bgr: np.ndarray) -> list[Box]:
         results = self.model.predict(image_bgr, imgsz=self.imgsz, conf=self.conf, device=self.device, verbose=False)
         return boxes_from_result(results[0], self.cls_map)
+
+    def detect_many(self, images_bgr: list[np.ndarray]) -> list[list[Box]]:
+        """One batched pass over several images of the same size."""
+        if not images_bgr:
+            return []
+        results = self.model.predict(list(images_bgr), imgsz=self.imgsz, conf=self.conf, device=self.device, verbose=False)
+        return [boxes_from_result(r, self.cls_map) for r in results]
 
 
 RIM_DETECTOR_CHOICES = ("template", "trained")

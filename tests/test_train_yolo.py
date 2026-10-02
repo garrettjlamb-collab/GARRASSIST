@@ -58,59 +58,85 @@ def test_train_detector_refuses_tiny_dataset(monkeypatch, tmp_path):
         train_detector("ball", device="cpu", yolo_cls=StubYOLO)
 
 
-def test_train_rimclf_version(monkeypatch, tmp_path):
+PATHS = {
+    "made": {3: (0.0, 0.0, 0.8), 5: (0.02, 0.4, 0.7), 7: (0.0, 0.9, 0.7), 9: (-0.03, 1.3, 0.6)},
+    "missed": {3: (0.0, 0.0, 0.8), 6: (0.5, -0.3, 0.7), 9: (0.9, -0.5, 0.7), 12: (1.3, 0.2, 0.6)},
+    "none": {},
+}
+
+
+def _rimclf_item(game, cls, i, points=None, with_path=True):
+    from film.train import datasets as ds
+    from film.train.rimclf_dataset import item_id, save_path
+
+    image_id = item_id(game, f"shot-{cls}-{i:03d}-r1")
+    ds.store_class_image("rimclf", image_id, np.zeros((16, 16, 3), np.uint8), cls)
+    if with_path:
+        points = PATHS[cls] if points is None else points
+        frames = [{"dt": round((k - 3) / 15, 3), "balls": [list(points[k])] if k in points else []} for k in range(25)]
+        save_path(image_id, {"rim_w": 50.0, "frames": frames}, game, 1, float(i))
+    return image_id
+
+
+def _rimclf_dataset(games=("game-a", "game-b"), per_class=8, points=None):
+    for game in games:
+        for cls in ("made", "missed", "none"):
+            for i in range(per_class):
+                _rimclf_item(game, cls, i, points=points)
+
+
+def test_train_rimclf_registers_a_classifier_that_reads_ball_paths(monkeypatch, tmp_path):
+    from film.interpret.ballpath import path_features
+    from film.train.rimclf import RimClassifier
+
     _env(monkeypatch, tmp_path)
-    root = tmp_path / "datasets" / "rimclf"
-    colours = {"made": (0, 0, 255), "missed": (0, 255, 0), "none": (255, 0, 0)}
-    for split, n in (("train", 6), ("val", 2)):
-        for cls, colour in colours.items():
-            (root / split / cls).mkdir(parents=True)
-            for i in range(n):
-                img = np.zeros((96, 96, 3), np.uint8)
-                img[:] = colour
-                cv2.imwrite(str(root / split / cls / f"{i}.jpg"), img)
-    assert class_counts("rimclf") == {"train": {"made": 6, "missed": 6, "none": 6}, "val": {"made": 2, "missed": 2, "none": 2}}
-    version, folder = train_rimclf_version("cpu", epochs=40, arch="tiny", pretrained=False, lr=0.05, batch=8, log=lambda *a: None)
-    assert version == "v1" and (folder / "best.pt").exists()
-    assert registry.read_manifest(folder)["arch"] == "tiny"
-    assert registry.latest("rimclf") == ("v1", folder)
+    _rimclf_dataset()
+    lines = []
+    version, folder = train_rimclf_version(log=lines.append)
+    info = registry.read_manifest(folder)
+    assert version == "v1" and registry.latest("rimclf") == ("v1", folder) and info["in_service"] is True
+    assert info["scored_by"] == "leave-one-game-out" and info["accuracy"] == 1.0 and info["items"] == 48
+    assert set(info["per_game"]) == {"game-a", "game-b"} and info["made_vs_missed"] == 1.0
+    clf = RimClassifier.load()
+    made = {"frames": [{"dt": round((k - 3) / 15, 3), "balls": [list(PATHS["made"][k])] if k in PATHS["made"] else []} for k in range(25)]}
+    assert clf.predict(path_features(made))[0] == "made"
+    assert any("registered rimclf v1" in line for line in lines)
+
+
+def test_one_game_is_scored_on_its_held_out_split(monkeypatch, tmp_path):
+    _env(monkeypatch, tmp_path)
+    _rimclf_dataset(games=("game-a",), per_class=12)
+    version, folder = train_rimclf_version(log=lambda *a: None)
+    info = registry.read_manifest(folder)
+    assert info["scored_by"] == "val-split" and info["in_service"] is True
 
 
 def test_train_rimclf_refuses_empty_class(monkeypatch, tmp_path):
     _env(monkeypatch, tmp_path)
-    root = tmp_path / "datasets" / "rimclf"
-    for split in ("train", "val"):
-        for cls in ("made", "missed", "none"):
-            (root / split / cls).mkdir(parents=True)
-    cv2.imwrite(str(root / "train" / "made" / "0.jpg"), np.zeros((96, 96, 3), np.uint8))
+    for i in range(4):
+        _rimclf_item("game-a", "made", i)
+        _rimclf_item("game-a", "none", i)
     with pytest.raises(ValueError, match="missed"):
-        train_rimclf_version("cpu", epochs=1, arch="tiny", pretrained=False)
+        train_rimclf_version(log=lambda *a: None)
+
+
+def test_a_montage_without_a_ball_path_is_left_out_and_reported(monkeypatch, tmp_path):
+    _env(monkeypatch, tmp_path)
+    _rimclf_dataset()
+    _rimclf_item("game-a", "made", 99, with_path=False)
+    lines = []
+    version, folder = train_rimclf_version(log=lines.append)
+    assert registry.read_manifest(folder)["items"] == 48
+    assert any("1 montage" in line and "no ball path" in line for line in lines)
 
 
 def test_a_classifier_no_better_than_guessing_is_not_put_into_service(monkeypatch, tmp_path):
     """A model that only matches 'always answer the commonest class' must not be picked up by interpret."""
     _env(monkeypatch, tmp_path)
-    import film.train.train_yolo as T
-    root = tmp_path / "datasets" / "rimclf"
-    for split, counts in (("train", {"made": 2, "missed": 2, "none": 6}), ("val", {"made": 2, "missed": 2, "none": 6})):
-        for cls, n in counts.items():
-            (root / split / cls).mkdir(parents=True)
-            for i in range(n):
-                cv2.imwrite(str(root / split / cls / f"{i}.jpg"), np.zeros((32, 32, 3), np.uint8))
-
-    def fake_train(dataset_dir, out_dir, device, epochs=8, **kwargs):
-        out_dir.mkdir(parents=True, exist_ok=True)
-        (out_dir / "best.pt").write_bytes(b"weights")
-        return {"arch": "tiny", "epochs": epochs, "best_val_acc": fake_train.acc, "train_images": 10, "val_images": 10}
-
-    monkeypatch.setattr(T, "train_rimclf", fake_train)
+    _rimclf_dataset(points={3: (0.0, 0.0, 0.8)})             # every class shows the same path: nothing to learn
     lines = []
-    fake_train.acc = 0.62                                   # the commonest class is 60% of val: 0.62 is not a real gain
-    version, folder = train_rimclf_version("cpu", log=lines.append)
+    version, folder = train_rimclf_version(log=lines.append)
     info = registry.read_manifest(folder)
     assert registry.latest("rimclf") is None and not (folder / "best.pt").exists() and (folder / "not-good-enough.pt").exists()
-    assert info["in_service"] is False and info["baseline_val_acc"] == 0.6
+    assert info["in_service"] is False and info["baseline"] == round(1 / 3, 4)
     assert any("not put into service" in line for line in lines)
-    fake_train.acc = 0.85
-    version, folder = train_rimclf_version("cpu", log=lines.append)
-    assert registry.latest("rimclf") == (version, folder) and registry.read_manifest(folder)["in_service"] is True

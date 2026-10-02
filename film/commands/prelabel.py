@@ -22,6 +22,6 @@ def run(args) -> int:
     else:
         from film.train.rimclf_dataset import build_rimclf_candidates
 
-        build_rimclf_candidates(args.game_id, n_none=args.n or 40)
+        build_rimclf_candidates(args.game_id, n_none=args.n or 40, device=args.device)
     print("next: uv run film review, then open the Label tab")
     return 0

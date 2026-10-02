@@ -4,7 +4,21 @@ from film.interpret.events import Event, save_events
 from film.perceive.tracks import replace_kind, rows_to_frame
 from film.train import datasets as ds
 from film.review.decisions import save_decision
-from film.train.rimclf_dataset import build_rimclf_candidates, rim_box_at
+from film.perceive.detectors import Box, FakeDetector
+from film.train.rimclf_dataset import build_rimclf_candidates as _build, item_id, load_path, rim_box_at
+
+
+def build_rimclf_candidates(game_id, **kwargs):
+    return _build(game_id, detector=FakeDetector(), **kwargs)
+
+
+def _placed(tmp_path):
+    """{event id: class} for every stored montage, without the game prefix."""
+    return {p.stem.split("--")[-1]: p.parent.name for p in (tmp_path / "datasets" / "rimclf").glob("*/*/*.jpg")}
+
+
+def _pending():
+    return {i.split("--")[-1]: ds.read_pending("rimclf", i) for i in ds.list_pending("rimclf")}
 
 
 def _env(monkeypatch, tmp_path):
@@ -50,9 +64,9 @@ def test_build_candidates_routes_made_pending_and_none(synthetic_video, tmp_path
     counts = build_rimclf_candidates(m.game_id, n_none=2, seed=1, margin_s=0.2, exclusion_s=0.1, log=lambda *a: None)
     assert counts == {"made_auto": 1, "pending": 2, "none_auto": 2, "already": 0, "no_rim": 0, "from_review": 0}
     root = tmp_path / "datasets" / "rimclf"
-    assert (root / "val" / "made" / "shot-000010-r1.jpg").exists()
+    assert (root / "val" / "made" / f"{m.game_id}--shot-000010-r1.jpg").exists()
     assert sorted(p.parent.name for p in root.glob("*/none/*.jpg")) == ["none", "none"]
-    pending = {i: ds.read_pending("rimclf", i) for i in ds.list_pending("rimclf")}
+    pending = _pending()
     assert pending["shot-000020-r1"]["suggested"] == "missed"
     assert pending["shot-000025-r1"]["suggested"] == "none"
 
@@ -104,9 +118,9 @@ def test_review_decisions_route_montages_before_the_scoreboard_rule(synthetic_vi
     save_decision(gd, "shot-000020-r1", {"status": "unsure"})
     counts = build_rimclf_candidates(m.game_id, n_none=0, margin_s=0.2, log=lambda *a: None)
     assert counts == {"made_auto": 1, "pending": 3, "none_auto": 0, "already": 0, "no_rim": 0, "from_review": 3}
-    placed = {p.stem: p.parent.name for p in (tmp_path / "datasets" / "rimclf").glob("*/*/*.jpg")}
+    placed = _placed(tmp_path)
     assert placed == {"shot-000005-r1": "made", "shot-000008-r1": "missed", "shot-000017-r1": "none", "shot-000023-r1": "made"}
-    pending = {i: ds.read_pending("rimclf", i) for i in ds.list_pending("rimclf")}
+    pending = _pending()
     assert {i: p["suggested"] for i, p in pending.items()} == {
         "shot-000011-r1": "made", "shot-000014-r1": "missed", "shot-000020-r1": "missed"}
 
@@ -138,9 +152,9 @@ def test_a_pending_montage_is_promoted_once_the_coach_decides(synthetic_video, t
     save_decision(gd, "shot-000020-r1", {"status": "unsure"})
     second = build_rimclf_candidates(m.game_id, n_none=0, margin_s=0.2, log=lambda *a: None)
     assert second["from_review"] == 2 and second["already"] == 1 and second["pending"] == 0
-    placed = {p.stem: p.parent.name for p in (tmp_path / "datasets" / "rimclf").glob("*/*/*.jpg")}
+    placed = _placed(tmp_path)
     assert placed == {"shot-000010-r1": "made", "shot-000015-r1": "none"}
-    assert ds.list_pending("rimclf") == ["shot-000020-r1"]
+    assert list(_pending()) == ["shot-000020-r1"]
 
 
 def test_a_rejected_warmup_card_waits_for_a_label_instead_of_teaching_none(synthetic_video, tmp_path, monkeypatch):
@@ -154,6 +168,35 @@ def test_a_rejected_warmup_card_waits_for_a_label_instead_of_teaching_none(synth
     save_decision(gd, "shot-000005-r1", {"status": "confirmed", "made": True})   # a make is a make, warmup or not
     save_decision(gd, "shot-000008-r1", {"status": "rejected"})                  # may only mean "not the game"
     build_rimclf_candidates(m.game_id, n_none=0, margin_s=0.2, log=lambda *a: None)
-    placed = {p.stem: p.parent.name for p in (tmp_path / "datasets" / "rimclf").glob("*/*/*.jpg")}
+    placed = _placed(tmp_path)
     assert placed == {"shot-000005-r1": "made"}
-    assert ds.list_pending("rimclf") == ["shot-000008-r1"]
+    assert list(_pending()) == ["shot-000008-r1"]
+
+
+def test_every_montage_gets_the_ball_path_the_classifier_trains_on(synthetic_video, tmp_path, monkeypatch):
+    _env(monkeypatch, tmp_path)
+    m = ingest(synthetic_video, date="2026-01-01", profile="test")
+    gd = game_dir(m.game_id)
+    _rims(gd)
+    save_events(gd, [_event("shot-000010-r1", 1.0, points=2), _event("shot-000020-r1", 2.0)])
+    det = FakeDetector(per_call=[[Box(100.0, 100.0, 110.0, 110.0, 0.7, "ball")]])
+    _build(m.game_id, n_none=1, seed=1, margin_s=0.2, exclusion_s=0.1, detector=det, log=lambda *a: None)
+    stored = [p.stem for p in (tmp_path / "datasets" / "rimclf").glob("*/*/*.jpg")] + ds.list_pending("rimclf")
+    assert len(stored) == 3
+    for image_id in stored:
+        path = load_path(image_id)
+        assert path["game"] == m.game_id and path["rim"] == 1 and len(path["frames"]) > 5
+        assert all(len(f["balls"]) == 1 for f in path["frames"])
+    assert load_path("nothing-here") is None
+
+
+def test_the_same_event_id_in_two_games_is_two_items():
+    assert item_id("game-a", "shot-000010-r1") != item_id("game-b", "shot-000010-r1")
+
+
+def test_rim_box_at_ignores_rows_without_a_box():
+    import pandas as pd
+
+    rims = pd.DataFrame([{"frame": 10, "track_id": 1, "x1": float("nan"), "y1": float("nan"), "x2": float("nan"), "y2": float("nan")},
+                         {"frame": 12, "track_id": 1, "x1": 30.0, "y1": 100.0, "x2": 40.0, "y2": 110.0}])
+    assert rim_box_at(rims, 10) == (30.0, 100.0, 40.0, 110.0)

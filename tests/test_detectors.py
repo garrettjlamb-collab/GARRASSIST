@@ -53,6 +53,19 @@ def test_yolo_detector_uses_model_predict():
     assert seen["imgsz"] == 320 and seen["conf"] == 0.3 and seen["device"] == "cpu" and seen["verbose"] is False
 
 
+def test_yolo_detector_detects_a_batch_in_one_pass():
+    calls = []
+
+    def predict(images, **kw):
+        calls.append(len(images))
+        return [_result([[0, 0, 10, 10, 0.9, 0]], names={0: "ball"}), _result([], names={0: "ball"})]
+
+    det = YoloDetector(types.SimpleNamespace(predict=predict), device="cpu", imgsz=320, name="ball@v1")
+    blank = np.zeros((8, 8, 3), np.uint8)
+    assert det.detect_many([blank, blank]) == [[Box(0, 0, 10, 10, 0.9, "ball")], []]
+    assert calls == [2] and det.detect_many([]) == [] and calls == [2]
+
+
 def test_load_detector_prefers_trained_then_falls_back(monkeypatch, tmp_path):
     calls = []
     monkeypatch.setattr(D.registry, "latest", lambda name: ("v3", tmp_path) if name == "rim" else None)

@@ -5,6 +5,7 @@ from film.common.paths import game_dir
 from film.ingest.run import ingest
 from film.interpret.events import load_events
 from film.interpret.run import interpret
+from film.perceive.detectors import Box, FakeDetector
 from film.perceive.tracks import replace_kind, rows_to_frame
 from film.train.rimclf import FakeClassifier
 
@@ -27,7 +28,7 @@ def test_interpret_writes_events(synthetic_video, tmp_path, monkeypatch):
     m = ingest(synthetic_video, date="2026-01-01", profile="test", fps=10.0)
     gd = game_dir(m.game_id)
     _tracks(gd)
-    events = interpret(m.game_id, classifier=FakeClassifier([("made", 0.9)]), log=lambda *a: None)
+    events = interpret(m.game_id, classifier=FakeClassifier([("made", 0.9)]), ball_detector=FakeDetector(), log=lambda *a: None)
     assert len(events) == 1
     e = events[0]
     assert e.type == "shot" and e.made is True and e.confidence == 0.63 and "no-scoreboard" in e.flags
@@ -57,7 +58,7 @@ def test_interpret_adds_scoreboard_only_events_without_calling_the_classifier(sy
     save_timeline(reads, gd / "scoreboard.jsonl")
     clf = FakeClassifier([("missed", 0.9)])
     lines = []
-    events = interpret(m.game_id, classifier=clf, log=lines.append)
+    events = interpret(m.game_id, classifier=clf, ball_detector=FakeDetector(), log=lines.append)
     assert [e.rim_id for e in events] == [1, -1]
     assert clf.calls == 1
     sb = events[1]
@@ -84,3 +85,30 @@ def test_a_rerun_carries_the_coachs_decisions_onto_the_redetected_shot(synthetic
     assert again.id == fresh.id and decisions[fresh.id]["made"] is True and decisions[fresh.id]["moved_from"] == old.id
     assert Manifest.load(gd).stages["interpret"]["decisions"] == {"kept": 0, "moved": 1, "orphaned": 0}
     assert any("1 moved" in line for line in lines)
+
+
+def test_the_classifier_is_given_the_balls_path_and_the_path_is_read_from_film_once(synthetic_video, tmp_path, monkeypatch):
+    from film.interpret.ballpath import FEATURES
+
+    monkeypatch.setenv("FILM_GAMES_DIR", str(tmp_path / "games"))
+    m = ingest(synthetic_video, date="2026-01-01", profile="test", fps=10.0)
+    gd = game_dir(m.game_id)
+    _tracks(gd)
+    given = []
+
+    class Recording(FakeClassifier):
+        def predict(self, features):
+            given.append(list(features))
+            return super().predict(features)
+
+    det = FakeDetector(per_call=[[Box(100.0, 100.0, 110.0, 110.0, 0.7, "ball")]], name="ball@fake")
+    interpret(m.game_id, classifier=Recording([("made", 0.9)]), ball_detector=det, log=lambda *a: None)
+    assert len(given) == 1 and len(given[0]) == len(FEATURES)
+    assert dict(zip(FEATURES, given[0]))["seen"] == 1.0 and dict(zip(FEATURES, given[0]))["peak_conf"] == 0.7
+    calls = det.calls
+    assert calls > 5 and (gd / "ballpaths.json").exists()
+    interpret(m.game_id, classifier=Recording([("made", 0.9)]), ball_detector=det, log=lambda *a: None)
+    assert det.calls == calls and given[1] == given[0]                       # a re-run reuses the stored path
+    other = FakeDetector(name="ball@newer")
+    interpret(m.game_id, classifier=Recording([("made", 0.9)]), ball_detector=other, log=lambda *a: None)
+    assert other.calls == calls and dict(zip(FEATURES, given[2]))["seen"] == 0.0   # a new detector reads them again
