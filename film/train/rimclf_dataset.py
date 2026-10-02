@@ -1,13 +1,16 @@
 from __future__ import annotations
 
+import json
 import random
 from pathlib import Path
 
 import cv2
 import pandas as pd
 
+from film.common.device import pick_device
 from film.common.manifest import Manifest
-from film.common.paths import game_dir
+from film.common.paths import datasets_dir, game_dir
+from film.interpret.ballpath import read_ball_path
 from film.interpret.events import load_events
 from film.perceive.tracks import read_tracks
 from film.review.decisions import load_decisions
@@ -19,11 +22,37 @@ from film.train.montage import build_montage, rim_follower
 EVENT_EXCLUSION_S = 3.0
 
 
+def item_id(game_id: str, local_id: str) -> str:
+    """Event ids repeat from game to game; a dataset item carries its game."""
+    return f"{game_id}--{local_id}"
+
+
+def path_file(image_id: str) -> Path:
+    return datasets_dir() / "rimclf" / "paths" / f"{image_id}.json"
+
+
+def save_path(image_id: str, path: dict, game_id: str, rim_id: int, t: float) -> None:
+    """The ball path next to the montage: the montage is what the coach looks at, the path is what trains."""
+    target = path_file(image_id)
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_text(json.dumps({"game": game_id, "rim": int(rim_id), "t": round(float(t), 3), **path}))
+
+
+def load_path(image_id: str) -> dict | None:
+    target = path_file(image_id)
+    return json.loads(target.read_text()) if target.exists() else None
+
+
+def _nearest_rim_id(rims: pd.DataFrame, frame: int) -> int:
+    return int(rims.loc[(rims["frame"].astype(int) - frame).abs().idxmin(), "track_id"])
+
+
 def rim_box_at(rims: pd.DataFrame, frame: int, rim_id: int | None = None, max_gap: int = 10) -> tuple | None:
     """The rim box at the nearest tracked frame within max_gap frames, for a given rim id or any rim."""
     if rims.empty:
         return None
     df = rims if rim_id is None else rims[rims["track_id"] == rim_id]
+    df = df.dropna(subset=["x1", "y1", "x2", "y2"])
     if df.empty:
         return None
     gaps = (df["frame"].astype(int) - frame).abs()
@@ -67,26 +96,37 @@ def _route(e, decision: dict | None) -> tuple[str | None, str | None]:
 
 
 def build_rimclf_candidates(game_id: str, n_none: int = 40, seed: int = 0, margin_s: float = 30.0,
-                            exclusion_s: float = EVENT_EXCLUSION_S, log=print) -> dict:
+                            exclusion_s: float = EVENT_EXCLUSION_S, detector=None, device: str | None = None,
+                            log=print) -> dict:
     gd = game_dir(game_id)
     m = Manifest.load(gd)
     source = Path(m.source)
     events = load_events(gd)
     rims = read_tracks(gd, "rim")
     decisions = load_decisions(gd)
+    if detector is None:
+        from film.perceive.detectors import load_detector
+
+        detector = load_detector("ball", pick_device(device))
+
+    def store_path(image_id: str, t: float, box, rim_id: int) -> None:
+        path = read_ball_path(source, t, box, m.width, m.height, detector, rim_at=rim_follower(rims, rim_id, m.fps))
+        save_path(image_id, path, game_id, rim_id, t)
+
     counts = {"made_auto": 0, "pending": 0, "none_auto": 0, "already": 0, "no_rim": 0, "from_review": 0}
     queued = set(list_pending("rimclf"))
     for e in events:
-        if e.id in queued and e.id in decisions:
+        image_id = item_id(game_id, e.id)
+        if image_id in queued and e.id in decisions:
             # Queued by an earlier run; if the coach has since given a class, promote the queued montage.
             cls, _ = _route(e, decisions[e.id])
-            image = cv2.imread(str(pending_images_dir("rimclf") / f"{e.id}.jpg")) if cls is not None else None
+            image = cv2.imread(str(pending_images_dir("rimclf") / f"{image_id}.jpg")) if cls is not None else None
             if image is not None:
-                store_class_image("rimclf", e.id, image, cls)
-                remove_pending("rimclf", e.id)
+                store_class_image("rimclf", image_id, image, cls)
+                remove_pending("rimclf", image_id)
                 counts["from_review"] += 1
                 continue
-        if e.id in queued or find_class_images("rimclf", e.id):
+        if image_id in queued or find_class_images("rimclf", image_id):
             counts["already"] += 1
             continue
         box = None if e.rim_id < 0 else rim_box_at(rims, int(round(e.t * m.fps)), e.rim_id)
@@ -95,12 +135,13 @@ def build_rimclf_candidates(game_id: str, n_none: int = 40, seed: int = 0, margi
             log(f"rimclf: no rim box near {e.id}, skipped")
             continue
         montage = build_montage(source, e.t, box, m.width, m.height, rim_at=rim_follower(rims, e.rim_id, m.fps))
+        store_path(image_id, e.t, box, e.rim_id)
         cls, suggested = _route(e, decisions.get(e.id))
         if cls is not None:
-            store_class_image("rimclf", e.id, montage, cls)
+            store_class_image("rimclf", image_id, montage, cls)
             counts["from_review" if e.id in decisions else "made_auto"] += 1
         else:
-            write_pending("rimclf", e.id, montage, [], extra={"t": e.t, "suggested": suggested, "event_id": e.id})
+            write_pending("rimclf", image_id, montage, [], extra={"t": e.t, "suggested": suggested, "event_id": e.id})
             counts["pending"] += 1
     rng = random.Random(seed)
     event_times = [e.t for e in events]
@@ -114,13 +155,15 @@ def build_rimclf_candidates(game_id: str, n_none: int = 40, seed: int = 0, margi
         box = rim_box_at(rims, int(round(t * m.fps)))
         if box is None:
             continue
-        none_id = f"none-{game_id}-{int(round(t * 10)):06d}"
+        none_id = item_id(game_id, f"none-{int(round(t * 10)):06d}")
         if none_id in queued or find_class_images("rimclf", none_id):
             none_seen += 1
             counts["already"] += 1
             continue
+        rim_id = _nearest_rim_id(rims, int(round(t * m.fps)))
+        store_path(none_id, t, box, rim_id)
         store_class_image("rimclf", none_id,
-                          build_montage(source, t, box, m.width, m.height, rim_at=rim_follower(rims, None, m.fps)), "none")
+                          build_montage(source, t, box, m.width, m.height, rim_at=rim_follower(rims, rim_id, m.fps)), "none")
         counts["none_auto"] += 1
     log(f"rimclf candidates for {game_id}: {counts}")
     return counts

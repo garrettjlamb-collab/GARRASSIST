@@ -70,7 +70,8 @@ def smooth_rims(df: pd.DataFrame, window: int = 5, max_gap: int = 30) -> pd.Data
     if df.empty:
         return df
     df = df.sort_values(["track_id", "frame"]).copy()
-    visit = df.groupby("track_id")["frame"].diff().gt(max_gap).groupby(df["track_id"]).cumsum()
+    # The first row of each rim has no previous frame: with nullable integers that is a missing value, not False.
+    visit = df.groupby("track_id")["frame"].diff().gt(max_gap).fillna(False).astype(bool).groupby(df["track_id"]).cumsum()
     keys = [df["track_id"], visit]
     for col in ("x1", "y1", "x2", "y2"):
         df[col] = df.groupby(keys)[col].transform(lambda s: s.rolling(window, center=True, min_periods=1).median())

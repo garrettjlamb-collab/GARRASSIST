@@ -75,3 +75,14 @@ def test_smooth_rims_treats_each_visit_separately():
     df = smooth_rims(rows_to_frame(rows))
     assert df.loc[df["frame"] == 110, "x1"].item() == 900
     assert df.loc[df["frame"] == 9, "x1"].item() == 100
+
+
+def test_smoothing_keeps_the_first_box_of_each_rim_when_frames_are_nullable_integers():
+    """tracks.parquet stores frames as nullable Int64; the first row of each rim has no previous frame to
+    difference against, and that missing value must not wipe its box."""
+    from film.perceive.tracks import rows_to_frame
+
+    rows = [{"frame": f, "t": f / 10, "kind": "rim", "track_id": tid, "x1": 100.0 + f, "y1": 50.0, "x2": 150.0 + f,
+             "y2": 80.0, "conf": 0.9} for tid in (1, 2) for f in range(6)]
+    out = smooth_rims(rows_to_frame(rows))
+    assert len(out) == 12 and not out[["x1", "y1", "x2", "y2"]].isna().any().any()

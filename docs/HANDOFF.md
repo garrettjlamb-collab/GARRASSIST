@@ -1,6 +1,6 @@
 # Handoff: basketball film pipeline
 
-Written 2026-10-01 for the next agent. Read this before touching anything. The design spec
+Written 2026-10-01, updated 2026-10-01 late (made-or-missed classifier in service), for the next agent. Read this before touching anything. The design spec
 (`docs/superpowers/specs/2026-09-30-film-pipeline-design.md`) says what the system is meant to become;
 this file says where it actually is, what was learned running it on real film, and what to do next.
 
@@ -12,12 +12,10 @@ process more Hudl games first; the pipeline already handles those.
 
 Do these in order. Details for each are under "Next steps" below.
 
-1. Check whether Garrett has reviewed the Cactus Shadows game: count the decisions in
-   `games/2025-02-05-arcadia-high-school-vs-cactus-shadows-boys-juniorvarsity-basketball-tactical/review.json`.
-   If the file is missing or nearly empty, ask him to review it (about 30 minutes, the first 125 cards)
-   and meanwhile start on step 2 with the Marcos data alone.
-2. Get the made-or-missed classifier (`rimclf`) past its quality gate. Without a scoreboard it is the only
-   way to know a shot went in. Redesign its input, retrain on every reviewed game.
+1. Done: Garrett reviewed the Cactus Shadows game (121 decisions: 107 confirmed, 14 rejected).
+2. Done: the made-or-missed classifier (`rimclf`) is past its quality gate and in service as `rimclf@v3`.
+   It reads the ball's path after the rim, not pixels. It is right about three times in four, so the next
+   gains come from ball labels just after the shot (see "What does not work yet").
 3. Train a rim detector that works from any camera angle (the current one is a template matcher that
    only fits the Hudl view of the Arcadia gym).
 4. Add a no-scoreboard profile with manual quarter marks, and run `JV vs Deer Valley JV - Angle 1.mp4` as
@@ -37,9 +35,9 @@ rented GPU. He may buy a Mac mini later but has decided to prove it on the lapto
 
 ## State on 2026-10-01
 
-- `main`, 206 tests passing, no warnings, working tree clean, **no git remote yet** (he will supply an SSH URL).
+- Branch `ball-path-classifier` (not yet merged to `main`), 225 tests passing, **no git remote yet** (he will supply an SSH URL).
 - Rung 1 of the spec is built and has run end to end on two real games.
-- Two games processed, one fully reviewed by Garrett, one waiting for his review.
+- Two games processed and reviewed by Garrett (Cactus Shadows: the 125 ball and scoreboard cards; its 108 motion cards are not reviewed).
 - Three more films are on disk that the pipeline **cannot run yet** because they have no burned-in scoreboard.
 
 ### What works, with measured numbers (JV vs Marcos, the reviewed game)
@@ -52,6 +50,7 @@ rented GPU. He may buy a Mac mini later but has decided to prove it on the lapto
 | Ball | YOLO11n trained on Garrett's 82 boxes, run on the 320 px rim crop enlarged to 640 (`ball@v4`) | 9,129 detections; 139 ball arrivals in live play |
 | Shot events | Ball crossing the rim line, with a peak-confidence gate; motion peaks as fallback; scoreboard-only events for baskets nothing else explains | 139 confirmed shots (66 made, 73 missed); 91 of 119 final points accounted for |
 | Made or missed | The scoreboard: did one team's score rise by 1-3 in the seconds after the arrival | Agrees with Garrett on 94% of confirmed shots |
+| Made or missed without a scoreboard | `rimclf@v3`: the ball detector at 15 fps for 1.4 s after each arrival, six features of the ball's path, a linear model (`film/interpret/ballpath.py`, `film/train/rimclf.py`) | 0.708 on three classes trained on one game and tested on the other (always guessing scores 0.488); 0.767 on made versus missed |
 | Warmups | `film/interpret/phases.py`: only stretches whose clock starts at the quarter length are live | Flagged all 43 cards he skipped as warmups, none he confirmed |
 | Review | Local page, keys Enter / M / T / X / U / L / R / F / J / K | 266 of 267 live cards decided |
 
@@ -63,15 +62,23 @@ Cutting ~300 clips takes about 2 minutes. Training the ball detector at 640 px t
 
 ### What does not work yet
 
-- **The made-or-missed classifier (`rimclf`).** Trained on the Marcos game's decisions (57 made, 73 missed,
-  166 none) it reaches about 0.64 on held-out clips where always answering "none" scores 0.58; it finds
-  about 3 of 13 held-out makes. A quality gate (`film/train/train_yolo.py`, `MIN_GAIN_OVER_GUESSING`)
-  keeps it out of service, so Interpret runs on the scoreboard alone. One real bug was found and fixed on
-  the way (montages now follow the rim as the camera pans). Remaining causes: one game is too little
-  data, and the ball is a few pixels wide in a 96 px tile. See "Next steps".
+- **The made-or-missed classifier is in service but only about 75% right.** The scoreboard is right about
+  95% of the time where it has a read, and still wins when the two disagree (`clf-scoreboard-disagree`).
+  On the shots with no scoreboard read the classifier's call matched Garrett on 34 of 46 across the two
+  games (in-sample). What limits it: the ball detector loses the ball in about a third of makes by 0.6 s
+  after arrival. More ball labels from the second after a shot are the direct fix.
+  What was tried and failed, so nobody repeats it: an image classifier (ResNet18) on rim montages, four
+  input designs (the old 96 px montage, tight full-resolution crops, a longer window, frame differences),
+  each trained on one game and tested on the other: 0.51 to 0.61 on three classes and 0.55 to 0.60 on made
+  versus missed, where always answering "missed" scores 0.575. Two games are too few clips for pixels.
+- **On Hudl film the "rim" box is the top of the backboard, not the hoop.** The hoop sits about 0.4 rim
+  widths to one side of the box centre (right for rim 1, left for rim 2). `hoop_offset` measures this per
+  game and rim from where confident balls arrive; it needs at least 5 arrivals or it falls back to the box
+  centre. A trained rim detector on other cameras will box the real rim, and the classifier's thresholds
+  (in rim-box widths) will need retraining on labeled film from that camera.
 - **Any film without the Hudl overlay.** `film run` refuses an `unknown` profile on purpose. No trained rim
   detector exists (YOLO-World cannot find these rims at any prompt or size: it boxes the ball instead),
-  there is no manual quarter marking, and made-or-missed has no source without the classifier.
+  and there is no manual quarter marking. Made-or-missed now has a source (`rimclf@v3`), trained on the Hudl view only.
 - **Missed shots are under-detected.** The ball detector catches 29 of the first 53 confirmed shots by
   itself; makes are rescued by the scoreboard, misses are not.
 - Shot locations, teams by jersey colour, tracker export, lineups, fouls by player, box score: not started
@@ -101,10 +108,16 @@ Game ids carry the **download** date (2025-02-05), not the real game date; Garre
   decisions is in `games/_backups/`. Interpret carries decisions onto re-detected shots
   (`carry_over_decisions`), and nothing ever deletes a decision.
 - `models/ball/v4` is in service (v1, v2 are older; v3 is an empty folder from an interrupted run).
-  `models/rimclf/v1` holds `not-good-enough.pt` and is ignored by the registry. `models/base/` holds the
+  `models/rimclf/v3` is in service (ball-path); `v1` (image classifier) and `v2` (ball-path, one game) hold
+  `not-good-enough.pt` and are ignored by the registry. `models/base/` holds the
   YOLO-World weights; `yolo11n.pt` re-downloads there on the next detector training.
-- `datasets/ball`: 82 labeled crops. `datasets/rimclf`: 296 montages built from the Marcos decisions.
-- `labels/rimclf/pending`: 101 warmup montages (optional labels). `labels/rim/pending`: 10 stale test frames.
+- `datasets/ball`: 82 labeled crops. `datasets/rimclf`: 449 labeled montages from both games (99 made, 131 missed,
+  219 none), each with its ball path in `datasets/rimclf/paths/<game_id>--<event_id>.json`. The montage is
+  what the coach sees in Label clips; the path is what trains. `datasets/rimclf-montage-v1` and
+  `labels/rimclf-montage-v1` are the old image-only dataset, set aside, safe to delete.
+- `games/<id>/ballpaths.json`: the ball path of every arrival, read once per ball-detector version.
+- `games/_backups/pre-rimclf-v3/`: events and reviews of both games from before the classifier went in.
+- `labels/rimclf/pending`: 315 montages (warmup cards and unreviewed motion cards; optional labels). `labels/rim/pending`: 10 stale test frames.
 
 ## What Garrett has asked for (requirements gathered in conversation)
 
@@ -142,14 +155,9 @@ The question he asked last: prioritise the no-scoreboard path, or feed a third s
 thing that path needs from more Hudl film is classifier data, and the Cactus Shadows game already
 supplies a second batch as soon as he reviews it.
 
-1. **Garrett reviews the Cactus Shadows game** (about 30 minutes; the first 125 cards are the strong
-   ones). This doubles the classifier's data and tests the detector on a second game.
-2. **Make `rimclf` clear the quality gate.** It is the only source of made-or-missed without a scoreboard.
-   Rebuild the dataset from both games (`film prelabel rimclf <id>` routes his decisions straight into
-   classes), then redesign the input before retraining: tighter crop on the rim and net, bigger tiles,
-   fewer frames centred on the half second after the ball reaches the rim. Training takes under a minute,
-   so iterate; `clf_try.py`-style experiments (fine-tune at lr 1e-4, head-only, class-weighted loss) are
-   cheap. Share one resize path between training (PIL) and prediction (cv2) while there.
+1. Done: Cactus Shadows reviewed.
+2. Done: `rimclf` clears the gate (see above). `film train rimclf` now scores by leave-one-game-out when the
+   dataset holds two or more games, and that score is what the gate reads.
 3. **A trained rim detector that is not tied to one camera.** On Hudl film the template matcher can label
    rims automatically (free training data for that view); for the NFHS and iPad views Garrett labels
    about 150 frames each in the Label rim tab. Then `film train rim`. Set `FILM_RIM_DETECTOR=template` on
@@ -178,6 +186,10 @@ Smaller debts are listed in `docs/superpowers/plans/2026-09-30-rung-1-execution-
   warning. It is harmless for file decoding; filter it out of logs.
 - The ball detector must run at the size it was trained at; `load_detector` reads `imgsz` from the model's
   manifest. `IMGSZ["ball"]` is 640.
+- `film interpret` now reads ball paths from the film when a classifier is in service: about 2 minutes on a
+  game's first run (ask Garrett first), seconds afterwards (`ballpaths.json`). `--no-classifier` skips it.
+- Games perceived before 2026-10-01 carry a blank box on the first rim row of each rim (a smoothing bug, fixed);
+  `rim_follower` and `rim_box_at` skip such rows.
 - A `film run --limit-s N` smoke test does not count as a finished Perceive; a later full run redoes it.
   `film run` otherwise skips finished stages; `--force` re-runs them.
 - Re-running Interpret changes event ids when arrival times shift. Decisions follow their shots, but back

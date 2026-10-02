@@ -40,6 +40,7 @@ def rim_follower(rims_df, rim_id: int | None, fps: float, max_gap_frames: int = 
 
     The Hudl camera pans, so the rim moves across the frame within a second; a montage must follow it."""
     df = rims_df if rim_id is None else rims_df[rims_df["track_id"] == rim_id]
+    df = df.dropna(subset=["x1", "y1", "x2", "y2"])
     boxes = {int(r.frame): (float(r.x1), float(r.y1), float(r.x2), float(r.y2)) for r in df.itertuples()}
     frames = np.array(sorted(boxes))
 

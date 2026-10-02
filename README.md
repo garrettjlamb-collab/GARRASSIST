@@ -38,7 +38,8 @@ uv run film eval 2025-02-05-jv-vs-marcos-tactical
 `film run` is `ingest` + `perceive` + `interpret` + `clips`. A 90 to 100 minute game takes about half an
 hour on the 8 GB laptop, almost all of it in `perceive`. Finished stages are skipped on a re-run; `--force`
 redoes them. `--limit-s 120` is a two-minute smoke test (a later run without it redoes the whole game).
-`interpret` and `clips` re-run in seconds to minutes and are safe to repeat: review decisions follow each
+`interpret` and `clips` re-run in seconds to minutes (the first `interpret` with a made-or-missed classifier in
+service reads each shot's ball path from the film, about 2 minutes) and are safe to repeat: review decisions follow each
 shot to its re-detected card and are never deleted.
 
 Nothing here uses the internet or any paid service once the weights are downloaded.
@@ -75,10 +76,12 @@ made-or-missed clips.
 2. **Ball.** `uv run film prelabel ball <game_id>` queues rim crops from the moments around the shots you
    confirmed; in **Label ball** drag a box round the ball and press S, or K when there is none (a skipped
    crop is never shown again). Then `uv run film train ball`: about 15 minutes on the laptop.
-3. **Made or missed.** `uv run film prelabel rimclf <game_id>` files a clip for every decided card straight
-   into made, missed or none, and queues the rest for **Label clips** (1 / 2 / 3). Then
-   `uv run film train rimclf` (under a minute). A classifier that does not clearly beat guessing is kept
-   out of service and the scoreboard stays in charge; one game is not enough data yet.
+3. **Made or missed.** `uv run film prelabel rimclf <game_id>` (about 4 minutes) files a clip for every decided
+   card straight into made, missed or none, stores the ball's path after the rim next to it, and queues the
+   rest for **Label clips** (1 / 2 / 3). Then `uv run film train rimclf` (seconds). The classifier reads the
+   ball's path, not the picture: a make drops straight down under the hoop, a miss goes sideways or back up.
+   With two or more games it is scored by training on the others and testing on the one held out; a
+   classifier that does not clearly beat guessing is kept out of service and the scoreboard stays in charge.
 4. **Rim, and not on Hudl film.** For other cameras: `uv run film prelabel rim <game_id>`, the **Label rim**
    tab, about 150 frames, `uv run film train rim`. A trained rim model outranks the templates once it
    exists; set `FILM_RIM_DETECTOR=template` to keep the templates on Hudl film.

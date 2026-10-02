@@ -40,3 +40,13 @@ def test_montage_follows_a_rim_that_moves_across_the_frame(synthetic_video):
         return float(tile[:, TILE // 2 - 6:TILE // 2 + 6].mean())
     assert all(centre_brightness(followed, i) > 150 for i in range(GRID * GRID))     # the bar stays centred in every tile
     assert sum(centre_brightness(fixed, i) > 150 for i in range(GRID * GRID)) <= 2   # a fixed crop loses it almost at once
+
+
+def test_rim_follower_ignores_rows_without_a_box():
+    """Games perceived before the smoothing fix carry a blank box on the first row of each rim."""
+    import pandas as pd
+    from film.train.montage import rim_follower
+
+    rows = [{"frame": 10, "track_id": 1, "x1": float("nan"), "y1": float("nan"), "x2": float("nan"), "y2": float("nan")},
+            {"frame": 12, "track_id": 1, "x1": 30.0, "y1": 100.0, "x2": 40.0, "y2": 110.0}]
+    assert rim_follower(pd.DataFrame(rows), rim_id=1, fps=10.0)(1.0) == (30.0, 100.0, 40.0, 110.0)

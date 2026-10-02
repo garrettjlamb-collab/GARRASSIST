@@ -1,13 +1,18 @@
 from __future__ import annotations
 
+import json
 import shutil
+from collections import defaultdict
 from pathlib import Path
+
+import numpy as np
 
 from film.common import registry
 from film.common.paths import datasets_dir
 from film.perceive.detectors import IMGSZ
 from film.train.datasets import data_yaml
-from film.train.rimclf import CLASSES, train_rimclf
+from film.interpret.ballpath import FEATURES, hoop_offset, path_features
+from film.train.rimclf import CLASSES, fit_rimclf
 
 MIN_GAIN_OVER_GUESSING = 0.10     # a classifier must beat the majority-class share of val by this much
 BASE_WEIGHTS = {"rim": "yolo11n.pt", "ball": "yolo11n.pt"}
@@ -53,26 +58,76 @@ def class_counts(dataset: str) -> dict[str, dict[str, int]]:
     return {split: {cls: sum(1 for _ in (root / split / cls).glob("*.jpg")) for cls in CLASSES} for split in ("train", "val")}
 
 
-def train_rimclf_version(device: str, epochs: int = 8, log=print, **kwargs) -> tuple[str, Path]:
-    counts = class_counts("rimclf")
-    empty = [f"{split}/{cls}" for split, per in counts.items() for cls, n in per.items() if n == 0]
+def rimclf_rows(log=print) -> tuple[np.ndarray, np.ndarray, list[str], list[str]]:
+    """Features, class index, game and split for every stored montage that has its ball path.
+
+    The hoop's offset is measured per game and rim from every path on disk, labeled or still pending:
+    it needs no labels, only arrivals."""
+    root = datasets_dir() / "rimclf"
+    paths = {p.stem: json.loads(p.read_text()) for p in sorted((root / "paths").glob("*.json"))}
+    by_rim = defaultdict(list)
+    for path in paths.values():
+        by_rim[(path["game"], path["rim"])].append(path)
+    offsets = {key: hoop_offset(group) for key, group in by_rim.items()}
+    rows, missing = [], 0
+    for split in ("train", "val"):
+        for k, cls in enumerate(CLASSES):
+            for image in sorted((root / split / cls).glob("*.jpg")):
+                path = paths.get(image.stem)
+                if path is None:
+                    missing += 1
+                    continue
+                rows.append((path_features(path, offsets[(path["game"], path["rim"])]), k, path["game"], split))
+    if missing:
+        log(f"rimclf: {missing} montage{'s' if missing != 1 else ''} left out, no ball path stored; "
+            f"re-run `film prelabel rimclf <game_id>` on a fresh dataset to include them")
+    X = np.array([r[0] for r in rows], dtype=float).reshape(len(rows), len(FEATURES))
+    return X, np.array([r[1] for r in rows], dtype=int), [r[2] for r in rows], [r[3] for r in rows]
+
+
+def train_rimclf_version(device: str | None = None, log=print, **kwargs) -> tuple[str, Path]:
+    """Fit the ball-path classifier on every labeled path and register it if it clearly beats guessing.
+
+    With two or more games it is scored the way a new game will meet it: trained on the others, tested on
+    the one held out. With one game it is scored on that game's held-out split."""
+    X, y, games, splits = rimclf_rows(log)
+    games_a, splits_a = np.array(games), np.array(splits)
+    empty = [cls for k, cls in enumerate(CLASSES) if not (y == k).any()]
     if empty:
-        raise ValueError(f"rimclf: these class folders are empty: {', '.join(empty)}; label more first")
-    version, out = registry.new_version_dir("rimclf")
-    log(f"train rimclf {version}: {counts}, {epochs} epochs on {device}")
-    info = train_rimclf(datasets_dir() / "rimclf", out, device, epochs=epochs, **kwargs)
-    # Always answering the commonest class scores this much on the held-out images. A classifier has to
-    # beat that clearly, or interpret is better off with the scoreboard alone.
-    val = counts["val"]
-    baseline = max(val.values()) / max(sum(val.values()), 1)
-    in_service = info["best_val_acc"] >= baseline + MIN_GAIN_OVER_GUESSING
-    if not in_service and (out / "best.pt").exists():
-        (out / "best.pt").rename(out / "not-good-enough.pt")          # latest() only sees best.pt
-    registry.write_manifest(out, name="rimclf", version=version, device=device,
-                            baseline_val_acc=round(baseline, 4), in_service=in_service, **info)
-    if in_service:
-        log(f"registered rimclf {version}: best val acc {info['best_val_acc']:.3f} (guessing scores {baseline:.3f})")
+        raise ValueError(f"rimclf: no {', '.join(empty)} clips with a ball path; label more first")
+    names = sorted(set(games))
+    predicted = np.full(len(y), -1)
+    if len(names) >= 2:
+        scored_by = "leave-one-game-out"
+        for game in names:
+            held = games_a == game
+            predicted[held] = fit_rimclf(X[~held], y[~held], **kwargs).scores(X[held]).argmax(axis=1)
     else:
-        log(f"rimclf {version} not put into service: val acc {info['best_val_acc']:.3f} does not clearly beat "
+        scored_by = "val-split"
+        held = splits_a == "val"
+        if not held.any() or held.all():
+            raise ValueError("rimclf: need clips in both the train and val splits; label more first")
+        predicted[held] = fit_rimclf(X[~held], y[~held], **kwargs).scores(X[held]).argmax(axis=1)
+    scored = predicted >= 0
+    accuracy = float((predicted[scored] == y[scored]).mean())
+    # Always answering the commonest class scores this much on the held-out clips. A classifier has to
+    # beat that clearly, or interpret is better off with the scoreboard alone.
+    baseline = float(np.bincount(y[scored], minlength=len(CLASSES)).max() / scored.sum())
+    shots = scored & (y < 2) & (predicted < 2)
+    made_vs_missed = float((predicted[shots] == y[shots]).mean()) if shots.any() else None
+    per_game = {g: round(float((predicted[scored & (games_a == g)] == y[scored & (games_a == g)]).mean()), 4)
+                for g in names if (scored & (games_a == g)).any()}
+    in_service = accuracy >= baseline + MIN_GAIN_OVER_GUESSING
+    version, out = registry.new_version_dir("rimclf")
+    fit_rimclf(X, y, **kwargs).save(out / ("best.pt" if in_service else "not-good-enough.pt"))   # latest() only sees best.pt
+    registry.write_manifest(
+        out, name="rimclf", version=version, kind="ball-path", features=FEATURES, scored_by=scored_by,
+        accuracy=round(accuracy, 4), baseline=round(baseline, 4), in_service=in_service,
+        made_vs_missed=None if made_vs_missed is None else round(made_vs_missed, 4), per_game=per_game,
+        items=int(len(y)), counts={cls: int((y == k).sum()) for k, cls in enumerate(CLASSES)}, games=names)
+    if in_service:
+        log(f"registered rimclf {version}: accuracy {accuracy:.3f} by {scored_by} (guessing scores {baseline:.3f})")
+    else:
+        log(f"rimclf {version} not put into service: accuracy {accuracy:.3f} by {scored_by} does not clearly beat "
             f"guessing ({baseline:.3f}); the scoreboard stays in charge of made-or-missed. Label more games and retrain.")
     return version, out
