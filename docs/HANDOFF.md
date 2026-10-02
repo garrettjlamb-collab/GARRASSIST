@@ -13,7 +13,7 @@ process more Hudl games first; the pipeline already handles those.
 Do these in order. Details for each are under "Next steps" below.
 
 1. Done: Garrett reviewed the Cactus Shadows game (121 decisions: 107 confirmed, 14 rejected).
-2. Done: the made-or-missed classifier (`rimclf`) is past its quality gate and in service as `rimclf@v3`.
+2. Done: the made-or-missed classifier (`rimclf`) is past its quality gate and in service as `rimclf@v4` (on `ball@v5`).
    It reads the ball's path after the rim, not pixels. It is right about three times in four, so the next
    gains come from ball labels just after the shot (see "What does not work yet").
 3. Train a rim detector that works from any camera angle (the current one is a template matcher that
@@ -35,7 +35,7 @@ rented GPU. He may buy a Mac mini later but has decided to prove it on the lapto
 
 ## State on 2026-10-01
 
-- Branch `ball-path-classifier` (not yet merged to `main`), 225 tests passing, **no git remote yet** (he will supply an SSH URL).
+- `main`, 229 tests passing, **no git remote yet** (he will supply an SSH URL).
 - Rung 1 of the spec is built and has run end to end on two real games.
 - Two games processed and reviewed by Garrett (Cactus Shadows: the 125 ball and scoreboard cards; its 108 motion cards are not reviewed).
 - Three more films are on disk that the pipeline **cannot run yet** because they have no burned-in scoreboard.
@@ -50,7 +50,7 @@ rented GPU. He may buy a Mac mini later but has decided to prove it on the lapto
 | Ball | YOLO11n trained on Garrett's 82 boxes, run on the 320 px rim crop enlarged to 640 (`ball@v4`) | 9,129 detections; 139 ball arrivals in live play |
 | Shot events | Ball crossing the rim line, with a peak-confidence gate; motion peaks as fallback; scoreboard-only events for baskets nothing else explains | 139 confirmed shots (66 made, 73 missed); 91 of 119 final points accounted for |
 | Made or missed | The scoreboard: did one team's score rise by 1-3 in the seconds after the arrival | Agrees with Garrett on 94% of confirmed shots |
-| Made or missed without a scoreboard | `rimclf@v3`: the ball detector at 15 fps for 1.4 s after each arrival, six features of the ball's path, a linear model (`film/interpret/ballpath.py`, `film/train/rimclf.py`) | 0.708 on three classes trained on one game and tested on the other (always guessing scores 0.488); 0.767 on made versus missed |
+| Made or missed without a scoreboard | `rimclf@v4`: the ball detector at 15 fps for 1.4 s after each arrival, six features of the ball's path, a linear model (`film/interpret/ballpath.py`, `film/train/rimclf.py`) | 0.748 on three classes trained on one game and tested on the other (always guessing scores 0.488); 0.785 on made versus missed (161 of 205). With `ball@v4` it was 0.708 and 0.767 |
 | Warmups | `film/interpret/phases.py`: only stretches whose clock starts at the quarter length are live | Flagged all 43 cards he skipped as warmups, none he confirmed |
 | Review | Local page, keys Enter / M / T / X / U / L / R / F / J / K | 266 of 267 live cards decided |
 
@@ -66,7 +66,11 @@ Cutting ~300 clips takes about 2 minutes. Training the ball detector at 640 px t
   95% of the time where it has a read, and still wins when the two disagree (`clf-scoreboard-disagree`).
   On the shots with no scoreboard read the classifier's call matched Garrett on 34 of 46 across the two
   games (in-sample). What limits it: the ball detector loses the ball in about a third of makes by 0.6 s
-  after arrival. More ball labels from the second after a shot are the direct fix.
+  after arrival. More ball labels from the second after a shot are the direct fix: the first such batch
+  (`film prelabel ball <id> --after-shots`, 87 boxes and 80 hard no-ball crops) moved it from 0.708 to 0.748.
+  The detector has now seen labels from both games, so leave-one-game-out is no longer fully blind for it.
+  Garrett presses K for "no ball" out of habit; a skipped crop is deleted, but its id carries the time and
+  rim, so it can be regenerated and saved empty (done once by hand for the crops `ball@v4` wrongly boxed).
   What was tried and failed, so nobody repeats it: an image classifier (ResNet18) on rim montages, four
   input designs (the old 96 px montage, tight full-resolution crops, a longer window, frame differences),
   each trained on one game and tested on the other: 0.51 to 0.61 on three classes and 0.55 to 0.60 on made
@@ -107,11 +111,13 @@ Game ids carry the **download** date (2025-02-05), not the real game date; Garre
   `clips/`, `review.json`. **`review.json` is Garrett's work and is irreplaceable**; a copy of his first 175
   decisions is in `games/_backups/`. Interpret carries decisions onto re-detected shots
   (`carry_over_decisions`), and nothing ever deletes a decision.
-- `models/ball/v4` is in service (v1, v2 are older; v3 is an empty folder from an interrupted run).
-  `models/rimclf/v3` is in service (ball-path); `v1` (image classifier) and `v2` (ball-path, one game) hold
+- `models/ball/v5` is in service: 169 boxes plus 83 no-ball crops, 38 minutes to train on the laptop (v4: 82 boxes;
+  v1, v2 are older; v3 is an empty folder from an interrupted run). `tracks.parquet` of both games was still
+  written by `ball@v4`: a `film perceive --force` (half an hour a game) would let v5 find arrivals too.
+  `models/rimclf/v4` is in service (ball-path, paths read by `ball@v5`; v3 was the same on `ball@v4`); `v1` (image classifier) and `v2` (ball-path, one game) hold
   `not-good-enough.pt` and are ignored by the registry. `models/base/` holds the
   YOLO-World weights; `yolo11n.pt` re-downloads there on the next detector training.
-- `datasets/ball`: 82 labeled crops. `datasets/rimclf`: 449 labeled montages from both games (99 made, 131 missed,
+- `datasets/ball`: 252 crops (169 with a ball box, 83 saved empty as "no ball here"). `datasets/rimclf`: 449 labeled montages from both games (99 made, 131 missed,
   219 none), each with its ball path in `datasets/rimclf/paths/<game_id>--<event_id>.json`. The montage is
   what the coach sees in Label clips; the path is what trains. `datasets/rimclf-montage-v1` and
   `labels/rimclf-montage-v1` are the old image-only dataset, set aside, safe to delete.
