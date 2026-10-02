@@ -126,12 +126,14 @@ class YoloDetector:
 RIM_DETECTOR_CHOICES = ("template", "trained")
 
 
-def load_detector(kind: str, device: str, profile: str | None = None):
+def load_detector(kind: str, device: str, profile: str | None = None, fallback: bool = True):
     """The latest trained detector of this kind, else (rims only) a template detector for the camera
     profile, else the open-vocabulary fallback so the pipeline still runs.
 
     FILM_RIM_DETECTOR=template puts the templates first for rims (when the profile has them), so a
-    trained rim model does not displace them; `trained` (or unset) keeps the ladder above."""
+    trained rim model does not displace them; `trained` (or unset) keeps the ladder above.
+
+    With `fallback=False` there is no open-vocabulary last resort: None when nothing fits this camera."""
     choice = os.environ.get("FILM_RIM_DETECTOR", "").strip().lower() or None
     if kind == "rim" and choice not in (None, *RIM_DETECTOR_CHOICES):
         raise ValueError(f"FILM_RIM_DETECTOR={choice!r}; use one of {', '.join(RIM_DETECTOR_CHOICES)}")
@@ -151,5 +153,7 @@ def load_detector(kind: str, device: str, profile: str | None = None):
         return YoloDetector.from_weights(folder / "best.pt", device, imgsz, name=f"{kind}@{version}")
     if templates is not None:
         return templates
+    if not fallback:
+        return None
     classes = RIM_WORLD_CLASSES if kind == "rim" else BALL_WORLD_CLASSES
     return YoloDetector.open_vocab(classes, device, IMGSZ[kind], name=f"{kind}@world-fallback")

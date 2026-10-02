@@ -83,13 +83,15 @@ def prelabel_rims(game_id: str, n: int = 150, detector=None, device: str | None 
                   margin_s: float = 30.0, log=print) -> int:
     """Propose rim and backboard boxes on evenly spaced frames for the coach to confirm."""
     m = Manifest.load(game_dir(game_id))
-    det = detector or load_detector("rim", pick_device(device), profile=m.profile)
+    # No open-vocabulary fallback here: on film it was not trained for it boxes the ball or nothing, and a
+    # wrong proposal costs the coach more than an empty frame.
+    det = detector or load_detector("rim", pick_device(device), profile=m.profile, fallback=False)
     count = 0
     for t in sample_times(m.duration_s, n, margin_s):
         frame = first_frame_at(Path(m.source), t, m.fps)
         if frame is None:
             continue
-        boxes = [b for b in det.detect(frame) if b.cls in CLASS_NAMES["rim"]]
+        boxes = [b for b in det.detect(frame) if b.cls in CLASS_NAMES["rim"]] if det is not None else []
         write_pending("rim", f"{game_id}_{int(round(t * 10)):06d}", frame, boxes, extra={"t": t})
         count += 1
     log(f"prelabel rim: {count} frames queued for {game_id}")

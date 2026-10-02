@@ -143,3 +143,19 @@ def test_prelabel_balls_after_shots_queues_the_crop_the_path_reader_sees(synthet
     pending = ds.read_pending("ball", ids[0])
     assert (pending["width"], pending["height"]) == (x2 - x1, y2 - y1) and pending["boxes"] == []
     assert prelabel_balls(m.game_id, n=10, ball_detector=balls, after_shots=True, log=lambda *a: None) == 0   # not queued twice
+
+
+def test_prelabel_rims_proposes_nothing_when_no_rim_model_fits_the_camera(synthetic_video, tmp_path, monkeypatch):
+    """The open-vocabulary fallback finds no rims on this film (it boxes the ball, or nothing): queue bare frames."""
+    from film.perceive.detectors import YoloDetector
+
+    _env(monkeypatch, tmp_path)
+    monkeypatch.setenv("FILM_MODELS_DIR", str(tmp_path / "models"))
+
+    def boom(*a, **k):
+        raise AssertionError("the open-vocabulary model must not be loaded to propose rims")
+
+    monkeypatch.setattr(YoloDetector, "open_vocab", classmethod(boom))
+    m = ingest(synthetic_video, date="2026-01-01", profile="nfhs-auto")
+    assert prelabel_rims(m.game_id, n=3, margin_s=0.5, log=lambda *a: None) == 3
+    assert all(ds.read_pending("rim", i)["boxes"] == [] for i in ds.list_pending("rim"))

@@ -25,6 +25,7 @@
   .keys { color:var(--muted); font-size:12px; margin-top:8px; }
   kbd { background:var(--line); padding:1px 5px; border-radius:4px; font-family:inherit; }
   canvas { max-width:100%; border:1px solid var(--line); border-radius:6px; cursor:crosshair; }
+  .card.wide { max-width:none; overflow:auto; } canvas.zoom { max-width:none; width:200%; }
   .row { display:flex; gap:12px; align-items:center; flex-wrap:wrap; }
   .btn { background:var(--accent); color:#fff; border:0; padding:6px 12px; border-radius:6px; cursor:pointer; }
   .list { margin-top:12px; max-height:240px; overflow:auto; font-size:12px; max-width:960px; }
@@ -228,8 +229,8 @@ function renderBoxLabel() {
   state.selected = -1;
   state.img = null;
   $("#label").innerHTML = `<div class="row"><b>${l.remaining} pending</b><span class="muted">${esc(l.image_id)}</span></div>
-    <div class="card"><canvas id="cv" width="${l.width}" height="${l.height}"></canvas>
-    <div class="keys">Drag to draw a box. Click a box to select it. <kbd>Delete</kbd> remove
+    <div class="card wide"><canvas id="cv" class="${state.zoom ? "zoom" : ""}" width="${l.width}" height="${l.height}"></canvas>
+    <div class="keys">Drag to draw a box. Click a box to select it. <kbd>Delete</kbd> remove <kbd>Z</kbd> zoom
     ${names.map((n, i) => `<kbd>${i + 1}</kbd> ${esc(n)}`).join(" ")} <kbd>S</kbd> save <kbd>K</kbd> skip</div></div>`;
   const img = new Image();
   img.onload = () => { state.img = img; drawBoxes(); };
@@ -266,7 +267,8 @@ window.addEventListener("mouseup", (ev) => {
     const p = canvasPos(ev);
     const x2 = Math.max(0, Math.min($("#cv").width, p.x)), y2 = Math.max(0, Math.min($("#cv").height, p.y));
     const names = CLASSES[state.tab];
-    const b = { cls: names[0], x1: Math.min(d.x1, x2), y1: Math.min(d.y1, y2), x2: Math.max(d.x1, x2), y2: Math.max(d.y1, y2) };
+    // On the rim tab the usual label is the backboard: big and crisp where the rim itself is a few pixels.
+    const b = { cls: state.tab === "rim" ? "backboard" : names[0], x1: Math.min(d.x1, x2), y1: Math.min(d.y1, y2), x2: Math.max(d.x1, x2), y2: Math.max(d.y1, y2) };
     if (b.x2 - b.x1 > 3 && b.y2 - b.y1 > 3) { state.boxes.push(b); state.selected = state.boxes.length - 1; }
   }
   drawBoxes();
@@ -309,6 +311,9 @@ async function boxKeys(ev) {
       await post(`/api/label/${state.tab}/${l.image_id}/boxes`, { boxes: state.boxes });
       await loadLabel();
     });
+  } else if (k === "z") {
+    state.zoom = !state.zoom;
+    $("#cv").classList.toggle("zoom", state.zoom);
   } else if (k === "k") {
     await guarded(async () => {
       await post(`/api/label/${state.tab}/${l.image_id}/skip`);
