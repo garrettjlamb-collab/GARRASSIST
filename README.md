@@ -76,6 +76,10 @@ made-or-missed clips.
 2. **Ball.** `uv run film prelabel ball <game_id>` queues rim crops from the moments around the shots you
    confirmed; in **Label ball** drag a box round the ball and press S, or K when there is none (a skipped
    crop is never shown again). Then `uv run film train ball`: about 15 minutes on the laptop.
+   `uv run film prelabel ball <game_id> --after-shots` instead queues crops from the second after each confirmed
+   shot where the detector lost the ball, which is what the made-or-missed classifier depends on. Those come
+   with no proposed box: box the ball and press S, or press S with no box when there is no ball in the crop
+   (that teaches the detector too); K only when you cannot tell.
 3. **Made or missed.** `uv run film prelabel rimclf <game_id>` (about 4 minutes) files a clip for every decided
    card straight into made, missed or none, stores the ball's path after the rim next to it, and queues the
    rest for **Label clips** (1 / 2 / 3). Then `uv run film train rimclf` (seconds). The classifier reads the
