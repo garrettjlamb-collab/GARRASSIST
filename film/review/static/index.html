@@ -101,9 +101,10 @@ async function loadGames() {
 async function selectGame(id) {
   state.game = id;
   state.events = await api(`/api/games/${id}/events`);
-  // Undecided game cards first, in game order; the weak motion-only cards after the ball and scoreboard ones; warmups last.
-  const isMotion = (e) => (e.signals || {}).source === "motion";
-  state.events.sort((a, b) => (isWarm(a) - isWarm(b)) || (!!a.decision - !!b.decision) || (isMotion(a) - isMotion(b)) || (a.t - b.t));
+  // Undecided game cards first, in game order; the weak ones (motion only, or the classifier saw nothing
+  // reach the rim) after the rest; warmups last.
+  const isWeak = (e) => (e.signals || {}).source === "motion" || (e.flags || []).includes("clf-none");
+  state.events.sort((a, b) => (isWarm(a) - isWarm(b)) || (!!a.decision - !!b.decision) || (isWeak(a) - isWeak(b)) || (a.t - b.t));
   state.index = 0;
   await loadGames();
   render();
