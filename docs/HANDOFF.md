@@ -99,7 +99,7 @@ there are iCloud placeholders with 0 bytes on disk; check with `du -k` before us
 | `~/Downloads/Arcadia High School vs Cactus Shadows Boys' JuniorVarsity Basketball - Tactical.mp4` | Same | Processed, **233 live cards waiting for Garrett's review** (125 ball/scoreboard first, 108 motion after) |
 | `~/Downloads/JV vs Deer Valley JV - Angle 1.mp4` | NFHS Network auto-camera; pans and zooms, no overlay. Not Garrett's gym (he said so 2026-10-02; the earlier "home gym" here was a guess), and he has no other NFHS film from it | Processed and reviewed (196 ball cards): `games/2025-02-05-jv-vs-deer-valley-jv-angle-1` |
 | `~/Desktop/Full Games/Prescott vs Arcadia .mp4` (space before `.mp4`) | iPad, a few rows up in the bleachers, home gym, opposite side from the Hudl camera; 1080p, sharp; wall scoreboard in frame at one end | Not processed. The easier iPad case |
-| `~/Desktop/Full Games/RKDA @ MDN 1:24.mp4` | iPad at court level at Marcos de Niza; 720p, motion blur on pans; wall scoreboard in frame at one end | Not processed. The hard iPad case |
+| `~/Desktop/Full Games/RKDA @ MDN 1:24.mp4` | iPad at court level at Marcos de Niza; 720p, motion blur on pans; wall scoreboard in frame at one end | Not processed. The hard iPad case. No Hudl copy exists (Garrett, 2026-10-02) |
 | `~/Downloads/State Championship.mp4` | NFHS broadcast with a score bug, 720p | Not examined beyond one frame |
 | `~/Desktop/Full Games/Arcadia Semi Final .mov` | Not examined | |
 
