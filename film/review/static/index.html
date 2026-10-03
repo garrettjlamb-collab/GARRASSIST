@@ -320,7 +320,7 @@ function renderBoxLabel() {
   $("#label").innerHTML = `<div class="row"><b>${l.remaining} pending</b><span class="muted">${esc(l.image_id)}</span></div>
     <div class="card wide"><canvas id="cv" class="${state.zoom ? "zoom" : ""}" width="${l.width}" height="${l.height}"></canvas>
     <div class="keys">Drag to draw a box. Click a box to select it. <kbd>Delete</kbd> remove <kbd>Z</kbd> zoom
-    ${names.map((n, i) => `<kbd>${i + 1}</kbd> ${esc(n)}`).join(" ")} <kbd>S</kbd> save <kbd>K</kbd> skip</div></div>`;
+    ${names.map((n, i) => `<kbd>${i + 1}</kbd> ${esc(n)}`).join(" ")} <kbd>S</kbd> save <kbd>D</kbd> skip</div></div>`;
   const img = new Image();
   img.onload = () => { state.img = img; drawBoxes(); };
   img.src = l.image_url;
@@ -403,7 +403,7 @@ async function boxKeys(ev) {
   } else if (k === "z") {
     state.zoom = !state.zoom;
     $("#cv").classList.toggle("zoom", state.zoom);
-  } else if (k === "k") {
+  } else if (k === "k" || k === "d") {          // D sits next to S: skip without moving the hand
     await guarded(async () => {
       await post(`/api/label/${state.tab}/${l.image_id}/skip`);
       await loadLabel();
