@@ -128,6 +128,10 @@ Game ids carry the **download** date (2025-02-05), not the real game date; Garre
 ## What Garrett has asked for (requirements gathered in conversation)
 
 1. **Full box score eventually**, as automated as possible; he accepts reviewing some of it.
+   He named **turnovers, steals and blocks** explicitly (2026-10-02): they must be in the box score, not
+   only shots, rebounds and fouls. A block is tied to a shot (a shot card can carry "blocked by #"); a
+   turnover, and a steal when one caused it, come from possession changes, which need the ball tracked
+   across the court and players identified (the box-score rung).
 2. **Jersey number + team is the identity key.** Names optional. When the machine is unsure of a player it
    should show him crops and let him type the number; worst case give him timestamps.
 3. **Substitutions, lineups, plus-minus, lineup efficiency.**
