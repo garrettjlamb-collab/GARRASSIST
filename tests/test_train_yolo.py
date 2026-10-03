@@ -140,3 +140,27 @@ def test_a_classifier_no_better_than_guessing_is_not_put_into_service(monkeypatc
     assert registry.latest("rimclf") is None and not (folder / "best.pt").exists() and (folder / "not-good-enough.pt").exists()
     assert info["in_service"] is False and info["baseline"] == round(1 / 3, 4)
     assert any("not put into service" in line for line in lines)
+
+
+def test_training_places_the_hoop_per_basket_side_not_per_track(monkeypatch, tmp_path):
+    """Each clip here comes from its own short rim track, with the ball arriving half a rim width right of the
+    box centre: only pooled by side can the column be found."""
+    import json
+    from film.train.rimclf_dataset import path_file
+    from film.train.train_yolo import rimclf_rows
+
+    _env(monkeypatch, tmp_path)
+    shifted = {cls: {k: (dx + 0.5, dy, c) for k, (dx, dy, c) in pts.items()} for cls, pts in PATHS.items()}
+    n = 0
+    for game in ("game-a", "game-b"):
+        for cls in ("made", "missed", "none"):
+            for i in range(8):
+                image_id = _rimclf_item(game, cls, i, points=shifted[cls])
+                stored = json.loads(path_file(image_id).read_text())
+                stored.update(rim=100 + n, side="left")
+                path_file(image_id).write_text(json.dumps(stored))
+                n += 1
+    X, y, games, splits = rimclf_rows(log=lambda *a: None)
+    from film.interpret.ballpath import FEATURES
+    made = X[y == 0][:, FEATURES.index("column_frames")]
+    assert (made > 0).all()

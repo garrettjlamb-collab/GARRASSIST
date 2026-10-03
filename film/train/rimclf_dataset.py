@@ -12,6 +12,7 @@ from film.common.manifest import Manifest
 from film.common.paths import datasets_dir, game_dir
 from film.interpret.ballpath import read_ball_path
 from film.interpret.events import load_events
+from film.perceive.rims import basket_sides
 from film.perceive.tracks import read_tracks
 from film.review.decisions import load_decisions
 from film.train.datasets import (
@@ -31,11 +32,13 @@ def path_file(image_id: str) -> Path:
     return datasets_dir() / "rimclf" / "paths" / f"{image_id}.json"
 
 
-def save_path(image_id: str, path: dict, game_id: str, rim_id: int, t: float, detector: str | None = None) -> None:
+def save_path(image_id: str, path: dict, game_id: str, rim_id: int, t: float, detector: str | None = None,
+              side: str | None = None) -> None:
     """The ball path next to the montage: the montage is what the coach looks at, the path is what trains."""
     target = path_file(image_id)
     target.parent.mkdir(parents=True, exist_ok=True)
-    target.write_text(json.dumps({"game": game_id, "rim": int(rim_id), "t": round(float(t), 3), "detector": detector, **path}))
+    target.write_text(json.dumps({"game": game_id, "rim": int(rim_id), "t": round(float(t), 3), "detector": detector,
+                                  "side": side, **path}))
 
 
 def load_path(image_id: str) -> dict | None:
@@ -104,6 +107,7 @@ def build_rimclf_candidates(game_id: str, n_none: int = 40, seed: int = 0, margi
     events = load_events(gd)
     rims = read_tracks(gd, "rim")
     decisions = load_decisions(gd)
+    sides = basket_sides(rims, m.width)
     if detector is None:
         from film.perceive.detectors import load_detector
 
@@ -111,12 +115,15 @@ def build_rimclf_candidates(game_id: str, n_none: int = 40, seed: int = 0, margi
 
     def store_path(image_id: str, t: float, box, rim_id: int) -> None:
         path = read_ball_path(source, t, box, m.width, m.height, detector, rim_at=rim_follower(rims, rim_id, m.fps))
-        save_path(image_id, path, game_id, rim_id, t, detector=detector.name)
+        save_path(image_id, path, game_id, rim_id, t, detector=detector.name, side=sides.get(int(rim_id)))
 
     def refresh_path(image_id: str, t: float, rim_id: int) -> None:
         """A path is only as good as the ball detector that read it: after a retrain, read it again."""
         stored = load_path(image_id)
         if stored is not None and stored.get("detector") == detector.name:
+            if stored.get("side") is None and sides.get(int(rim_id)) is not None:     # stored before sides existed
+                stored["side"] = sides[int(rim_id)]
+                path_file(image_id).write_text(json.dumps(stored))
             return
         box = rim_box_at(rims, int(round(t * m.fps)), rim_id)
         if box is not None:

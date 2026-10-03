@@ -108,3 +108,16 @@ def test_boxed_rims_win_over_backboards():
     rows = detect_rims(np.zeros((4, 4, 3), np.uint8), FakeDetector(per_call=[boxes]), RimTracker(), frame=0, t=0.0,
                        model_version="rim@v1")
     assert [r["x1"] for r in rows] == [10]
+
+
+def test_basket_sides_come_from_where_each_rim_track_sits_in_the_frame():
+    """A panning camera re-acquires the same basket under a new id every time; the hoop's offset from the
+    rim box depends on which basket it is, and that shows in which half of the frame the track lives."""
+    import pandas as pd
+    from film.perceive.rims import basket_sides
+
+    rows = ([{"track_id": 3, "x1": 100.0 + i, "x2": 200.0 + i} for i in range(5)]
+            + [{"track_id": 4, "x1": 1500.0, "x2": 1600.0}] * 3
+            + [{"track_id": 5, "x1": 300.0, "x2": 380.0}, {"track_id": 5, "x1": float("nan"), "x2": float("nan")}])
+    assert basket_sides(pd.DataFrame(rows), frame_w=1920) == {3: "left", 4: "right", 5: "left"}
+    assert basket_sides(pd.DataFrame(columns=["track_id", "x1", "x2"]), frame_w=1920) == {}

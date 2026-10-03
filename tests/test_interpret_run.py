@@ -129,3 +129,25 @@ def test_quarter_marks_set_warmups_and_quarters_on_a_fresh_interpret(synthetic_v
     save_quarters(gd, [(0.0, e.t - 0.5), (e.t - 0.1, e.t + 1)])
     [e] = interpret(m.game_id, use_classifier=False, log=lambda *a: None)
     assert "warmup" not in e.flags and e.quarter == 2
+
+
+def test_hoop_offset_is_shared_by_every_track_of_the_same_basket(monkeypatch):
+    """Ten short tracks of one basket each see one arrival: alone none can place the hoop, together they can."""
+    import pandas as pd
+    import film.interpret.run as R
+    from film.interpret.arrivals import Arrival
+
+    path = {"rim_w": 50.0, "frames": [{"dt": 0.0, "balls": [[0.5, 0.0, 0.8]]}, {"dt": 0.3, "balls": [[0.5, 0.6, 0.8]]}]}
+    arrivals = [Arrival(t=float(i), frame=i * 10, rim_id=10 + i, rim_box=(100.0, 60.0, 150.0, 90.0), source="ball", conf=0.8) for i in range(10)]
+    rims = pd.DataFrame([{"frame": a.frame, "track_id": a.rim_id, "x1": 100.0, "y1": 60.0, "x2": 150.0, "y2": 90.0} for a in arrivals])
+    monkeypatch.setattr(R, "ball_paths", lambda gd, m, arr, r, det: [path] * len(arr))
+    given = []
+
+    class Recording(FakeClassifier):
+        def predict(self, features):
+            given.append(dict(zip(R.FEATURES, features)))
+            return super().predict(features)
+
+    manifest = type("M", (), {"width": 1920})()
+    R.classify_arrivals(None, manifest, arrivals, rims, Recording(), None)
+    assert len(given) == 10 and all(f["column_frames"] > 0 and f["sideways"] < 0.05 for f in given)

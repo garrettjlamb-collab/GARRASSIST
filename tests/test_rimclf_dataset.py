@@ -186,6 +186,7 @@ def test_every_montage_gets_the_ball_path_the_classifier_trains_on(synthetic_vid
     for image_id in stored:
         path = load_path(image_id)
         assert path["game"] == m.game_id and path["rim"] == 1 and len(path["frames"]) > 5
+        assert path["side"] == "left"                              # the test rim sits at x 100-150 of a 320 px frame
         assert all(len(f["balls"]) == 1 for f in path["frames"])
     assert load_path("nothing-here") is None
 

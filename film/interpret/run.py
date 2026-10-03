@@ -12,11 +12,12 @@ from film.interpret.arrivals import Arrival, find_ball_arrivals, find_motion_arr
 from film.interpret.events import Event, build_shot_events, load_events, mark_dead_time, save_events, scoreboard_only_events
 from film.interpret.phases import game_phases
 from film.interpret.quarters import load_quarters, mark_quarters
+from film.perceive.rims import basket_sides
 from film.perceive.run import MOTION_COLUMNS
 from film.perceive.scoreboard import load_timeline
 from film.perceive.tracks import read_tracks
 from film.review.decisions import carry_over_decisions
-from film.interpret.ballpath import hoop_offset, path_features, read_ball_path
+from film.interpret.ballpath import FEATURES, hoop_offset, path_features, read_ball_path
 from film.train.montage import rim_follower
 from film.train.rimclf import RimClassifier
 
@@ -41,9 +42,11 @@ def ball_paths(gd: Path, m: Manifest, arrivals: list[Arrival], rims: pd.DataFram
 
 def classify_arrivals(gd: Path, m: Manifest, arrivals: list[Arrival], rims: pd.DataFrame, clf, detector) -> list[tuple[str, float]]:
     paths = ball_paths(gd, m, arrivals, rims, detector)
-    rim_ids = sorted({a.rim_id for a in arrivals})
-    offsets = {r: hoop_offset([p for a, p in zip(arrivals, paths) if a.rim_id == r]) for r in rim_ids}
-    return [clf.predict(path_features(p, offsets[a.rim_id]))[:2] for a, p in zip(arrivals, paths)]
+    # The hoop's offset from the rim box is a property of the basket, not of one stretch of tracking.
+    sides = basket_sides(rims, m.width)
+    side_of = [sides.get(a.rim_id, a.rim_id) for a in arrivals]
+    offsets = {s: hoop_offset([p for k, p in zip(side_of, paths) if k == s]) for s in set(side_of)}
+    return [clf.predict(path_features(p, offsets[s]))[:2] for s, p in zip(side_of, paths)]
 
 
 def interpret(game_id: str, classifier=None, use_classifier: bool = True, device: str | None = None,

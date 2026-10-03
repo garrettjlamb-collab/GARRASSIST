@@ -67,6 +67,19 @@ def rim_boxes(boxes: list[Box]) -> list[Box]:
     return rims or [rim_from_backboard(b) for b in boxes if b.cls == "backboard"]
 
 
+def basket_sides(rims_df: pd.DataFrame, frame_w: int) -> dict[int, str]:
+    """Which basket each rim track is: "left" when the track lives in the left half of the frame.
+
+    A panning camera gives the same basket a new id each time it comes back into view. The camera keeps
+    play in the middle, so the basket being attacked sits toward its own end of the frame; in a wide
+    shot both are in view, one in each half. Fixed-camera templates agree (left template, left half)."""
+    df = rims_df.dropna(subset=["x1", "x2"])
+    if df.empty:
+        return {}
+    cx = ((df["x1"] + df["x2"]) / 2).groupby(df["track_id"]).median()
+    return {int(track): ("left" if x < frame_w / 2 else "right") for track, x in cx.items()}
+
+
 def rim_row(frame: int, t: float, track_id: int, box: Box, model_version: str) -> dict:
     return {"frame": frame, "t": t, "kind": "rim", "track_id": track_id, "ref_id": None,
             "x1": box.x1, "y1": box.y1, "x2": box.x2, "y2": box.y2, "conf": box.conf,

@@ -61,14 +61,18 @@ def class_counts(dataset: str) -> dict[str, dict[str, int]]:
 def rimclf_rows(log=print) -> tuple[np.ndarray, np.ndarray, list[str], list[str]]:
     """Features, class index, game and split for every stored montage that has its ball path.
 
-    The hoop's offset is measured per game and rim from every path on disk, labeled or still pending:
+    The hoop's offset is measured per game and basket from every path on disk, labeled or still pending:
     it needs no labels, only arrivals."""
     root = datasets_dir() / "rimclf"
     paths = {p.stem: json.loads(p.read_text()) for p in sorted((root / "paths").glob("*.json"))}
-    by_rim = defaultdict(list)
+    def basket(path: dict) -> tuple:
+        """The basket a path belongs to: its side of the court when known, else its rim track."""
+        return (path["game"], path.get("side") or path["rim"])
+
+    by_basket = defaultdict(list)
     for path in paths.values():
-        by_rim[(path["game"], path["rim"])].append(path)
-    offsets = {key: hoop_offset(group) for key, group in by_rim.items()}
+        by_basket[basket(path)].append(path)
+    offsets = {key: hoop_offset(group) for key, group in by_basket.items()}
     rows, missing = [], 0
     for split in ("train", "val"):
         for k, cls in enumerate(CLASSES):
@@ -77,7 +81,7 @@ def rimclf_rows(log=print) -> tuple[np.ndarray, np.ndarray, list[str], list[str]
                 if path is None:
                     missing += 1
                     continue
-                rows.append((path_features(path, offsets[(path["game"], path["rim"])]), k, path["game"], split))
+                rows.append((path_features(path, offsets[basket(path)]), k, path["game"], split))
     if missing:
         log(f"rimclf: {missing} montage{'s' if missing != 1 else ''} left out, no ball path stored; "
             f"re-run `film prelabel rimclf <game_id>` on a fresh dataset to include them")
