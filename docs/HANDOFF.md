@@ -177,6 +177,11 @@ supplies a second batch as soon as he reviews it.
    re-queues a skipped crop. A batch from the 86 shots he confirmed last, plus the Cactus Shadows shots,
    should lift recall on misses. Consider an "N = no ball here" key that saves background negatives.
    Retire motion arrivals once ball recall makes them redundant.
+7. **Clip cutting (Garrett, 2026-10-02: "we have to find a way to improve the clip cutting / individual
+   clip length", parked for later).** Today every clip is a fixed 8 s before the arrival and 3 s after. On the
+   zoomed NFHS camera this shows a lot of dead time and makes neighbouring cards look like duplicates. Ask him
+   what bothers him most before changing it; requirement 4 above (end at the outcome, later start at the
+   possession) is the direction he gave earlier.
 7. **Rung 2 of the spec** (shot locations, teams by jersey colour, tracker export, high-school arc), then
    lineups and fouls. Each rung gets its own plan under `docs/superpowers/plans/`.
 
