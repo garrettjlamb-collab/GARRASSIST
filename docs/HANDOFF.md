@@ -35,7 +35,7 @@ rented GPU. He may buy a Mac mini later but has decided to prove it on the lapto
 
 ## State on 2026-10-01
 
-- `main`, 243 tests passing, **no git remote yet** (he will supply an SSH URL).
+- `main`, 246 tests passing, **no git remote yet** (he will supply an SSH URL).
 - Rung 1 of the spec is built and has run end to end on two real games.
 - Two games processed and reviewed by Garrett (Cactus Shadows: the 125 ball and scoreboard cards; its 108 motion cards are not reviewed).
 - Three more films are on disk that the pipeline **cannot run yet** because they have no burned-in scoreboard.
@@ -147,6 +147,24 @@ Game ids carry the **download** date (2025-02-05), not the real game date; Garre
   a second NFHS game from anywhere would still help the classifier. Parked: clip length; box-score stats including
   turnovers, steals and blocks.
 - Label tabs: `D` skips (next to `S`); `S` with no box saves "no ball here". Garrett reads K/D as "can't tell".
+
+## Update 2026-10-03: the first iPad game (Prescott), and baskets by side
+
+- **`rim@v2`**: backboard detector retrained on Deer Valley + Prescott frames (276; `rim@v1` had already boxed 8 of
+  9 Prescott backboards unprompted). The run hit the session's 2-hour background limit at round 45 of 50 because
+  the laptop was swapping; `best.pt` (round 13, mAP50 0.995) was registered by hand, noted in its manifest.
+  **Long jobs on this laptop: check `sysctl vm.swapusage` first, and keep one job under 2 hours.**
+- **Prescott** (`games/2026-10-01-prescott-vs-arcadia`, profile `handheld`, 25 minutes to process): 175 cards.
+  Garrett reviewed 119: strong cards **90 of 111 real (81%)**, as good as Hudl. Made/missed was a coin toss.
+  The film holds game time only (the iPad was stopped at breaks), so there are no warmups.
+- **Baskets by side** (`basket_sides`, `film/perceive/rims.py`): a panning camera gives a basket a new rim id each
+  time it returns (Deer Valley 198 ids, Prescott 90), so the per-id hoop offset was mostly unmeasured. A track is
+  the left basket when it lives in the left half of the frame; offsets are pooled per side. They agree across
+  cameras: about +0.5 rim widths left, -0.5 right.
+- **`rimclf@v8`** in service: 0.624 leave-one-game-out over four games (guessing 0.505). Made versus missed with
+  the game held out: Cactus Shadows ~0.81, Marcos ~0.72, Prescott 0.66 (was 0.54 before sides), **Deer Valley
+  0.55, still chance**. Deer Valley is the open problem: tight zoom, 47% card precision, no signal in the path
+  features even when trained on its own other half. Look at its clips before more labels.
 
 ## What Garrett has asked for (requirements gathered in conversation)
 
