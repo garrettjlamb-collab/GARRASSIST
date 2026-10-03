@@ -97,7 +97,7 @@ there are iCloud placeholders with 0 bytes on disk; check with `du -k` before us
 |---|---|---|
 | `~/Downloads/JV vs Marcos - Tactical.mp4` | Hudl Focus, home gym, burned-in scoreboard | Processed and reviewed: `games/2025-02-05-jv-vs-marcos-tactical` |
 | `~/Downloads/Arcadia High School vs Cactus Shadows Boys' JuniorVarsity Basketball - Tactical.mp4` | Same | Processed, **233 live cards waiting for Garrett's review** (125 ball/scoreboard first, 108 motion after) |
-| `~/Downloads/JV vs Deer Valley JV - Angle 1.mp4` | NFHS Network auto-camera, home gym; pans and zooms, no overlay | Refused: profile unknown, templates find no rims |
+| `~/Downloads/JV vs Deer Valley JV - Angle 1.mp4` | NFHS Network auto-camera; pans and zooms, no overlay. Not Garrett's gym (he said so 2026-10-02; the earlier "home gym" here was a guess), and he has no other NFHS film from it | Processed and reviewed (196 ball cards): `games/2025-02-05-jv-vs-deer-valley-jv-angle-1` |
 | `~/Desktop/Full Games/Prescott vs Arcadia .mp4` (space before `.mp4`) | iPad, a few rows up in the bleachers, home gym, opposite side from the Hudl camera; 1080p, sharp; wall scoreboard in frame at one end | Not processed. The easier iPad case |
 | `~/Desktop/Full Games/RKDA @ MDN 1:24.mp4` | iPad at court level at Marcos de Niza; 720p, motion blur on pans; wall scoreboard in frame at one end | Not processed. The hard iPad case |
 | `~/Downloads/State Championship.mp4` | NFHS broadcast with a score bug, 720p | Not examined beyond one frame |
@@ -143,8 +143,8 @@ Game ids carry the **download** date (2025-02-05), not the real game date; Garre
   without training on it 0.54 (guessing 0.61), made vs missed 0.60, flags 77 of 144 fake cards while keeping
   81 of 92 real shots. Hudl games: 0.745 / 0.723 (were 0.771 / 0.737); the scoreboard still decides there.
   Cards the classifier calls empty now sort with the motion cards.
-- **Next:** another NFHS game reviewed the same way (one game of a camera is not enough), then the iPad
-  angle (Prescott first: backboard labels, then shots). Parked: clip length; box-score stats including
+- **Next:** the iPad angle (Prescott: backboard labels, then shots). Garrett has no more NFHS film from that gym;
+  a second NFHS game from anywhere would still help the classifier. Parked: clip length; box-score stats including
   turnovers, steals and blocks.
 - Label tabs: `D` skips (next to `S`); `S` with no box saves "no ball here". Garrett reads K/D as "can't tell".
 
@@ -197,7 +197,7 @@ supplies a second batch as soon as he reviews it.
    Hudl film so the trained model does not displace the templates there.
 4. **A `no-scoreboard` profile:** manual quarter marks in review setup (spec section 8) for quarter, clock
    and warmup time; score summed from confirmed shots; Interpret using the classifier alone. Test on
-   `JV vs Deer Valley JV - Angle 1.mp4` first (same gym, same ball), then `Prescott vs Arcadia .mp4`.
+   `JV vs Deer Valley JV - Angle 1.mp4` first (done 2026-10-02), then `Prescott vs Arcadia .mp4`.
 5. **A wall-scoreboard reader** for film where the gym's scoreboard is in frame at one end (both iPad
    games). Intermittent reads are enough to check makes and track the period.
 6. **More ball labels.** `film prelabel ball <id>` now samples densely around confirmed shots and never
