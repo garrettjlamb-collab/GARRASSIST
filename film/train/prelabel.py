@@ -11,8 +11,9 @@ from film.common.paths import game_dir
 from film.common.video import iter_frames
 from film.interpret.ballpath import path_crop_box
 from film.interpret.events import load_events
-from film.perceive.ball import crop, rim_crop_box
+from film.perceive.ball import detector_tile, rim_crop_box
 from film.perceive.detectors import load_detector
+from film.perceive.rims import rim_boxes
 from film.perceive.tracks import read_tracks
 from film.review.decisions import load_decisions
 from film.train.datasets import CLASS_NAMES, is_known, write_pending
@@ -119,7 +120,7 @@ def prelabel_balls(game_id: str, n: int = 300, rim_detector=None, ball_detector=
             frame = first_frame_at(Path(m.source), t, m.fps) if rim is not None else None
             if frame is None:
                 continue
-            tile = crop(frame, path_crop_box(rim, m.width, m.height))
+            tile, _ = detector_tile(frame, path_crop_box(rim, m.width, m.height))
             # No proposed boxes: the detector had no confident ball here, and its weak guesses (a water cooler,
             # a wall pad) are mostly wrong. Saved with no box, the crop teaches it exactly that.
             write_pending("ball", image_id, tile, [], extra={"t": t})
@@ -136,9 +137,9 @@ def prelabel_balls(game_id: str, n: int = 300, rim_detector=None, ball_detector=
         if frame is None:
             continue
         h, w = frame.shape[:2]
-        rims = sorted((b for b in rim_det.detect(frame) if b.cls == "rim"), key=lambda b: -b.conf)[:2]
+        rims = sorted(rim_boxes(rim_det.detect(frame)), key=lambda b: -b.conf)[:2]
         for i, rim in enumerate(rims):
-            tile = crop(frame, rim_crop_box(rim, w, h))
+            tile, _ = detector_tile(frame, rim_crop_box(rim, w, h))
             boxes = [b for b in ball_det.detect(tile) if b.cls == "ball"]
             image_id = f"{game_id}_{int(round(t * 10)):06d}_r{i}"
             if is_known("ball", image_id):                    # already queued, labeled or skipped on an earlier run

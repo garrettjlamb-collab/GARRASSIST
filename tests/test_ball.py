@@ -35,3 +35,30 @@ def test_detect_ball_maps_back_and_keeps_best():
 def test_no_ball_no_row():
     det = FakeDetector(per_call=[[]])
     assert detect_ball_near_rim(np.zeros((1080, 1920, 3), np.uint8), [(1, Box(900, 500, 950, 530, 0.9, "rim"))], det, 0, 0.0, "x") == []
+
+
+def test_a_big_rim_gets_a_proportionally_bigger_crop():
+    """A zoomed camera shows the rim (and the ball) bigger than the Hudl view the detector was trained on:
+    the crop grows with the rim so that, shrunk to the detector's size, everything looks the size it learned."""
+    from film.perceive.ball import CROP_WIDTHS
+
+    hudl = Box(900, 500, 985, 520, 0.9, "rim")                      # 85 wide: the biggest Hudl rim box
+    assert rim_crop_box(hudl, 1920, 1080)[2] - rim_crop_box(hudl, 1920, 1080)[0] == CROP_SIZE
+    zoomed = Box(900, 500, 1050, 536, 0.9, "rim")                   # 150 wide
+    x1, y1, x2, y2 = rim_crop_box(zoomed, 1920, 1080)
+    assert x2 - x1 == y2 - y1 == round(CROP_WIDTHS * 150) and x1 + (x2 - x1) / 2 == zoomed.cx
+
+
+def test_detect_ball_on_a_big_crop_shrinks_it_and_maps_back():
+    rim = Box(900, 500, 1050, 536, 0.9, "rim")
+    cb = rim_crop_box(rim, 1920, 1080)
+    scale = (cb[2] - cb[0]) / CROP_SIZE
+    seen = []
+
+    def fn(image, i):
+        seen.append(image.shape[:2])
+        return [Box(100, 100, 120, 120, 0.8, "ball")]
+
+    [r] = detect_ball_near_rim(np.zeros((1080, 1920, 3), np.uint8), [(1, rim)], FakeDetector(fn=fn), 0, 0.0, "x")
+    assert seen == [(CROP_SIZE, CROP_SIZE)]
+    assert abs(r["x1"] - (cb[0] + 100 * scale)) < 1e-6 and abs(r["y2"] - (cb[1] + 120 * scale)) < 1e-6

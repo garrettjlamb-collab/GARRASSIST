@@ -113,7 +113,10 @@ def test_film_rim_detector_env_picks_templates_or_trained(monkeypatch, tmp_path)
     monkeypatch.setattr(YoloDetector, "from_weights", classmethod(lambda cls, w, device, imgsz, conf=0.25, name="": "trained"))
     monkeypatch.setattr(YoloDetector, "open_vocab", classmethod(lambda cls, classes, device, imgsz, conf=0.15, name="", weights=None: "world"))
     monkeypatch.delenv("FILM_RIM_DETECTOR", raising=False)
-    assert load_detector("rim", "cpu", profile="hudl-tactical") == "trained"      # the ladder: trained outranks templates
+    # A camera with templates keeps them: they were measured on that camera, and a trained rim model is
+    # trained on other cameras (it boxes backboards, not the template's strip).
+    assert isinstance(load_detector("rim", "cpu", profile="hudl-tactical"), TemplateRimDetector)
+    assert load_detector("rim", "cpu", profile="nfhs-auto") == "trained"
     monkeypatch.setenv("FILM_RIM_DETECTOR", "template")
     assert isinstance(load_detector("rim", "cpu", profile="hudl-tactical"), TemplateRimDetector)
     assert load_detector("rim", "cpu", profile="test") == "trained"              # no templates for this profile: the ladder

@@ -127,11 +127,11 @@ RIM_DETECTOR_CHOICES = ("template", "trained")
 
 
 def load_detector(kind: str, device: str, profile: str | None = None, fallback: bool = True):
-    """The latest trained detector of this kind, else (rims only) a template detector for the camera
-    profile, else the open-vocabulary fallback so the pipeline still runs.
+    """For rims, the camera profile's templates when it has them (they were measured on that camera); else
+    the latest trained detector of this kind; else the open-vocabulary fallback so the pipeline still runs.
 
-    FILM_RIM_DETECTOR=template puts the templates first for rims (when the profile has them), so a
-    trained rim model does not displace them; `trained` (or unset) keeps the ladder above.
+    FILM_RIM_DETECTOR=trained puts a trained rim model ahead of the templates; `template` (or unset) keeps
+    the templates first.
 
     With `fallback=False` there is no open-vocabulary last resort: None when nothing fits this camera."""
     choice = os.environ.get("FILM_RIM_DETECTOR", "").strip().lower() or None
@@ -142,7 +142,7 @@ def load_detector(kind: str, device: str, profile: str | None = None, fallback: 
         from film.perceive.rim_templates import TemplateRimDetector
 
         templates = TemplateRimDetector.for_profile(profile)
-    if templates is not None and choice == "template":
+    if templates is not None and choice != "trained":
         return templates
     found = registry.latest(kind)
     if found is not None:

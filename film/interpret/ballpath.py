@@ -4,7 +4,7 @@ from pathlib import Path
 from statistics import median
 
 from film.common.video import iter_frames
-from film.perceive.ball import crop
+from film.perceive.ball import crop_side, detector_tile
 
 PATH_FPS = 15.0
 LEAD_S = 0.2
@@ -25,7 +25,7 @@ FEATURES = ["column_frames", "depth", "sideways", "back_up", "seen", "peak_conf"
 
 def path_crop_box(rim_box, frame_w: int, frame_h: int, size: int = CROP_SIZE) -> tuple[int, int, int, int]:
     """A native-resolution square around the rim with more room below it than above, clamped to the frame."""
-    size = min(size, frame_w, frame_h)
+    size = crop_side(rim_box[2] - rim_box[0], frame_w, frame_h, size)
     cx, cy = (rim_box[0] + rim_box[2]) / 2, (rim_box[1] + rim_box[3]) / 2 + DOWN_SHIFT * size
     x1 = max(0, min(int(round(cx - size / 2)), frame_w - size))
     y1 = max(0, min(int(round(cy - size / 2)), frame_h - size))
@@ -44,14 +44,15 @@ def read_ball_path(source: Path, t: float, rim_box, frame_w: int, frame_h: int, 
         if here is not None:
             rim_box = here
         box = path_crop_box(rim_box, frame_w, frame_h)
-        crops.append(crop(frame, box))
-        rims.append((rim_box, box))
+        tile, scale = detector_tile(frame, box)
+        crops.append(tile)
+        rims.append((rim_box, box, scale))
         times.append(frame_t)
     frames = []
-    for frame_t, (rim, box), found in zip(times, rims, detector.detect_many(crops)):
+    for frame_t, (rim, box, scale), found in zip(times, rims, detector.detect_many(crops)):
         width = max(rim[2] - rim[0], 1.0)
         rcx, rcy = (rim[0] + rim[2]) / 2, (rim[1] + rim[3]) / 2
-        balls = [[round((b.cx + box[0] - rcx) / width, 3), round((b.cy + box[1] - rcy) / width, 3), round(b.conf, 3)]
+        balls = [[round((b.cx * scale + box[0] - rcx) / width, 3), round((b.cy * scale + box[1] - rcy) / width, 3), round(b.conf, 3)]
                  for b in found if b.cls == "ball"]
         frames.append({"dt": round(frame_t - t, 3), "balls": balls})
     return {"rim_w": float(rim_box[2] - rim_box[0]), "frames": frames}

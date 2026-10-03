@@ -86,3 +86,25 @@ def test_smoothing_keeps_the_first_box_of_each_rim_when_frames_are_nullable_inte
              "y2": 80.0, "conf": 0.9} for tid in (1, 2) for f in range(6)]
     out = smooth_rims(rows_to_frame(rows))
     assert len(out) == 12 and not out[["x1", "y1", "x2", "y2"]].isna().any().any()
+
+
+
+def test_a_backboard_stands_in_for_the_rim_when_no_rim_is_boxed():
+    """A trained model on NFHS or iPad film boxes backboards: the rim reference is a strip near its bottom,
+    centred, like the Hudl templates' box."""
+    from film.perceive.rims import rim_from_backboard
+
+    board = Box(100, 200, 300, 320, 0.8, "backboard")                       # 200 wide, 120 tall
+    r = rim_from_backboard(board)
+    assert r.cls == "rim" and r.conf == 0.8 and r.cx == 200 and r.w == 120
+    assert board.y1 + 0.5 * board.h < r.cy < board.y2 and r.y2 <= board.y2 and r.h < 0.3 * r.w
+    rows = detect_rims(np.zeros((4, 4, 3), np.uint8), FakeDetector(per_call=[[board]]), RimTracker(), frame=0, t=0.0,
+                       model_version="rim@v1")
+    assert len(rows) == 1 and (rows[0]["x1"], rows[0]["x2"]) == (r.x1, r.x2)
+
+
+def test_boxed_rims_win_over_backboards():
+    boxes = [rim(10, 0.5), Box(0, 0, 50, 30, 0.9, "backboard")]
+    rows = detect_rims(np.zeros((4, 4, 3), np.uint8), FakeDetector(per_call=[boxes]), RimTracker(), frame=0, t=0.0,
+                       model_version="rim@v1")
+    assert [r["x1"] for r in rows] == [10]

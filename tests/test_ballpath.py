@@ -80,3 +80,23 @@ def test_read_ball_path_follows_a_moving_rim(video_factory):
     read_ball_path(video, 1.0, rim, 320, 240, det, rim_at=lambda t: moved if t >= 1.5 else None)
     assert abs(left_edges[0] - fixed[0]) < 3                                    # before the rim moves: the same crop
     assert 14 < left_edges[-1] - fixed[-1] < 26                                 # after: the crop went 40 px right with it
+
+
+def test_a_big_rim_is_read_at_the_detectors_size_and_in_rim_widths(video_factory):
+    from film.interpret.ballpath import CROP_SIZE
+
+    video = video_factory(size=(1280, 720))
+    rim = (400.0, 200.0, 550.0, 236.0)                                           # 150 wide, centre (475, 218)
+    x1, y1, x2, y2 = path_crop_box(rim, 1280, 720)
+    scale = (x2 - x1) / CROP_SIZE
+    assert scale > 1.5
+    shapes = []
+
+    def fn(image, i):
+        shapes.append(image.shape[:2])
+        cx, cy = (475 - x1) / scale, (293 - y1) / scale                         # a ball 75 px below the rim's centre
+        return [Box(cx - 5, cy - 5, cx + 5, cy + 5, 0.6, "ball")]
+
+    path = read_ball_path(video, 1.0, rim, 1280, 720, FakeDetector(fn=fn))
+    assert set(shapes) == {(CROP_SIZE, CROP_SIZE)}
+    assert path["frames"][3]["balls"] == [[0.0, 0.5, 0.6]]
