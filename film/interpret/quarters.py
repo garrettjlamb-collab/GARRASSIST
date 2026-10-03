@@ -60,6 +60,8 @@ def apply_quarters(gd: Path) -> dict:
     from film.interpret.events import load_events, save_events
 
     quarters = load_quarters(gd)
+    if not (Path(gd) / "events.json").exists():          # still being processed: interpret applies them
+        return {"events": 0, "warmups": 0, "quarters": len(quarters)}
     events = load_events(gd)
     warmups = mark_quarters(events, quarters) if quarters else sum("warmup" in e.flags for e in events)
     save_events(gd, events)

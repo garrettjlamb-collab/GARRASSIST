@@ -48,3 +48,13 @@ def test_apply_quarters_rewrites_the_cards_without_rerunning_anything(synthetic_
     assert apply_quarters(gd) == {"events": 3, "warmups": 1, "quarters": 2}
     events = load_events(gd)
     assert [(e.quarter, "warmup" in e.flags) for e in events] == [(None, True), (1, False), (2, False)]
+
+
+def test_marks_saved_before_the_events_exist_wait_for_them(synthetic_video, tmp_path, monkeypatch):
+    """The coach can mark quarters while the game is still being processed; no empty events file is written."""
+    monkeypatch.setenv("FILM_GAMES_DIR", str(tmp_path / "games"))
+    m = ingest(synthetic_video, date="2026-01-01", profile="nfhs-auto")
+    gd = game_dir(m.game_id)
+    save_quarters(gd, [(1.0, 2.0)])
+    assert apply_quarters(gd) == {"events": 0, "warmups": 0, "quarters": 1}
+    assert not (gd / "events.json").exists()
