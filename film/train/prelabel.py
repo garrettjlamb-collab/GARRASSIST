@@ -100,11 +100,12 @@ def prelabel_rims(game_id: str, n: int = 150, detector=None, device: str | None 
 
 
 def prelabel_balls(game_id: str, n: int = 300, rim_detector=None, ball_detector=None, device: str | None = None,
-                   margin_s: float = 30.0, after_shots: bool = False, log=print) -> int:
+                   margin_s: float = 30.0, after_shots: bool = False, propose: bool = True, log=print) -> int:
     """Propose ball boxes inside rim crops, sampled around known arrivals when events exist.
 
     With `after_shots`, the crops are instead the ones the made-or-missed classifier's path reader sees, at
-    the moments after confirmed shots where the detector lost the ball."""
+    the moments after confirmed shots where the detector lost the ball. With `propose=False` the crops are
+    queued bare, for a gym where the detector's guesses are mostly wrong."""
     gd = game_dir(game_id)
     m = Manifest.load(gd)
     device = pick_device(device)
@@ -128,7 +129,7 @@ def prelabel_balls(game_id: str, n: int = 300, rim_detector=None, ball_detector=
         log(f"prelabel ball: {count} after-shot crops queued for {game_id}")
         return count
     rim_det = rim_detector or load_detector("rim", device, profile=m.profile)
-    ball_det = ball_detector or load_detector("ball", device)
+    ball_det = (ball_detector or load_detector("ball", device)) if propose else None
     times = ball_sample_times(gd) or sample_times(m.duration_s, n, margin_s)
     times = spread([t for t in times if 0.0 <= t < m.duration_s], n)
     count = 0
@@ -140,7 +141,7 @@ def prelabel_balls(game_id: str, n: int = 300, rim_detector=None, ball_detector=
         rims = sorted(rim_boxes(rim_det.detect(frame)), key=lambda b: -b.conf)[:2]
         for i, rim in enumerate(rims):
             tile, _ = detector_tile(frame, rim_crop_box(rim, w, h))
-            boxes = [b for b in ball_det.detect(tile) if b.cls == "ball"]
+            boxes = [b for b in ball_det.detect(tile) if b.cls == "ball"] if propose else []
             image_id = f"{game_id}_{int(round(t * 10)):06d}_r{i}"
             if is_known("ball", image_id):                    # already queued, labeled or skipped on an earlier run
                 continue

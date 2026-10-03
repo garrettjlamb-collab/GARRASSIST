@@ -159,3 +159,16 @@ def test_prelabel_rims_proposes_nothing_when_no_rim_model_fits_the_camera(synthe
     m = ingest(synthetic_video, date="2026-01-01", profile="nfhs-auto")
     assert prelabel_rims(m.game_id, n=3, margin_s=0.5, log=lambda *a: None) == 3
     assert all(ds.read_pending("rim", i)["boxes"] == [] for i in ds.list_pending("rim"))
+
+
+def test_prelabel_balls_can_queue_crops_without_the_detectors_guesses(synthetic_video, tmp_path, monkeypatch):
+    """In a gym the ball detector has never seen, its guesses are mostly banners and pom-poms: an empty crop
+    the coach saves as it is teaches more than five wrong boxes he has to delete."""
+    _env(monkeypatch, tmp_path)
+    m = ingest(synthetic_video, date="2026-01-01", profile="test")
+    save_events(game_dir(m.game_id), [_shot("shot-000010-r1", 1.0)])
+    rims = FakeDetector(fn=lambda img, i: [Box(100, 60, 150, 90, 0.8, "rim")])
+    balls = FakeDetector(fn=lambda img, i: [Box(5, 5, 15, 15, 0.6, "ball")])
+    n = prelabel_balls(m.game_id, n=10, rim_detector=rims, ball_detector=balls, propose=False, log=lambda *a: None)
+    assert n == 5 and balls.calls == 0
+    assert all(ds.read_pending("ball", i)["boxes"] == [] for i in ds.list_pending("ball"))
