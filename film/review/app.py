@@ -12,6 +12,8 @@ from film.common.manifest import Manifest
 from film.common.paths import game_dir, games_dir
 from film.export.clips import clip_path
 from film.interpret.events import load_events
+from film.interpret.quarters import apply_quarters, load_quarters, save_quarters
+from film.perceive.scoreboard import has_scoreboard
 from film.perceive.detectors import Box
 from film.review.decisions import apply_decisions, load_decisions, save_decision
 from film.train import datasets as ds
@@ -42,6 +44,10 @@ class ClassLabel(BaseModel):
     cls: str
 
 
+class Quarters(BaseModel):
+    quarters: list[tuple[float, float]]
+
+
 def _gd(game_id: str) -> Path:
     gd = game_dir(game_id)
     if not (gd / "manifest.json").exists():
@@ -54,6 +60,7 @@ def _summary(gd: Path) -> dict:
     events = load_events(gd)
     decisions = load_decisions(gd)
     return {"game_id": m.game_id, "profile": m.profile, "date": m.date, "events": len(events),
+            "scoreboard": has_scoreboard(m.profile), "quarters": len(load_quarters(gd)),
             "decided": sum(1 for e in events if e.id in decisions),
             "stages": {name: info.get("status") for name, info in m.stages.items()}}
 
@@ -140,6 +147,20 @@ def create_app() -> FastAPI:
             return save_decision(gd, event_id, decision.model_dump(exclude_unset=True))
         except ValueError as exc:
             raise HTTPException(400, str(exc))
+
+    @app.get("/api/games/{game_id}/quarters")
+    def quarters(game_id: str):
+        gd = _gd(game_id)
+        return {"quarters": [list(q) for q in load_quarters(gd)], "scoreboard": has_scoreboard(Manifest.load(gd).profile)}
+
+    @app.post("/api/games/{game_id}/quarters")
+    def set_quarters(game_id: str, body: Quarters):
+        gd = _gd(game_id)
+        try:
+            save_quarters(gd, body.quarters)
+        except ValueError as exc:
+            raise HTTPException(400, str(exc))
+        return apply_quarters(gd)
 
     @app.get("/clips/{game_id}/{event_id}.mp4")
     def clip(game_id: str, event_id: str):

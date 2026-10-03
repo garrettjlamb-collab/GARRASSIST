@@ -42,12 +42,14 @@
 <main>
   <nav>
     <button data-tab="shots" class="sel">Shots</button>
+    <button data-tab="quarters">Quarters</button>
     <button data-tab="rim">Label rim</button>
     <button data-tab="ball">Label ball</button>
     <button data-tab="rimclf">Label clips</button>
   </nav>
   <div id="status"></div>
   <section id="shots"></section>
+  <section id="quarters" hidden></section>
   <section id="label" hidden></section>
 </main>
 <script>
@@ -65,9 +67,17 @@ const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&l
 let statusTimer = null;
 function showError(err) {
   const el = $("#status");
+  el.style.color = "";
   el.textContent = `Error: ${err && err.message ? err.message : err}`;
   clearTimeout(statusTimer);
   statusTimer = setTimeout(() => { el.textContent = ""; }, 6000);
+}
+function showNote(text) {
+  const el = $("#status");
+  el.textContent = text;
+  el.style.color = "var(--ok)";
+  clearTimeout(statusTimer);
+  statusTimer = setTimeout(() => { el.textContent = ""; el.style.color = ""; }, 8000);
 }
 // Run one awaited action at a time; a failure is shown and leaves the page state as it was.
 async function guarded(fn) {
@@ -78,6 +88,7 @@ async function guarded(fn) {
 
 async function loadGames() {
   const games = await api("/api/games");
+  state.games = games;
   $("#games").innerHTML = games.map(g => g.error
     ? `<div class="game broken" title="${esc(g.error)}"><b>${esc(g.game_id)}</b><small>cannot be read: ${esc(g.error)}</small></div>`
     : `<div class="game ${g.game_id === state.game ? "sel" : ""}" data-id="${esc(g.game_id)}"><b>${esc(g.game_id)}</b><small>${esc(g.profile)} · ${g.decided}/${g.events} decided</small></div>`).join("")
@@ -101,8 +112,11 @@ async function selectGame(id) {
 function render() {
   document.querySelectorAll("nav button").forEach(b => b.classList.toggle("sel", b.dataset.tab === state.tab));
   $("#shots").hidden = state.tab !== "shots";
-  $("#label").hidden = state.tab === "shots";
-  if (state.tab === "shots") renderShots(); else loadLabel();
+  $("#quarters").hidden = state.tab !== "quarters";
+  $("#label").hidden = state.tab === "shots" || state.tab === "quarters";
+  if (state.tab === "shots") renderShots();
+  else if (state.tab === "quarters") loadQuarters();
+  else loadLabel();
 }
 
 function renderShots() {
@@ -110,6 +124,9 @@ function renderShots() {
   if (!state.game) { el.innerHTML = "<p class='muted'>Pick a game.</p>"; return; }
   const decided = state.events.filter(e => e.decision).length;
   const e = state.events[state.index];
+  const g = (state.games || []).find(x => x.game_id === state.game);
+  const needMarks = g && !g.scoreboard && !g.quarters
+    ? `<div class="card"><b>This game has no scoreboard.</b> Mark the quarters first, so warmup shots are set aside and each shot gets its quarter. <button class="btn" id="go-quarters">Mark quarters</button></div>` : "";
   if (!e) { el.innerHTML = `<p>No events for this game yet.</p>`; return; }
   const madeBadge = e.made === true ? "<span class='badge made'>MADE</span>" : e.made === false ? "<span class='badge miss'>MISSED</span>" : "<span class='badge none'>UNKNOWN</span>";
   const dec = e.decision ? `<span class='badge none'>${esc(e.decision.status)}</span>` : "";
@@ -117,6 +134,7 @@ function renderShots() {
   el.innerHTML = `
     <div class="row"><b>${decided}/${state.events.length} decided</b><span class="muted">${state.index + 1} of ${state.events.length}</span>
       <button class="btn" id="confirm-high">Confirm all above 0.9</button></div>
+    ${needMarks}
     <div class="card">
       <video id="clip" src="/clips/${esc(state.game)}/${esc(e.id)}.mp4" autoplay loop muted playsinline></video>
       <div style="margin-top:8px">${warm}${madeBadge}<span class="badge none">${esc(e.type)}</span>${dec}
@@ -126,6 +144,7 @@ function renderShots() {
     </div>
     <div class="list">${state.events.map((x, i) => `<div class="${i === state.index ? "sel" : ""}" data-i="${i}">${x.decision ? "✓" : "·"}${isWarm(x) ? " warmup" : ""} ${esc(x.id)} Q${x.quarter ?? "?"} ${clock(x.clock_s)} ${x.made === true ? "made" : x.made === false ? "missed" : "?"} ${x.confidence}</div>`).join("")}</div>`;
   $("#confirm-high").onclick = confirmHigh;
+  if ($("#go-quarters")) $("#go-quarters").onclick = () => { state.tab = "quarters"; render(); };
   const video = $("#clip");
   video.onloadedmetadata = () => {
     const shotAt = e.clip ? e.t - e.clip.start : 0;
@@ -179,6 +198,76 @@ function shotKeys(ev) {
   }
   else if (k === "j") { state.index = Math.max(0, state.index - 1); renderShots(); }
   else if (k === "k") { state.index = Math.min(state.events.length - 1, state.index + 1); renderShots(); }
+  else return;
+  ev.preventDefault();
+}
+
+// ---- Quarters: for film with no scoreboard, the coach marks when each quarter starts and ends ----
+const hms = (s) => s == null ? "--:--" : `${Math.floor(s / 3600)}:${String(Math.floor(s % 3600 / 60)).padStart(2, "0")}:${String(Math.floor(s % 60)).padStart(2, "0")}`;
+
+async function loadQuarters() {
+  const el = $("#quarters");
+  if (!state.game) { el.innerHTML = "<p class='muted'>Pick a game.</p>"; return; }
+  const q = await api(`/api/games/${state.game}/quarters`);
+  state.marks = q.quarters.map(([a, b]) => [a, b]);
+  el.innerHTML = `
+    <div class="card wide">
+      <video id="film" src="/video/${esc(state.game)}" controls preload="metadata" style="width:100%;max-width:1280px"></video>
+      <div class="row" style="margin-top:8px">
+        <button class="btn" id="q-start">Quarter starts here</button>
+        <button class="btn" id="q-end">Quarter ends here</button>
+        <span class="muted">film at <b id="q-now">0:00:00</b></span>
+      </div>
+      <div id="q-list" style="margin-top:8px"></div>
+      <div class="row" style="margin-top:8px"><button class="btn" id="q-save">Save quarters</button><span id="q-msg" class="muted"></span></div>
+      <div class="keys">Drag or play the film to the tip-off and press <kbd>[</kbd> (quarter starts); to the buzzer and press <kbd>]</kbd> (quarter ends). Four times, plus overtime.
+        <kbd>Space</kbd> play/pause <kbd>←</kbd>/<kbd>→</kbd> 5 s <kbd>Shift</kbd>+<kbd>←</kbd>/<kbd>→</kbd> 1 min. ${q.scoreboard ? "This game has a scoreboard: marks here override it." : ""}</div>
+    </div>`;
+  const film = $("#film");
+  film.ontimeupdate = () => { $("#q-now").textContent = hms(film.currentTime); };
+  $("#q-start").onclick = () => markQuarter("start");
+  $("#q-end").onclick = () => markQuarter("end");
+  $("#q-save").onclick = saveQuarters;
+  drawMarks();
+}
+
+function drawMarks() {
+  $("#q-list").innerHTML = state.marks.length ? state.marks.map(([a, b], i) =>
+    `<div class="row"><b>${i < 4 ? "Q" + (i + 1) : "OT" + (i - 3)}</b> <a href="#" data-seek="${a}">${hms(a)}</a> to ${b == null ? "<i>no end yet</i>" : `<a href="#" data-seek="${b}">${hms(b)}</a>`}
+     <button class="btn" data-del="${i}" style="background:var(--line)">remove</button></div>`).join("") : "<p class='muted'>No quarters marked yet.</p>";
+  document.querySelectorAll("[data-seek]").forEach(a => a.onclick = (ev) => { ev.preventDefault(); $("#film").currentTime = +a.dataset.seek; });
+  document.querySelectorAll("[data-del]").forEach(b => b.onclick = () => { state.marks.splice(+b.dataset.del, 1); drawMarks(); });
+}
+
+function markQuarter(which) {
+  const t = Math.round($("#film").currentTime * 10) / 10;
+  const last = state.marks[state.marks.length - 1];
+  if (which === "start") {
+    if (last && last[1] == null) last[0] = t; else state.marks.push([t, null]);
+  } else if (last && last[1] == null && t > last[0]) last[1] = t;
+  else { showError("press [ at the tip-off first; a quarter ends after it starts"); return; }
+  state.marks.sort((x, y) => x[0] - y[0]);
+  drawMarks();
+}
+
+function saveQuarters() {
+  return guarded(async () => {
+    if (state.marks.some(([, b]) => b == null)) throw new Error("every quarter needs an end: press ] at its buzzer, or remove it");
+    const r = await post(`/api/games/${state.game}/quarters`, { quarters: state.marks });
+    state.tab = "shots";
+    await selectGame(state.game);
+    showNote(`Saved ${r.quarters} quarters: ${r.warmups} of ${r.events} cards are warmups, sorted last.`);
+  });
+}
+
+function quarterKeys(ev) {
+  const film = $("#film");
+  if (!film) return;
+  if (ev.key === "[") markQuarter("start");
+  else if (ev.key === "]") markQuarter("end");
+  else if (ev.key === " ") { if (film.paused) film.play(); else film.pause(); }
+  else if (ev.key === "ArrowLeft") film.currentTime = Math.max(0, film.currentTime - (ev.shiftKey ? 60 : 5));
+  else if (ev.key === "ArrowRight") film.currentTime = film.currentTime + (ev.shiftKey ? 60 : 5);
   else return;
   ev.preventDefault();
 }
@@ -326,13 +415,14 @@ async function boxKeys(ev) {
 document.addEventListener("keydown", (ev) => {
   if (ev.metaKey || ev.ctrlKey || ev.altKey || ev.repeat) return;
   if (state.tab === "shots") shotKeys(ev);
+  else if (state.tab === "quarters") quarterKeys(ev);
   else if (state.tab === "rimclf") clipKeys(ev);
   else boxKeys(ev);
 });
 document.querySelectorAll("nav button").forEach(b => b.onclick = () => { state.tab = b.dataset.tab; render(); });
 // A link such as /#ball opens straight on that tab.
 const wanted = location.hash.slice(1);
-if (["shots", "rim", "ball", "rimclf"].includes(wanted)) state.tab = wanted;
+if (["shots", "quarters", "rim", "ball", "rimclf"].includes(wanted)) state.tab = wanted;
 loadGames();
 </script>
 </body>

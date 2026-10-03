@@ -143,3 +143,18 @@ def test_an_explicit_null_team_persists_and_an_omitted_one_does_not(synthetic_vi
     first, second = client.get(f"/api/games/{game_id}/events").json()
     assert first["team"] is None                    # the coach cleared it
     assert second["team"] == "home" and "team" not in second["decision"]
+
+
+def test_quarter_marks_are_read_saved_and_applied_to_the_cards(synthetic_video, tmp_path, monkeypatch):
+    _env(monkeypatch, tmp_path)
+    game_id, gd = _game(synthetic_video)                       # events at 1.0 and 1.5 s
+    client = TestClient(create_app())
+    assert client.get(f"/api/games/{game_id}/quarters").json() == {"quarters": [], "scoreboard": False}
+    assert client.get("/api/games").json()[0]["scoreboard"] is False
+    r = client.post(f"/api/games/{game_id}/quarters", json={"quarters": [[1.2, 2.0]]})
+    assert r.status_code == 200 and r.json() == {"events": 2, "warmups": 1, "quarters": 1}
+    events = {e["id"]: e for e in client.get(f"/api/games/{game_id}/events").json()}
+    assert "warmup" in events["shot-000000-r1"]["flags"] and events["shot-000001-r1"]["quarter"] == 1
+    assert client.get(f"/api/games/{game_id}/quarters").json()["quarters"] == [[1.2, 2.0]]
+    bad = client.post(f"/api/games/{game_id}/quarters", json={"quarters": [[2.0, 1.0]]})
+    assert bad.status_code == 400 and "before" in bad.json()["detail"]

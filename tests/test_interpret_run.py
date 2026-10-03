@@ -112,3 +112,20 @@ def test_the_classifier_is_given_the_balls_path_and_the_path_is_read_from_film_o
     other = FakeDetector(name="ball@newer")
     interpret(m.game_id, classifier=Recording([("made", 0.9)]), ball_detector=other, log=lambda *a: None)
     assert other.calls == calls and dict(zip(FEATURES, given[2]))["seen"] == 0.0   # a new detector reads them again
+
+
+def test_quarter_marks_set_warmups_and_quarters_on_a_fresh_interpret(synthetic_video, tmp_path, monkeypatch):
+    from film.interpret.quarters import save_quarters
+
+    monkeypatch.setenv("FILM_GAMES_DIR", str(tmp_path / "games"))
+    m = ingest(synthetic_video, date="2026-01-01", profile="test", fps=10.0)
+    gd = game_dir(m.game_id)
+    _tracks(gd)
+    [e] = interpret(m.game_id, use_classifier=False, log=lambda *a: None)
+    assert "warmup" not in e.flags and e.quarter is None
+    save_quarters(gd, [(e.t + 1, e.t + 2)])
+    [e] = interpret(m.game_id, use_classifier=False, log=lambda *a: None)
+    assert "warmup" in e.flags
+    save_quarters(gd, [(0.0, e.t - 0.5), (e.t - 0.1, e.t + 1)])
+    [e] = interpret(m.game_id, use_classifier=False, log=lambda *a: None)
+    assert "warmup" not in e.flags and e.quarter == 2

@@ -202,7 +202,9 @@ def mark_dead_time(events: list[Event], phases) -> int:
         else:
             live = is_live(phases, e.t)
         e.signals["phase"] = "live" if live else "warmup"
-        if not live:
+        if live:
+            e.flags = [f for f in e.flags if f != "warmup"]             # marks can move: a flag is never stale
+        else:
             if "warmup" not in e.flags:
                 e.flags.append("warmup")
             marked += 1

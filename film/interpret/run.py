@@ -11,6 +11,7 @@ from film.common.paths import game_dir
 from film.interpret.arrivals import Arrival, find_ball_arrivals, find_motion_arrivals, merge_arrivals
 from film.interpret.events import Event, build_shot_events, load_events, mark_dead_time, save_events, scoreboard_only_events
 from film.interpret.phases import game_phases
+from film.interpret.quarters import load_quarters, mark_quarters
 from film.perceive.run import MOTION_COLUMNS
 from film.perceive.scoreboard import load_timeline
 from film.perceive.tracks import read_tracks
@@ -68,6 +69,9 @@ def interpret(game_id: str, classifier=None, use_classifier: bool = True, device
     sb_only = scoreboard_only_events(timeline, events)
     events = sorted(events + sb_only, key=lambda e: (e.t, e.rim_id))
     warmups = mark_dead_time(events, game_phases(timeline))
+    quarters = load_quarters(gd)
+    if quarters:                                          # the coach's marks win over the scoreboard
+        warmups = mark_quarters(events, quarters)
     previous = load_events(gd)
     save_events(gd, events)
     carried = carry_over_decisions(gd, previous, events)       # the coach's review follows each shot to its new card
