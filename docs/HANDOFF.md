@@ -35,7 +35,7 @@ rented GPU. He may buy a Mac mini later but has decided to prove it on the lapto
 
 ## State on 2026-10-01
 
-- `main`, 229 tests passing, **no git remote yet** (he will supply an SSH URL).
+- `main`, 244 tests passing, **no git remote yet** (he will supply an SSH URL).
 - Rung 1 of the spec is built and has run end to end on two real games.
 - Two games processed and reviewed by Garrett (Cactus Shadows: the 125 ball and scoreboard cards; its 108 motion cards are not reviewed).
 - Three more films are on disk that the pipeline **cannot run yet** because they have no burned-in scoreboard.
@@ -124,6 +124,29 @@ Game ids carry the **download** date (2025-02-05), not the real game date; Garre
 - `games/<id>/ballpaths.json`: the ball path of every arrival, read once per ball-detector version.
 - `games/_backups/pre-rimclf-v3/`: events and reviews of both games from before the classifier went in.
 - `labels/rimclf/pending`: 315 montages (warmup cards and unreviewed motion cards; optional labels). `labels/rim/pending`: 10 stale test frames.
+
+## Update 2026-10-02: the first no-scoreboard game (Deer Valley, NFHS camera)
+
+- **Rim detector for cameras without templates:** `rim@v1`, trained on 150 Deer Valley frames Garrett
+  labeled with **backboard** boxes (the rim is a few pixels in a wide shot). `rim_from_backboard`
+  (`film/perceive/rims.py`) turns a backboard into the rim reference strip. 0.987 mAP50 on held-out frames.
+  Profiles with templates (Hudl) keep their templates first; `FILM_RIM_DETECTOR=trained` reverses that.
+- **Crops scale with the rim** (`CROP_WIDTHS = 3.75`, `film/perceive/ball.py`), shrunk to 320 px, so a zoomed
+  camera's ball is the size the detector learned. Hudl crops are unchanged (under 320 px).
+- **Quarter marks** (`film/interpret/quarters.py`, Quarters tab, `[` and `]`): Garrett marked Deer Valley's four
+  quarters; they set warmups and quarter numbers. No clock without a scoreboard.
+- **Deer Valley run:** 54 minutes on the laptop (rim network on every frame, 23 frames/s). 793 cards, 423 warmup.
+  Garrett reviewed the 196 ball cards: **92 real (47%)**; made/missed was a coin toss.
+- **Why made/missed failed there:** the ball detector barely saw the ball on this camera (confident in ~1 frame
+  in 10), so every path looked alike. A Deer Valley after-shot ball batch (141 boxes, 15 empty) and `ball@v6`
+  fixed the seeing; `rimclf@v6` is in service: 0.666 leave-one-game-out over three games; on Deer Valley
+  without training on it 0.54 (guessing 0.61), made vs missed 0.60, flags 77 of 144 fake cards while keeping
+  81 of 92 real shots. Hudl games: 0.745 / 0.723 (were 0.771 / 0.737); the scoreboard still decides there.
+  Cards the classifier calls empty now sort with the motion cards.
+- **Next:** another NFHS game reviewed the same way (one game of a camera is not enough), then the iPad
+  angle (Prescott first: backboard labels, then shots). Parked: clip length; box-score stats including
+  turnovers, steals and blocks.
+- Label tabs: `D` skips (next to `S`); `S` with no box saves "no ball here". Garrett reads K/D as "can't tell".
 
 ## What Garrett has asked for (requirements gathered in conversation)
 
