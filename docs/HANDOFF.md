@@ -167,6 +167,14 @@ Game ids carry the **download** date (2025-02-05), not the real game date; Garre
   0.55, still chance**. Deer Valley is the open problem: tight zoom, 47% card precision, no signal in the path
   features even when trained on its own other half. Look at its clips before more labels.
 
+## Shots that go in the classifier's data but not in the stats
+
+Garrett, 2026-10-05, on RKDA card `shot-012883`: a foul was whistled and the shot was taken afterwards. He
+confirmed it as **made** on purpose, because the ball did go in and that is the truth the made-or-missed
+classifier should learn. It is not a field-goal attempt and must not count in a box score. There is no way to
+say that on a card yet: a "does not count (after the whistle)" mark is needed before stats are exported, and
+the confirmed decisions so far may hold a few more of these.
+
 ## What Garrett has asked for (requirements gathered in conversation)
 
 1. **Full box score eventually**, as automated as possible; he accepts reviewing some of it.
