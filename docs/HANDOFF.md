@@ -186,6 +186,17 @@ Game ids carry the **download** date (2025-02-05), not the real game date; Garre
 - `tracks.parquet` of Marcos, Cactus Shadows, Deer Valley and Prescott still come from older ball detectors
   (v4 to v6); a `film perceive` of each (25 to 55 minutes) would let `ball@v7` find their arrivals.
 
+## Update 2026-10-05 (later): Combs, a third gym with no ball labels
+
+- **Combs** (`2026-10-01-combs-vs-mdn-angle-1`, iPad, 31 minutes to process) needed backboard labels only:
+  `ball@v7` had never seen the gym and still followed the real ball. 305 cards; Garrett reviewed 190:
+  **137 of 188 strong cards real (73%)**, made/missed right on 74% with a classifier that had not seen the game.
+- **`rimclf@v10`** in service, six games: 0.653 leave-one-game-out (guessing 0.454). Made versus missed, game held
+  out: Cactus Shadows 0.82, RKDA 0.77, Prescott 0.74, Combs 0.74, Marcos 0.74, Deer Valley 0.59.
+  Its "none" class does not transfer to Combs (18 of 91 fake cards caught, against 30 of 47 on RKDA).
+- Six games reviewed: 2 Hudl, 1 NFHS, 3 iPad in 3 gyms. Garrett's decisions: Marcos 284, Cactus Shadows 121,
+  Deer Valley 196, Prescott 119, RKDA 128, Combs 190.
+
 ## Shots that go in the classifier's data but not in the stats
 
 Garrett, 2026-10-05, on RKDA card `shot-012883`: a foul was whistled and the shot was taken afterwards. He
