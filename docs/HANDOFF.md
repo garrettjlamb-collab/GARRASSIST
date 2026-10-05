@@ -174,7 +174,7 @@ confirmed it as **made** on purpose, because the ball did go in and that is the 
 classifier should learn. It is not a field-goal attempt and must not count in a box score. There is no way to
 say that on a card yet: a "does not count (after the whistle)" mark is needed before stats are exported, and
 the confirmed decisions so far may hold a few more of these.
-Known so far, all RKDA: `shot-012883-r85`, `shot-014405` (same situation).
+Known so far, all RKDA: `shot-012883-r85` (made), `shot-014405-r96` (missed), `shot-017324` (missed). Garrett's point is the foul: a whistle around the shot, whatever the ball did.
 
 ## What Garrett has asked for (requirements gathered in conversation)
 
