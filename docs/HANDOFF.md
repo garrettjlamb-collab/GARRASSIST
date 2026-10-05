@@ -194,7 +194,7 @@ classifier should learn. It is not a field-goal attempt and must not count in a 
 say that on a card yet: a "does not count (after the whistle)" mark is needed before stats are exported, and
 the confirmed decisions so far may hold a few more of these.
 Known so far, all RKDA: `shot-012883-r85` (made), `shot-014405-r96` (missed), `shot-017324-r124` (missed), `shot-024920`.
-Combs: `shot-002608-r19` (whistle before the shot; Garrett called it "not a real shot"), `shot-008010-r47` (fouled on the shot), `shot-009368-r50` (fouled on the shot), `shot-016206` (fouled on the shot).
+Combs: `shot-002608-r19` (whistle before the shot; Garrett called it "not a real shot"), `shot-008010-r47` (fouled on the shot), `shot-009368-r50` (fouled on the shot), `shot-016206-r78` (fouled on the shot), `shot-029165` (fouled on the shot).
 RKDA is the first game he flagged these on; the four earlier reviewed games have unflagged ones. He sends them as future training examples for foul detection. Garrett's point is the foul: a whistle around the shot, whatever the ball did.
 
 ## What Garrett has asked for (requirements gathered in conversation)
