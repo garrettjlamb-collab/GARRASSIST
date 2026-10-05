@@ -65,3 +65,16 @@ def test_warmup_cards_never_reach_the_export(synthetic_video, tmp_path, monkeypa
         save_decision(gd, e.id, {"status": "confirmed", "made": True})
     _, json_path = export_shots(m.game_id)
     assert [s["id"] for s in json.loads(json_path.read_text())["shots"]] == ["shot-000001-r1"]
+
+
+def test_the_export_says_which_shots_had_a_foul_and_which_do_not_count(synthetic_video, tmp_path, monkeypatch):
+    """A shot after the whistle is true made-or-missed data for the classifier and not an attempt in the stats."""
+    game_id, gd = _game(synthetic_video, tmp_path, monkeypatch)
+    save_decision(gd, "shot-000000-r1", {"status": "confirmed", "made": True, "foul": "before_shot"})
+    save_decision(gd, "shot-000001-r1", {"status": "confirmed", "made": False, "foul": "on_shot"})
+    save_decision(gd, "shot-000002-r1", {"status": "confirmed", "made": True})
+    csv_path, json_path = export_shots(game_id)
+    rows = list(csv.DictReader(csv_path.open()))
+    assert [(r["foul"], r["counts"]) for r in rows] == [("before_shot", "False"), ("on_shot", "True"), ("", "True")]
+    shots = json.loads(json_path.read_text())["shots"]
+    assert [(s["foul"], s["counts"]) for s in shots] == [("before_shot", False), ("on_shot", True), (None, True)]

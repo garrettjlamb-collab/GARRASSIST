@@ -9,7 +9,7 @@ from film.export.clips import build_reel, clip_path
 from film.interpret.events import load_events
 from film.review.decisions import apply_decisions, load_decisions
 
-FIELDS = ["id", "t", "quarter", "clock_s", "team", "made", "confidence", "status", "flags"]
+FIELDS = ["id", "t", "quarter", "clock_s", "team", "made", "confidence", "status", "flags", "foul", "counts"]
 
 
 def reviewed_shots(game_id: str, statuses=("confirmed", "unsure")) -> list[dict]:
@@ -19,6 +19,8 @@ def reviewed_shots(game_id: str, statuses=("confirmed", "unsure")) -> list[dict]
     # Warmup shots (pregame, breaks, halftime, post-game) never count toward the game, whatever was pressed.
     rows = [e for e in merged if e.get("decision") and e["decision"]["status"] in statuses
             and "warmup" not in e.get("flags", [])]
+    for e in rows:
+        e["counts"] = e.get("foul") != "before_shot"          # after the whistle: on film, not in the stats
     return sorted(rows, key=lambda e: e["t"])
 
 
@@ -34,7 +36,7 @@ def export_shots(game_id: str) -> tuple[Path, Path]:
         for e in rows:
             writer.writerow({"id": e["id"], "t": e["t"], "quarter": e["quarter"], "clock_s": e["clock_s"], "team": e["team"],
                              "made": e["made"], "confidence": e["confidence"], "status": e["decision"]["status"],
-                             "flags": " ".join(e.get("flags", []))})
+                             "flags": " ".join(e.get("flags", [])), "foul": e.get("foul") or "", "counts": e["counts"]})
     json_path.write_text(json.dumps({"format": "film-shot-times", "schemaVersion": 1, "gameId": game_id, "shots": rows}, indent=1))
     return csv_path, json_path
 

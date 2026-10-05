@@ -26,6 +26,7 @@ class Decision(BaseModel):
     status: str
     made: bool | None = None
     team: str | None = None
+    foul: str | None = None
 
 
 class BoxIn(BaseModel):

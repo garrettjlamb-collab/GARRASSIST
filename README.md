@@ -55,6 +55,7 @@ opens 3 s before the shot.
 | Enter | Confirm the card as shown |
 | M | Flip made / missed |
 | T | Cycle team: home, away, blank |
+| W | Foul on the play: fouled on the shot, whistle first (not an attempt), none |
 | X | Reject: not a shot |
 | U | Unsure |
 | K / J | Next / previous without deciding (use K for a warmup clip) |

@@ -8,6 +8,9 @@ from pathlib import Path
 
 _LOCK = threading.Lock()
 STATUSES = ("confirmed", "rejected", "unsure")
+# A foul on the play, as the coach saw it. "on_shot": fouled in the act of shooting. "before_shot": the whistle
+# came first, so the shot is not an attempt, though what the ball did is still true made-or-missed data.
+FOULS = ("on_shot", "before_shot")
 
 
 def decisions_path(game_dir: Path) -> Path:
@@ -23,10 +26,15 @@ def save_decision(game_dir: Path, event_id: str, decision: dict) -> dict:
     status = decision.get("status")
     if status not in STATUSES:
         raise ValueError(f"status must be one of {STATUSES}, got {status!r}")
+    foul = decision.get("foul")
+    if foul is not None and foul not in FOULS:
+        raise ValueError(f"foul must be one of {FOULS} or empty, got {foul!r}")
     entry = {"status": status, "decided_at": datetime.now(timezone.utc).isoformat(timespec="seconds")}
     for key in ("made", "team"):
         if key in decision:
             entry[key] = decision[key]
+    if foul is not None:
+        entry["foul"] = foul
     Path(game_dir).mkdir(parents=True, exist_ok=True)
     path = decisions_path(game_dir)
     with _LOCK:
@@ -45,6 +53,7 @@ def apply_decisions(events: list[dict], decisions: dict) -> list[dict]:
         merged = dict(event)
         decision = decisions.get(event["id"])
         merged["decision"] = decision
+        merged["foul"] = decision.get("foul") if decision else None
         if decision:
             for key in ("made", "team"):
                 if key in decision:

@@ -82,3 +82,20 @@ def test_two_old_decisions_never_land_on_one_new_event_and_existing_ones_are_not
     d = load_decisions(tmp_path)
     assert d["shot-000105-r1"]["moved_from"] == "shot-000100-r1"                       # the nearer of the two wins
     assert d["shot-000405-r1"]["status"] == "unsure"
+
+
+def test_a_decision_can_say_there_was_a_foul_on_the_play(tmp_path):
+    entry = save_decision(tmp_path, "shot-1", {"status": "confirmed", "made": False, "foul": "on_shot"})
+    assert entry["foul"] == "on_shot"
+    save_decision(tmp_path, "shot-2", {"status": "confirmed", "made": True, "foul": "before_shot"})
+    save_decision(tmp_path, "shot-3", {"status": "confirmed", "made": True, "foul": None})
+    save_decision(tmp_path, "shot-4", {"status": "confirmed", "made": True})
+    events = [{"id": f"shot-{i}", "made": None, "team": None} for i in (1, 2, 3, 4, 5)]
+    merged = apply_decisions(events, load_decisions(tmp_path))
+    assert [e["foul"] for e in merged] == ["on_shot", "before_shot", None, None, None]
+
+
+def test_an_unknown_kind_of_foul_is_refused(tmp_path):
+    with pytest.raises(ValueError, match="foul"):
+        save_decision(tmp_path, "shot-1", {"status": "confirmed", "foul": "flagrant"})
+    assert load_decisions(tmp_path) == {}

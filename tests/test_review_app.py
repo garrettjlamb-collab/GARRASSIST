@@ -158,3 +158,15 @@ def test_quarter_marks_are_read_saved_and_applied_to_the_cards(synthetic_video, 
     assert client.get(f"/api/games/{game_id}/quarters").json()["quarters"] == [[1.2, 2.0]]
     bad = client.post(f"/api/games/{game_id}/quarters", json={"quarters": [[2.0, 1.0]]})
     assert bad.status_code == 400 and "before" in bad.json()["detail"]
+
+
+def test_a_foul_on_the_play_is_saved_with_the_decision_and_shown_again(synthetic_video, tmp_path, monkeypatch):
+    _env(monkeypatch, tmp_path)
+    game_id, gd = _game(synthetic_video)
+    client = TestClient(create_app())
+    r = client.post(f"/api/games/{game_id}/decisions/shot-000001-r1", json={"status": "confirmed", "made": False, "foul": "on_shot"})
+    assert r.status_code == 200 and r.json()["foul"] == "on_shot"
+    events = {e["id"]: e for e in client.get(f"/api/games/{game_id}/events").json()}
+    assert events["shot-000001-r1"]["foul"] == "on_shot" and events["shot-000000-r1"]["foul"] is None
+    bad = client.post(f"/api/games/{game_id}/decisions/shot-000001-r1", json={"status": "confirmed", "foul": "flagrant"})
+    assert bad.status_code == 400

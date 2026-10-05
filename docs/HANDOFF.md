@@ -35,7 +35,7 @@ rented GPU. He may buy a Mac mini later but has decided to prove it on the lapto
 
 ## State on 2026-10-01
 
-- `main`, 247 tests passing, **no git remote yet** (he will supply an SSH URL).
+- `main`, 251 tests passing, **no git remote yet** (he will supply an SSH URL).
 - Rung 1 of the spec is built and has run end to end on two real games.
 - Two games processed and reviewed by Garrett (Cactus Shadows: the 125 ball and scoreboard cards; its 108 motion cards are not reviewed).
 - Three more films are on disk that the pipeline **cannot run yet** because they have no burned-in scoreboard.
@@ -197,16 +197,19 @@ Game ids carry the **download** date (2025-02-05), not the real game date; Garre
 - Six games reviewed: 2 Hudl, 1 NFHS, 3 iPad in 3 gyms. Garrett's decisions: Marcos 284, Cactus Shadows 121,
   Deer Valley 196, Prescott 119, RKDA 128, Combs 190.
 
-## Shots that go in the classifier's data but not in the stats
+## Fouls on a shot card (built 2026-10-05)
 
-Garrett, 2026-10-05, on RKDA card `shot-012883`: a foul was whistled and the shot was taken afterwards. He
-confirmed it as **made** on purpose, because the ball did go in and that is the truth the made-or-missed
-classifier should learn. It is not a field-goal attempt and must not count in a box score. There is no way to
-say that on a card yet: a "does not count (after the whistle)" mark is needed before stats are exported, and
-the confirmed decisions so far may hold a few more of these.
-Known so far, all RKDA: `shot-012883-r85` (made), `shot-014405-r96` (missed), `shot-017324-r124` (missed), `shot-024920`.
-Combs: `shot-002608-r19` (whistle before the shot; Garrett called it "not a real shot"), `shot-008010-r47` (fouled on the shot), `shot-009368-r50` (fouled on the shot), `shot-016206-r78` (fouled on the shot), `shot-029165-r162` (fouled on the shot), `shot-033855-r183` (foul on the floor before the shot: not an attempt), `shot-041248` (foul before the shot: not an attempt).
-RKDA is the first game he flagged these on; the four earlier reviewed games have unflagged ones. He sends them as future training examples for foul detection. Garrett's point is the foul: a whistle around the shot, whatever the ball did.
+`W` on a shot card cycles **fouled on the shot** / **whistle first** / none; Enter saves it with the decision
+(`foul: "on_shot" | "before_shot"` in `review.json`, `FOULS` in `film/review/decisions.py`). The export carries
+`foul` and `counts`; `counts` is false for a whistle-first shot, which is not an attempt. The made-or-missed
+classifier still trains on what the ball did, so such a card is **confirmed** with its true made/missed, never
+rejected. Garrett sends these as the start of foul training data.
+
+Marked so far: Combs `shot-002608-r19`, `shot-033855-r183` (saved rejected), `shot-041248-r205` whistle first;
+`shot-008010-r47`, `shot-009368-r50`, `shot-016206-r78`, `shot-029165-r162` fouled on the shot. RKDA
+`shot-012883-r85` whistle first. **Not yet marked, kind not stated:** RKDA `shot-014405-r96`, `shot-017324-r124`,
+`shot-024920-r172` ("same situation ... in the context of a foul happening"). RKDA was the first game he
+flagged; the four earlier games have unflagged ones. Still to build: which team and which player fouled.
 
 ## What Garrett has asked for (requirements gathered in conversation)
 
