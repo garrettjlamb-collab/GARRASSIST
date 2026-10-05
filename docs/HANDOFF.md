@@ -35,7 +35,7 @@ rented GPU. He may buy a Mac mini later but has decided to prove it on the lapto
 
 ## State on 2026-10-01
 
-- `main`, 246 tests passing, **no git remote yet** (he will supply an SSH URL).
+- `main`, 247 tests passing, **no git remote yet** (he will supply an SSH URL).
 - Rung 1 of the spec is built and has run end to end on two real games.
 - Two games processed and reviewed by Garrett (Cactus Shadows: the 125 ball and scoreboard cards; its 108 motion cards are not reviewed).
 - Three more films are on disk that the pipeline **cannot run yet** because they have no burned-in scoreboard.
@@ -166,6 +166,25 @@ Game ids carry the **download** date (2025-02-05), not the real game date; Garre
   the game held out: Cactus Shadows ~0.81, Marcos ~0.72, Prescott 0.66 (was 0.54 before sides), **Deer Valley
   0.55, still chance**. Deer Valley is the open problem: tight zoom, 47% card precision, no signal in the path
   features even when trained on its own other half. Look at its clips before more labels.
+
+## Update 2026-10-05: a second gym on iPad (RKDA @ MDN), and what a new gym costs
+
+- **A new gym needs labels twice, about 15 minutes each from Garrett.** `rim@v2` (Arcadia only) found no backboard
+  at Marcos de Niza; `ball@v6` boxed its yellow banners, pom-poms and scoreboard digits (460 cards for a 57-minute
+  game). After 121 RKDA backboard frames (+83 Combs) -> `rim@v3` (0.989), and 75 RKDA ball boxes + 104 empty
+  crops -> `ball@v7` (0.866): **175 cards, 121 of 127 strong cards real (95%), made/missed right on 82%**.
+- `film prelabel ball <id> --no-proposals` queues bare crops for such a gym. Garrett presses D/K for "no ball"
+  whatever the instructions say: ask him, then regenerate the skipped ids and save the ones the detector fired on
+  as empty (done by hand twice; worth making a command).
+- A temporal "fixed spot" filter for false ball sightings was tried and dropped (460 -> ~420 cards only).
+- **`rimclf@v9`** in service, paths read by `ball@v7` on all five games: 0.684 leave-one-game-out (guessing 0.467).
+  Made versus missed, game held out: Cactus Shadows 0.82, RKDA 0.78, Marcos 0.75, Prescott 0.73, **Deer Valley
+  0.58 (still the open problem)**.
+- Skipped frames can be re-queued from their ids (rim: `<game>_<t*10>`; done once for 58 accidental skips).
+- **Combs** (`2026-10-01-combs-vs-mdn-angle-1`, iPad, third gym): backboards labeled (in `rim@v3`), not processed.
+  Next: process it, look at the card count, then a ball batch for that gym if it is inflated.
+- `tracks.parquet` of Marcos, Cactus Shadows, Deer Valley and Prescott still come from older ball detectors
+  (v4 to v6); a `film perceive` of each (25 to 55 minutes) would let `ball@v7` find their arrivals.
 
 ## Shots that go in the classifier's data but not in the stats
 
