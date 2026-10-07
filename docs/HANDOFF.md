@@ -197,6 +197,32 @@ Game ids carry the **download** date (2025-02-05), not the real game date; Garre
 - Six games reviewed: 2 Hudl, 1 NFHS, 3 iPad in 3 gyms. Garrett's decisions: Marcos 284, Cactus Shadows 121,
   Deer Valley 196, Prescott 119, RKDA 128, Combs 190.
 
+## Update 2026-10-06: the picture classifier works now, and it improves with more games
+
+Measured with `experiments/rimclf_images.py` (in the repo; sheets in `datasets/rimclf-images`), every game held
+out in turn, 678 real shots and 564 non-shots across six games:
+
+| Made versus missed, game held out | Ball path (`rimclf@v10`) | Pictures (ResNet18 per frame, 16 frames, pooled) | Averaged |
+|---|---|---|---|
+| Cactus Shadows | 0.82 | 0.84 | 0.87 |
+| Marcos | 0.74 | 0.72 | 0.75 |
+| Deer Valley | 0.59 | 0.79 | 0.74 |
+| Prescott | 0.74 | 0.86 | 0.88 |
+| RKDA | 0.77 | 0.75 | 0.81 |
+| Combs | 0.74 | 0.91 | 0.91 |
+| All | 0.74 | 0.81 | 0.83 |
+
+- **When the two agree with averaged confidence >= 0.75: 57% of real shots, 95% right** (>= 0.65: 67%, 91%).
+  When they disagree it is a coin toss. This is the no-scoreboard version of "scoreboard and classifier agree".
+- **The path classifier is flat with more games** (0.72 on one game, 0.73 on five: six features, saturated).
+  **The picture classifier climbs:** Combs held out 0.53 / 0.67 / 0.78 / 0.86 / 0.91 on 1 to 5 games; RKDA
+  0.60 / 0.63 / 0.60 / 0.74 / 0.75. Each reviewed game now makes the next one better.
+- The same picture approach failed on two games in September (see above): it needed about 1,000 clips, a crop
+  1.6 rim widths across centred under the measured hoop, and every frame through the network separately.
+- **Not in the pipeline yet.** Next: put the picture classifier in service beside the path classifier, with the
+  card's confidence taken from their agreement so "Confirm all above 0.9" works without a scoreboard.
+- Cost: about 8 minutes per held-out game on the laptop (8 epochs, ~1,000 clips).
+
 ## Fouls on a shot card (built 2026-10-05)
 
 `W` on a shot card cycles **fouled on the shot** / **whistle first** / none; Enter saves it with the decision
