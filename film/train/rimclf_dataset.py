@@ -10,7 +10,8 @@ import pandas as pd
 from film.common.device import pick_device
 from film.common.manifest import Manifest
 from film.common.paths import datasets_dir, game_dir
-from film.interpret.ballpath import read_ball_path
+from film.interpret.ballpath import hoop_offset, read_ball_path
+from film.interpret.rimview import read_rim_view
 from film.interpret.events import load_events
 from film.perceive.rims import basket_sides
 from film.perceive.tracks import read_tracks
@@ -44,6 +45,40 @@ def save_path(image_id: str, path: dict, game_id: str, rim_id: int, t: float, de
 def load_path(image_id: str) -> dict | None:
     target = path_file(image_id)
     return json.loads(target.read_text()) if target.exists() else None
+
+
+def view_file(image_id: str) -> Path:
+    return datasets_dir() / "rimclf" / "views" / f"{image_id}.jpg"
+
+
+def ensure_views(game_id: str, log=print) -> int:
+    """Cut the rim view (see film.interpret.rimview) of every item of this game that has a ball path and no
+    view yet; returns how many were cut. The hoop is placed per basket side from the game's stored paths."""
+    gd = game_dir(game_id)
+    m = Manifest.load(gd)
+    rims = read_tracks(gd, "rim")
+    root = datasets_dir() / "rimclf" / "paths"
+    paths = {p.stem: json.loads(p.read_text()) for p in sorted(root.glob(f"{game_id}--*.json"))} if root.exists() else {}
+    by_side: dict = {}
+    for path in paths.values():
+        by_side.setdefault(path.get("side") or path["rim"], []).append(path)
+    offsets = {side: hoop_offset(group) for side, group in by_side.items()}
+    cut = 0
+    for image_id, path in paths.items():
+        target = view_file(image_id)
+        if target.exists():
+            continue
+        box = rim_box_at(rims, int(round(path["t"] * m.fps)), path["rim"])
+        if box is None:
+            continue
+        sheet = read_rim_view(Path(m.source), path["t"], box, hoop_dx=offsets[path.get("side") or path["rim"]],
+                              rim_at=rim_follower(rims, path["rim"], m.fps))
+        target.parent.mkdir(parents=True, exist_ok=True)
+        cv2.imwrite(str(target), sheet, [cv2.IMWRITE_JPEG_QUALITY, 92])
+        cut += 1
+    if cut:
+        log(f"rimclf views for {game_id}: {cut} cut")
+    return cut
 
 
 def _nearest_rim_id(rims: pd.DataFrame, frame: int) -> int:
@@ -186,4 +221,5 @@ def build_rimclf_candidates(game_id: str, n_none: int = 40, seed: int = 0, margi
                           build_montage(source, t, box, m.width, m.height, rim_at=rim_follower(rims, rim_id, m.fps)), "none")
         counts["none_auto"] += 1
     log(f"rimclf candidates for {game_id}: {counts}")
+    ensure_views(game_id, log=log)
     return counts

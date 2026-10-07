@@ -67,10 +67,22 @@ def _window_for(i: int, arrivals: list[Arrival]) -> float:
     return max(0.5, min(SCORE_WINDOW_S, gap - NEXT_ARRIVAL_MARGIN_S))
 
 
+# Without a scoreboard a card's confidence comes from how the two classifiers agree (see film.interpret.fuse).
+# Strong agreement was a real shot with the right call on 90% of such cards across six reviewed games: the
+# same as a scoreboard that agrees with the classifier, so it earns the same "safe to accept" confidence.
+AGREEMENT_CONFIDENCE = {"strong": 0.92, "fair": 0.8, "split": 0.4}
+
+
 def build_shot_events(arrivals: list[Arrival], timeline: list[ScoreboardRead],
-                      clf_preds: list[tuple[str, float] | None], game_id: str) -> list[Event]:
+                      clf_preds: list[tuple[str, float] | None], game_id: str,
+                      opinions: list[dict | None] | None = None) -> list[Event]:
+    """`clf_preds` is the made/missed/none call per arrival; `opinions` (optional, see fuse) says how the
+    ball-path and picture classifiers each voted and how well they agreed."""
     events: list[Event] = []
+    opinions = opinions or [None] * len(arrivals)
     for i, (arrival, pred) in enumerate(zip(arrivals, clf_preds)):
+        opinion = opinions[i]
+        agreement = opinion.get("agreement") if opinion else None
         delta = score_change(timeline, arrival.t, _window_for(i, arrivals))
         d_home, d_away = delta if delta is not None else (0, 0)
         home_scored, away_scored = d_home in (1, 2, 3), d_away in (1, 2, 3)
@@ -93,6 +105,8 @@ def build_shot_events(arrivals: list[Arrival], timeline: list[ScoreboardRead],
         kind = "shot"
         signals = {"source": arrival.source, "arrival_conf": arrival.conf, "clf": list(pred) if pred else None,
                    "score_delta": list(delta) if delta is not None else None, "scoreboard": verdict, "points": points}
+        if opinion:
+            signals.update({"clf_path": opinion.get("path"), "clf_pictures": opinion.get("pictures"), "agreement": agreement})
         if pred is None:
             flags.append("no-classifier")
             if no_evidence:
@@ -111,8 +125,10 @@ def build_shot_events(arrivals: list[Arrival], timeline: list[ScoreboardRead],
             else:
                 clf_made = label == "made"
                 if no_evidence:
-                    made, conf = clf_made, 0.7 * prob
+                    made, conf = clf_made, AGREEMENT_CONFIDENCE.get(agreement, 0.7 * prob)
                     flags.append(no_evidence_flag)
+                    if agreement == "split":
+                        flags.append("classifiers-disagree")
                 elif clf_made == score_made:
                     made, conf = clf_made, (0.95 if clf_made else 0.9)
                 else:

@@ -179,3 +179,31 @@ def test_dead_time_marks_arrivals_as_warmups_but_keeps_late_posted_baskets():
     assert "warmup" in warm.flags and warm.signals["phase"] == "warmup"
     assert "warmup" not in late.flags                    # a basket posted during a break is still this game's
     assert "warmup" in after.flags                       # after the board reset it belongs to the next game
+
+
+def _opinion(label="made", prob=0.85, agreement="strong"):
+    return {"label": label, "prob": prob, "agreement": agreement, "path": [label, 0.8], "pictures": [label, 0.9]}
+
+
+def test_without_a_scoreboard_two_classifiers_in_strong_agreement_make_a_card_safe_to_accept():
+    [e] = build_shot_events([A(10.0)], [], [("made", 0.85)], "g", opinions=[_opinion()])
+    assert e.made is True and e.confidence >= 0.9 and "no-scoreboard" in e.flags
+    assert e.signals["agreement"] == "strong" and e.signals["clf_path"] == ["made", 0.8] and e.signals["clf_pictures"] == ["made", 0.9]
+    [fair] = build_shot_events([A(10.0)], [], [("missed", 0.7)], "g", opinions=[_opinion("missed", 0.7, "fair")])
+    assert fair.made is False and 0.7 <= fair.confidence < 0.9
+
+
+def test_classifiers_that_disagree_leave_a_low_confidence_card_that_says_so():
+    [e] = build_shot_events([A(10.0)], [], [("made", 0.55)], "g", opinions=[_opinion("made", 0.55, "split")])
+    assert e.confidence <= 0.5 and "classifiers-disagree" in e.flags
+
+
+def test_one_classifier_alone_scores_as_it_always_did():
+    [old] = build_shot_events([A(10.0)], [], [("made", 0.9)], "g")
+    [new] = build_shot_events([A(10.0)], [], [("made", 0.9)], "g", opinions=[{"label": "made", "prob": 0.9, "agreement": None, "path": ["made", 0.9], "pictures": None}])
+    assert old.confidence == new.confidence == 0.63 and "classifiers-disagree" not in new.flags
+
+
+def test_a_motion_only_card_is_never_safe_to_accept_however_sure_the_classifiers_are():
+    [e] = build_shot_events([A(10.0, source="motion")], [], [("made", 0.85)], "g", opinions=[_opinion()])
+    assert e.confidence <= 0.5

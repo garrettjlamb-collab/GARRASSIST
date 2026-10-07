@@ -151,3 +151,42 @@ def test_hoop_offset_is_shared_by_every_track_of_the_same_basket(monkeypatch):
     manifest = type("M", (), {"width": 1920})()
     R.classify_arrivals(None, manifest, arrivals, rims, Recording(), None)
     assert len(given) == 10 and all(f["column_frames"] > 0 and f["sideways"] < 0.05 for f in given)
+
+
+class FakePictures:
+    """A scripted picture classifier: the same class probabilities for every view; counts the views it saw."""
+
+    def __init__(self, scores=(0.9, 0.05, 0.05), version="picclf@fake"):
+        self.row, self.version, self.seen = list(scores), version, 0
+
+    def scores(self, views):
+        views = list(views)
+        self.seen += len(views)
+        return np.array([self.row] * len(views), dtype=np.float32)
+
+
+def test_the_picture_classifier_gives_a_second_opinion_and_its_answers_are_kept(synthetic_video, tmp_path, monkeypatch):
+    monkeypatch.setenv("FILM_GAMES_DIR", str(tmp_path / "games"))
+    m = ingest(synthetic_video, date="2026-01-01", profile="test", fps=10.0)
+    gd = game_dir(m.game_id)
+    _tracks(gd)
+    pics = FakePictures()
+    kwargs = dict(classifier=FakeClassifier([("made", 0.9)]), ball_detector=FakeDetector(), log=lambda *a: None)
+    [e] = interpret(m.game_id, picture_classifier=pics, **kwargs)
+    assert pics.seen == 1 and e.made is True and e.signals["agreement"] == "strong" and e.confidence >= 0.9
+    assert e.signals["clf_pictures"][0] == "made" and e.signals["clf_path"][0] == "made"
+    assert Manifest.load(gd).model_versions["picclf"] == "picclf@fake"
+    interpret(m.game_id, picture_classifier=pics, **kwargs)
+    assert pics.seen == 1                                                     # a re-run reuses the stored answer
+    newer = FakePictures(scores=(0.05, 0.9, 0.05), version="picclf@newer")
+    [e] = interpret(m.game_id, picture_classifier=newer, **kwargs)
+    assert newer.seen == 1 and e.signals["agreement"] == "split" and "classifiers-disagree" in e.flags
+
+
+def test_without_a_picture_classifier_the_path_classifier_carries_on_alone(synthetic_video, tmp_path, monkeypatch):
+    monkeypatch.setenv("FILM_GAMES_DIR", str(tmp_path / "games"))
+    monkeypatch.setenv("FILM_MODELS_DIR", str(tmp_path / "models"))
+    m = ingest(synthetic_video, date="2026-01-01", profile="test", fps=10.0)
+    _tracks(game_dir(m.game_id))
+    [e] = interpret(m.game_id, classifier=FakeClassifier([("made", 0.9)]), ball_detector=FakeDetector(), log=lambda *a: None)
+    assert e.confidence == 0.63 and e.signals["agreement"] is None and e.signals["clf_pictures"] is None

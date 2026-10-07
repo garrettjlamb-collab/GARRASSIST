@@ -135,3 +135,73 @@ def train_rimclf_version(device: str | None = None, log=print, **kwargs) -> tupl
         log(f"rimclf {version} not put into service: accuracy {accuracy:.3f} by {scored_by} does not clearly beat "
             f"guessing ({baseline:.3f}); the scoreboard stays in charge of made-or-missed. Label more games and retrain.")
     return version, out
+
+
+def picclf_rows(log=print) -> tuple[list[Path], np.ndarray, list[str], list[float]]:
+    """View file, class index, game and label time for every stored montage that has its rim view."""
+    from film.train.rimclf_dataset import view_file
+
+    root = datasets_dir() / "rimclf"
+    views, y, games, stamps, missing = [], [], [], [], 0
+    for split in ("train", "val"):
+        for k, cls in enumerate(CLASSES):
+            for image in sorted((root / split / cls).glob("*.jpg")):
+                view = view_file(image.stem)
+                if not view.exists():
+                    missing += 1
+                    continue
+                views.append(view)
+                y.append(k)
+                games.append(image.stem.split("--")[0])
+                stamps.append(image.stat().st_mtime)
+    if missing:
+        log(f"picclf: {missing} montage{'s' if missing != 1 else ''} left out, no rim view stored; "
+            f"run `film prelabel rimclf <game_id>` to cut them")
+    return views, np.array(y, dtype=int), games, stamps
+
+
+def train_picclf_version(device: str, hold: str | None = None, log=print, **kwargs) -> tuple[str, Path]:
+    """Fit the picture classifier and register it if it clearly beats guessing on a game it did not train on.
+
+    One game is held out for the score (the one labeled last, unless `hold` names another); the model that
+    goes into service is then fit on every game. Scoring every game in turn is the experiment's job
+    (experiments/rimclf_images.py): it costs about eight minutes a game on the laptop."""
+    from film.train.picclf import fit_picclf
+
+    views, y, games, stamps = picclf_rows(log)
+    empty = [cls for k, cls in enumerate(CLASSES) if not (y == k).any()]
+    if empty:
+        raise ValueError(f"picclf: no {', '.join(empty)} clips with a rim view; label more first")
+    names = sorted(set(games))
+    if len(names) < 2:
+        raise ValueError("picclf: needs two reviewed games, one to train on and one to score on")
+    if hold is None:
+        hold = max(names, key=lambda n: max(s for s, g in zip(stamps, games) if g == n))
+    elif hold not in names:
+        raise ValueError(f"picclf: no game {hold!r} in the dataset; have {', '.join(names)}")
+    held = np.array([g == hold for g in games])
+    log(f"train picclf: {len(y)} views from {len(names)} games; scoring on {hold} ({int(held.sum())} views)")
+    scorer = fit_picclf([v for v, h in zip(views, held) if not h], y[~held], device, **kwargs)
+    prob = scorer.scores([v for v, h in zip(views, held) if h])
+    truth = y[held]
+    accuracy = float((prob.argmax(axis=1) == truth).mean())
+    baseline = float(np.bincount(truth, minlength=len(CLASSES)).max() / len(truth))
+    shots = truth < 2
+    made_vs_missed = float(((prob[:, 0] > prob[:, 1]) == (truth == 0))[shots].mean()) if shots.any() else None
+    in_service = accuracy >= baseline + MIN_GAIN_OVER_GUESSING
+    del scorer
+    version, out = registry.new_version_dir("picclf")
+    fit_picclf(views, y, device, **kwargs).save(out / ("best.pt" if in_service else "not-good-enough.pt"))
+    registry.write_manifest(
+        out, name="picclf", version=version, kind="rim-view-frames", device=str(device), held_out=hold,
+        accuracy=round(accuracy, 4), baseline=round(baseline, 4), in_service=in_service,
+        made_vs_missed=None if made_vs_missed is None else round(made_vs_missed, 4),
+        items=int(len(y)), scored_on=int(held.sum()), games=names,
+        counts={cls: int((y == k).sum()) for k, cls in enumerate(CLASSES)})
+    if in_service:
+        log(f"registered picclf {version}: accuracy {accuracy:.3f} on {hold}, held out (guessing scores {baseline:.3f}); "
+            f"made versus missed {made_vs_missed if made_vs_missed is None else round(made_vs_missed, 3)}")
+    else:
+        log(f"picclf {version} not put into service: accuracy {accuracy:.3f} on {hold} does not clearly beat guessing "
+            f"({baseline:.3f}); the ball-path classifier carries on alone.")
+    return version, out

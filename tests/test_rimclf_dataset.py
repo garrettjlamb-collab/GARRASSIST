@@ -220,3 +220,23 @@ def test_a_new_ball_detector_rereads_the_stored_paths(synthetic_video, tmp_path,
     counts = _build(m.game_id, detector=new, **kwargs)
     assert counts["refreshed"] == 3 and counts["already"] == 3 and counts["pending"] == 0
     assert all(load_path(i)["detector"] == "ball@v2" and len(load_path(i)["frames"][0]["balls"]) == 1 for i in ids)
+
+
+def test_every_item_gets_the_rim_view_the_picture_classifier_trains_on(synthetic_video, tmp_path, monkeypatch):
+    import cv2
+    from film.interpret.rimview import GRID, TILE
+    from film.train.rimclf_dataset import ensure_views, view_file
+
+    _env(monkeypatch, tmp_path)
+    m = ingest(synthetic_video, date="2026-01-01", profile="test")
+    gd = game_dir(m.game_id)
+    _rims(gd)
+    save_events(gd, [_event("shot-000010-r1", 1.0, points=2), _event("shot-000020-r1", 2.0)])
+    build_rimclf_candidates(m.game_id, n_none=1, seed=1, margin_s=0.2, exclusion_s=0.1, log=lambda *a: None)
+    stored = [p.stem for p in (tmp_path / "datasets" / "rimclf").glob("*/*/*.jpg")] + ds.list_pending("rimclf")
+    assert len(stored) == 3
+    for image_id in stored:
+        assert cv2.imread(str(view_file(image_id))).shape == (GRID * TILE, GRID * TILE, 3)
+    assert ensure_views(m.game_id, log=lambda *a: None) == 0                 # nothing left to cut
+    view_file(stored[0]).unlink()
+    assert ensure_views(m.game_id, log=lambda *a: None) == 1                 # a missing one is cut again

@@ -164,3 +164,60 @@ def test_training_places_the_hoop_per_basket_side_not_per_track(monkeypatch, tmp
     from film.interpret.ballpath import FEATURES
     made = X[y == 0][:, FEATURES.index("column_frames")]
     assert (made > 0).all()
+
+
+VIEW_COLOURS = {"made": (0, 0, 220), "missed": (0, 220, 0), "none": (220, 0, 0)}
+
+
+def _picclf_dataset(games=("game-a", "game-b"), per_class=5, colours=VIEW_COLOURS):
+    from film.interpret.rimview import GRID, TILE
+    from film.train.rimclf_dataset import view_file
+
+    for game in games:
+        for cls in ("made", "missed", "none"):
+            for i in range(per_class):
+                image_id = _rimclf_item(game, cls, i)
+                view = np.zeros((GRID * TILE, GRID * TILE, 3), np.uint8)
+                view[:] = colours[cls]
+                view_file(image_id).parent.mkdir(parents=True, exist_ok=True)
+                cv2.imwrite(str(view_file(image_id)), view)
+
+
+def test_train_picclf_scores_on_a_held_out_game_and_registers_a_model_fit_on_all(monkeypatch, tmp_path):
+    from film.train.picclf import PictureClassifier
+    from film.train.train_yolo import train_picclf_version
+
+    _env(monkeypatch, tmp_path)
+    _picclf_dataset()
+    lines = []
+    version, folder = train_picclf_version("cpu", hold="game-b", arch="tiny", pretrained=False, epochs=30, lr=0.02, log=lines.append)
+    info = registry.read_manifest(folder)
+    assert version == "v1" and info["in_service"] is True and info["held_out"] == "game-b"
+    assert info["accuracy"] == 1.0 and info["made_vs_missed"] == 1.0 and info["items"] == 30 and info["scored_on"] == 15
+    assert registry.latest("picclf") == ("v1", folder) and PictureClassifier.load("cpu") is not None
+    assert any("registered picclf v1" in line for line in lines)
+
+
+def test_train_picclf_holds_out_the_game_labeled_last_unless_told(monkeypatch, tmp_path):
+    import os
+    from film.train.train_yolo import train_picclf_version
+
+    _env(monkeypatch, tmp_path)
+    _picclf_dataset()
+    old = 1_600_000_000
+    for image in (tmp_path / "datasets" / "rimclf").glob("*/*/game-b--*.jpg"):
+        os.utime(image, (old, old))
+    version, folder = train_picclf_version("cpu", arch="tiny", pretrained=False, epochs=2, lr=0.02, log=lambda *a: None)
+    assert registry.read_manifest(folder)["held_out"] == "game-a"
+
+
+def test_a_picture_classifier_that_learned_nothing_is_not_put_into_service(monkeypatch, tmp_path):
+    from film.train.train_yolo import train_picclf_version
+
+    _env(monkeypatch, tmp_path)
+    same = {cls: (90, 90, 90) for cls in VIEW_COLOURS}
+    _picclf_dataset(colours=same)
+    lines = []
+    version, folder = train_picclf_version("cpu", hold="game-b", arch="tiny", pretrained=False, epochs=2, lr=0.02, log=lines.append)
+    assert registry.read_manifest(folder)["in_service"] is False and registry.latest("picclf") is None
+    assert (folder / "not-good-enough.pt").exists() and any("not put into service" in line for line in lines)
