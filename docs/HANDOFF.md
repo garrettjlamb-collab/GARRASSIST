@@ -35,7 +35,7 @@ rented GPU. He may buy a Mac mini later but has decided to prove it on the lapto
 
 ## State on 2026-10-01
 
-- `main`, 251 tests passing, **no git remote yet** (he will supply an SSH URL).
+- `main`, 276 tests passing, **no git remote yet** (he will supply an SSH URL).
 - Rung 1 of the spec is built and has run end to end on two real games.
 - Two games processed and reviewed by Garrett (Cactus Shadows: the 125 ball and scoreboard cards; its 108 motion cards are not reviewed).
 - Three more films are on disk that the pipeline **cannot run yet** because they have no burned-in scoreboard.
@@ -219,8 +219,19 @@ out in turn, 678 real shots and 564 non-shots across six games:
   0.60 / 0.63 / 0.60 / 0.74 / 0.75. Each reviewed game now makes the next one better.
 - The same picture approach failed on two games in September (see above): it needed about 1,000 clips, a crop
   1.6 rim widths across centred under the measured hoop, and every frame through the network separately.
-- **Not in the pipeline yet.** Next: put the picture classifier in service beside the path classifier, with the
-  card's confidence taken from their agreement so "Confirm all above 0.9" works without a scoreboard.
+- **In the pipeline since 2026-10-07: `picclf@v1`** (`film/interpret/rimview.py`, `film/train/picclf.py`,
+  `film/interpret/fuse.py`). `film prelabel rimclf <id>` also cuts each item's rim view
+  (`datasets/rimclf/views`); `film train picclf [--hold <game_id>]` scores on one held-out game (default: the
+  one labeled last; Combs gave 0.822 three-class, 0.906 made versus missed) and registers a model fit on all
+  games: 17 minutes on the laptop for 1,242 views. Interpret keeps each arrival's picture scores in
+  `games/<id>/picviews.json`.
+- **Card confidence without a scoreboard** (`AGREEMENT_CONFIDENCE`, `film/interpret/events.py`): strong
+  agreement 0.92, fair 0.8, split 0.4 with the flag `classifiers-disagree`. "Strong" needs conviction >= 0.75
+  and an averaged "none" <= 0.25; held out, such a card is a real shot with the right call 90% of the time
+  (348 cards, 48% of real shots). Motion-only cards stay capped at 0.5.
+- On the six reviewed games after the re-run: 484 reviewed cards at >= 0.9, 480 real and right, covering 69% of
+  real shots. **That is in-sample** (the model in service trained on these games); expect about 90% and about
+  half the shots on a new game. The first new game is the real test: review it in full and compare.
 - Cost: about 8 minutes per held-out game on the laptop (8 epochs, ~1,000 clips).
 
 ## Fouls on a shot card (built 2026-10-05)

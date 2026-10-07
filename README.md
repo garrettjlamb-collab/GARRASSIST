@@ -87,6 +87,10 @@ made-or-missed clips.
    ball's path, not the picture: a make drops straight down under the hoop, a miss goes sideways or back up.
    With two or more games it is scored by training on the others and testing on the one held out; a
    classifier that does not clearly beat guessing is kept out of service and the scoreboard stays in charge.
+   `uv run film train picclf` (about 17 minutes) trains the second opinion, a classifier that looks at sixteen
+   frames of the hoop and net. It needs two reviewed games. Where the two agree strongly on a card with no
+   scoreboard, the card's confidence is 0.92 and **Confirm all above 0.9** accepts it; where they disagree the
+   card is flagged `classifiers-disagree`.
 4. **Rim, and not on Hudl film.** For other cameras: `uv run film prelabel rim <game_id>`, the **Label rim**
    tab, about 150 frames, `uv run film train rim`. A trained rim model outranks the templates once it
    exists; set `FILM_RIM_DETECTOR=template` to keep the templates on Hudl film.
