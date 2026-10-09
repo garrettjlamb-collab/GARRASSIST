@@ -257,7 +257,7 @@ Results (`rim@v4` after `--auto` on all four gyms: Cortez 42, Tempe 49, Cactus S
 | MDN vs Cactus Shadows | 374 | 300 | 184 | 47 | 26 |
 | MDN vs Tempe | 128 | 100 | 42 | 35 | 20 |
 | Moon Valley vs MDN (150 min film) | 468 (173 typed shot) | 159 | 88 | 52 | 50 |
-| Arcadia vs Cortez | 176 | 92 | 36 | 30 | 21 |
+| Arcadia vs Cortez | 176 | 74 | 53 | 18 | 21 |
 
 Backboard found in 80% (CS), 85% (Tempe), 46% (Moon Valley, wide fixed view) and 48% (Cortez, 720p, near
 backboard often out of frame) of frames. All four await Garrett's quarter marks and review.
