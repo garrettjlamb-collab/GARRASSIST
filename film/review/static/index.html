@@ -116,7 +116,7 @@ function render() {
   $("#quarters").hidden = state.tab !== "quarters";
   $("#label").hidden = state.tab === "shots" || state.tab === "quarters";
   if (state.tab === "shots") renderShots();
-  else if (state.tab === "quarters") loadQuarters();
+  else if (state.tab === "quarters") loadQuarters().catch(showError);
   else loadLabel();
 }
 
@@ -193,7 +193,7 @@ function shotKeys(ev) {
   else if (k === "w") { e.foul = e.foul === "on_shot" ? "before_shot" : e.foul === "before_shot" ? null : "on_shot"; renderShots(); }
   else if (k === "x") decide("rejected");
   else if (k === "u") decide("unsure");
-  else if (k === "l") window.open(`/video/${state.game}#t=${Math.max(0, e.clip ? e.clip.start : e.t - 8).toFixed(1)}`, "_blank");
+  else if (k === "l") window.open(`/film.html?game=${encodeURIComponent(state.game)}&t=${Math.max(0, e.clip ? e.clip.start : e.t - 8).toFixed(1)}`, "_blank");
   else if (k === "r") { const v = $("#clip"); if (v) { v.currentTime = 0; v.play(); } }
   else if (k === "f") {
     state.rate = RATES[(RATES.indexOf(state.rate) + 1) % RATES.length];
@@ -209,10 +209,27 @@ function shotKeys(ev) {
 // ---- Quarters: for film with no scoreboard, the coach marks when each quarter starts and ends ----
 const hms = (s) => s == null ? "--:--" : `${Math.floor(s / 3600)}:${String(Math.floor(s % 3600 / 60)).padStart(2, "0")}:${String(Math.floor(s % 60)).padStart(2, "0")}`;
 
+// The full film may be in iCloud only: ask the server for it and wait here until it is on the Mac.
+// Resolves false if the coach moved on to another game or tab while waiting.
+async function filmReady(game, el) {
+  let f = await post(`/api/games/${game}/film`);
+  while (f.state !== "local") {
+    if (f.state === "missing") throw new Error("the film file is not where this game says it is");
+    if (f.error) throw new Error(f.error);
+    el.innerHTML = `<p class="muted">Pulling the full film from iCloud (${(f.size_bytes / 1e9).toFixed(1)} GB)… it will load here when it arrives.</p>`;
+    await new Promise((done) => setTimeout(done, 5000));
+    if (state.game !== game || state.tab !== "quarters") return false;
+    f = await api(`/api/games/${game}/film`);
+  }
+  return true;
+}
+
 async function loadQuarters() {
   const el = $("#quarters");
   if (!state.game) { el.innerHTML = "<p class='muted'>Pick a game.</p>"; return; }
-  const q = await api(`/api/games/${state.game}/quarters`);
+  const game = state.game;
+  const q = await api(`/api/games/${game}/quarters`);
+  if (!(await filmReady(game, el))) return;
   state.marks = q.quarters.map(([a, b]) => [a, b]);
   el.innerHTML = `
     <div class="card wide">

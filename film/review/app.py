@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import re
+import threading
+from contextlib import asynccontextmanager
 from pathlib import Path
 
 from fastapi import FastAPI, HTTPException, Request
@@ -15,6 +17,7 @@ from film.interpret.events import load_events
 from film.interpret.quarters import apply_quarters, load_quarters, save_quarters
 from film.perceive.scoreboard import has_scoreboard
 from film.perceive.detectors import Box
+from film.review.films import Films
 from film.review.decisions import apply_decisions, load_decisions, save_decision
 from film.train import datasets as ds
 from film.train.rimclf import CLASSES
@@ -90,7 +93,8 @@ def _known_image(dataset: str, image_id: str) -> None:
         raise HTTPException(404, f"no image {image_id} in {dataset}")
 
 
-def _range_response(path: Path, range_header: str | None):
+def _range_response(path: Path, range_header: str | None, touch=lambda: None):
+    """`touch` is called as each chunk is sent, so a film being watched counts as in use."""
     size = path.stat().st_size
     if not range_header:
         return FileResponse(path, media_type="video/mp4", headers={"Accept-Ranges": "bytes"})
@@ -118,14 +122,36 @@ def _range_response(path: Path, range_header: str | None):
                 if not chunk:
                     break
                 remaining -= len(chunk)
+                touch()
                 yield chunk
 
     headers = {"Content-Range": f"bytes {start}-{end}/{size}", "Accept-Ranges": "bytes", "Content-Length": str(end - start + 1)}
     return StreamingResponse(body(), status_code=206, media_type="video/mp4", headers=headers)
 
 
-def create_app() -> FastAPI:
-    app = FastAPI(title="film review")
+SWEEP_EVERY_S = 60.0
+
+
+def create_app(films: Films | None = None) -> FastAPI:
+    films = films or Films()
+
+    @asynccontextmanager
+    async def lifespan(app: FastAPI):
+        stop = threading.Event()
+
+        def sweeper():
+            while not stop.wait(SWEEP_EVERY_S):
+                films.sweep()
+
+        threading.Thread(target=sweeper, daemon=True).start()
+        try:
+            yield
+        finally:
+            stop.set()
+            films.release_all()               # every film this server pulled goes back to iCloud
+
+    app = FastAPI(title="film review", lifespan=lifespan)
+    app.state.films = films
 
     @app.get("/api/games")
     def games():
@@ -170,10 +196,23 @@ def create_app() -> FastAPI:
             raise HTTPException(404, "clip not cut yet; run film clips")
         return FileResponse(path, media_type="video/mp4")
 
+    @app.get("/api/games/{game_id}/film")
+    def film_status(game_id: str):
+        return films.status(game_id, Path(Manifest.load(_gd(game_id)).source))
+
+    @app.post("/api/games/{game_id}/film")
+    def film_request(game_id: str):
+        return films.request(game_id, Path(Manifest.load(_gd(game_id)).source))
+
     @app.get("/video/{game_id}")
     def video(game_id: str, request: Request):
-        m = Manifest.load(_gd(game_id))
-        return _range_response(Path(m.source), request.headers.get("range"))
+        source = Path(Manifest.load(_gd(game_id)).source)
+        film = films.request(game_id, source)
+        if film["state"] == "missing":
+            raise HTTPException(404, f"the film is not at {source}")
+        if film["state"] != "local":
+            raise HTTPException(503, film["error"] or "pulling the film from iCloud", headers={"Retry-After": "30"})
+        return _range_response(source, request.headers.get("range"), touch=lambda: films.touch(game_id))
 
     @app.get("/api/label/{dataset}/next")
     def label_next(dataset: str):

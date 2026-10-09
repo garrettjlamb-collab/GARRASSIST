@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Full film</title>
+<link rel="icon" href="data:,">
+<style>
+  body { margin:0; font:14px/1.4 -apple-system, system-ui, sans-serif; background:#0f1218; color:#e6e9ef; display:grid; place-items:center; height:100vh; }
+  p { max-width:520px; text-align:center; } .bad { color:#ff5c5c; }
+</style>
+</head>
+<body>
+<p id="msg">Opening the film…</p>
+<script>
+// The full film may be in iCloud only. Ask the review server for it, wait while it comes down, then play it.
+const params = new URLSearchParams(location.search);
+const game = params.get("game");
+const t = params.get("t") || "0";
+const url = `/api/games/${encodeURIComponent(game)}/film`;
+const msg = document.getElementById("msg");
+const fail = (text) => { msg.className = "bad"; msg.textContent = text; };
+
+async function open() {
+  let r = await fetch(url, { method: "POST" });
+  for (;;) {
+    if (!r.ok) return fail(await r.text());
+    const f = await r.json();
+    if (f.state === "local") return location.replace(`/video/${encodeURIComponent(game)}#t=${t}`);
+    if (f.state === "missing") return fail("The film file is not where this game says it is.");
+    if (f.error) return fail(f.error);
+    msg.textContent = `Pulling the full film from iCloud (${(f.size_bytes / 1e9).toFixed(1)} GB)… it will start here when it arrives.`;
+    await new Promise((done) => setTimeout(done, 5000));
+    r = await fetch(url);
+  }
+}
+open().catch((err) => fail(String(err)));
+</script>
+</body>
+</html>
