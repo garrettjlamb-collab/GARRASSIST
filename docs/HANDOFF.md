@@ -90,8 +90,33 @@ Cutting ~300 clips takes about 2 minutes. Training the ball detector at 640 px t
 
 ## Films on disk
 
-All in `~/Downloads` (the `.mp4` copies are fully local) and `~/Desktop/Full Games` (some `.mov` copies
-there are iCloud placeholders with 0 bytes on disk; check with `du -k` before using them).
+All in `~/Downloads` (the `.mp4` copies are fully local) and `~/Desktop/Full Games`, which syncs to iCloud
+Drive. Most films there are in iCloud only, with no copy on the Mac: `film doctor` lists which.
+
+### Films may be cloud-only (built 2026-10-09)
+
+The laptop's disk is too small to keep every film, so a job pulls its film from iCloud when it needs it
+and puts it back when it ends (`film/common/cloud.py`; spec in
+`docs/superpowers/specs/2026-10-09-cloud-film-design.md`).
+
+- **Never open `m.source` directly.** A cloud-only file opened that way is downloaded by macOS with no
+  space check and never goes back. Any script that reads a film, including a one-off, does this:
+
+  ```python
+  from film.common.cloud import game_film, local_source
+
+  with local_source(game_film(game_id)) as film:
+      frame = first_frame_at(film, t, fps)
+  ```
+
+- Only a film the pipeline pulled goes back. One Garrett keeps on the Mac is never offloaded.
+- A film is held until the last job using it ends, across processes, so two sessions can share one.
+- A pull is refused when the disk does not have the film's size plus 5 GB free. Each film is 0.6 to 5.7 GB.
+- macOS will not offload a file that has not finished uploading, and an offload it accepts does not always
+  take. Both are reported in one line (`... is still on the Mac`) and the next job on that film tries again.
+- The review cards play pre-cut clips and need no film. The Quarters tab and the L key pull the full film
+  and the server puts it back after 30 minutes with nobody watching, or when it stops.
+- The films in `~/Downloads` are not in iCloud and are left alone.
 
 | File | Camera | Status |
 |---|---|---|

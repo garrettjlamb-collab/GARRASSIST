@@ -42,7 +42,10 @@ redoes them. `--limit-s 120` is a two-minute smoke test (a later run without it 
 service reads each shot's ball path from the film, about 2 minutes) and are safe to repeat: review decisions follow each
 shot to its re-detected card and are never deleted.
 
-Nothing here uses the internet or any paid service once the weights are downloaded.
+Nothing here uses the internet or any paid service once the weights are downloaded, with one exception:
+a film kept in iCloud only (most of `~/Desktop/Full Games`) is pulled down when a command needs it and put
+back when the command ends. It says so when it does, and refuses if the disk has no room. A film you keep
+on the Mac is never offloaded. `uv run film doctor` lists where each game's film is.
 
 ## Reviewing
 
