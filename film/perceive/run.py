@@ -5,6 +5,7 @@ from pathlib import Path
 
 import pandas as pd
 
+from film.common.cloud import needs_film
 from film.common.device import pick_device
 from film.common.manifest import Manifest
 from film.common.paths import game_dir
@@ -20,6 +21,7 @@ MOTION_COLUMNS = ["frame", "t", "rim_id", "energy", "energy_global"]
 LOW_RIM_FRACTION = 0.15
 
 
+@needs_film
 def perceive(game_id: str, device: str | None = None, rim_detector=None, ball_detector=None,
              limit_s: float | None = None, log=print) -> dict:
     """One decode pass: rims, the ball near each rim, motion energy, and the scoreboard once a second."""

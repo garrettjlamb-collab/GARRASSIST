@@ -11,6 +11,7 @@ def register(sub) -> None:
 
 
 def run(args) -> int:
+    from film.common.cloud import local_source
     from film.common.manifest import Manifest
     from film.common.paths import game_dir
     from film.perceive.scoreboard import build_timeline, clean_timeline, has_scoreboard, load_profile, save_timeline
@@ -20,7 +21,8 @@ def run(args) -> int:
     if not has_scoreboard(m.profile):
         print(f"profile {m.profile} has no scoreboard reader; nothing to do")
         return 1
-    raw = build_timeline(Path(m.source), load_profile(m.profile), limit_s=args.limit_s)
+    with local_source(Path(m.source)) as film:
+        raw = build_timeline(film, load_profile(m.profile), limit_s=args.limit_s)
     kept = clean_timeline(raw)
     out = save_timeline(kept, gd / "scoreboard.jsonl")
     m.mark("scoreboard", "done", raw=len(raw), kept=len(kept))

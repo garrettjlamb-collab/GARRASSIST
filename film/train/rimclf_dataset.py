@@ -8,6 +8,7 @@ import cv2
 import pandas as pd
 
 from film.common.device import pick_device
+from film.common.cloud import may_need_film
 from film.common.manifest import Manifest
 from film.common.paths import datasets_dir, game_dir
 from film.interpret.ballpath import hoop_offset, read_ball_path
@@ -51,7 +52,8 @@ def view_file(image_id: str) -> Path:
     return datasets_dir() / "rimclf" / "views" / f"{image_id}.jpg"
 
 
-def ensure_views(game_id: str, log=print) -> int:
+@may_need_film
+def ensure_views(game_id: str, log=print, *, film) -> int:
     """Cut the rim view (see film.interpret.rimview) of every item of this game that has a ball path and no
     view yet; returns how many were cut. The hoop is placed per basket side from the game's stored paths."""
     gd = game_dir(game_id)
@@ -71,7 +73,7 @@ def ensure_views(game_id: str, log=print) -> int:
         box = rim_box_at(rims, int(round(path["t"] * m.fps)), path["rim"])
         if box is None:
             continue
-        sheet = read_rim_view(Path(m.source), path["t"], box, hoop_dx=offsets[path.get("side") or path["rim"]],
+        sheet = read_rim_view(film(), path["t"], box, hoop_dx=offsets[path.get("side") or path["rim"]],
                               rim_at=rim_follower(rims, path["rim"], m.fps))
         target.parent.mkdir(parents=True, exist_ok=True)
         cv2.imwrite(str(target), sheet, [cv2.IMWRITE_JPEG_QUALITY, 92])
@@ -133,12 +135,12 @@ def _route(e, decision: dict | None) -> tuple[str | None, str | None]:
     return None, "missed" if e.type == "shot" else "none"
 
 
+@may_need_film
 def build_rimclf_candidates(game_id: str, n_none: int = 40, seed: int = 0, margin_s: float = 30.0,
                             exclusion_s: float = EVENT_EXCLUSION_S, detector=None, device: str | None = None,
-                            log=print) -> dict:
+                            log=print, *, film) -> dict:
     gd = game_dir(game_id)
     m = Manifest.load(gd)
-    source = Path(m.source)
     events = load_events(gd)
     rims = read_tracks(gd, "rim")
     decisions = load_decisions(gd)
@@ -149,7 +151,7 @@ def build_rimclf_candidates(game_id: str, n_none: int = 40, seed: int = 0, margi
         detector = load_detector("ball", pick_device(device))
 
     def store_path(image_id: str, t: float, box, rim_id: int) -> None:
-        path = read_ball_path(source, t, box, m.width, m.height, detector, rim_at=rim_follower(rims, rim_id, m.fps))
+        path = read_ball_path(film(), t, box, m.width, m.height, detector, rim_at=rim_follower(rims, rim_id, m.fps))
         save_path(image_id, path, game_id, rim_id, t, detector=detector.name, side=sides.get(int(rim_id)))
 
     def refresh_path(image_id: str, t: float, rim_id: int) -> None:
@@ -188,7 +190,7 @@ def build_rimclf_candidates(game_id: str, n_none: int = 40, seed: int = 0, margi
             counts["no_rim"] += 1
             log(f"rimclf: no rim box near {e.id}, skipped")
             continue
-        montage = build_montage(source, e.t, box, m.width, m.height, rim_at=rim_follower(rims, e.rim_id, m.fps))
+        montage = build_montage(film(), e.t, box, m.width, m.height, rim_at=rim_follower(rims, e.rim_id, m.fps))
         store_path(image_id, e.t, box, e.rim_id)
         cls, suggested = _route(e, decisions.get(e.id))
         if cls is not None:
@@ -218,7 +220,7 @@ def build_rimclf_candidates(game_id: str, n_none: int = 40, seed: int = 0, margi
         rim_id = _nearest_rim_id(rims, int(round(t * m.fps)))
         store_path(none_id, t, box, rim_id)
         store_class_image("rimclf", none_id,
-                          build_montage(source, t, box, m.width, m.height, rim_at=rim_follower(rims, rim_id, m.fps)), "none")
+                          build_montage(film(), t, box, m.width, m.height, rim_at=rim_follower(rims, rim_id, m.fps)), "none")
         counts["none_auto"] += 1
     log(f"rimclf candidates for {game_id}: {counts}")
     ensure_views(game_id, log=log)

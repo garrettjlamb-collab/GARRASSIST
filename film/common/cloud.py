@@ -217,18 +217,51 @@ def local_source(source: Path, log=print) -> Iterator[Path]:
 
 
 @contextmanager
-def lazy_source(source: Path, log=print) -> Iterator[Callable[[], Path]]:
+def lazy_source(source: Path | Callable[[], Path], log=print) -> Iterator[Callable[[], Path]]:
     """A function that returns the film, pulling it on the first call: for a stage that often has
-    everything it needs on disk already and should not pull 5 GB to find that out."""
+    everything it needs on disk already and should not pull 5 GB to find that out. `source` may itself
+    be a function, for a caller that should not even look the path up until it is needed."""
     held: list[Hold] = []
 
     def film() -> Path:
         if not held:
-            held.append(hold(source, log=log))
-        return Path(source)
+            held.append(hold(source() if callable(source) else source, log=log))
+        return held[0].source
 
     try:
         yield film
     finally:
         for h in held:
             h.release()
+
+
+def game_film(game_id: str) -> Path:
+    from film.common.manifest import Manifest
+    from film.common.paths import game_dir
+
+    return Path(Manifest.load(game_dir(game_id)).source)
+
+
+def needs_film(fn):
+    """For a stage `fn(game_id, ...)` that always reads the film: it is local for the whole call."""
+    import functools
+
+    @functools.wraps(fn)
+    def stage(game_id, *args, **kwargs):
+        with local_source(game_film(game_id), log=kwargs.get("log", print)):
+            return fn(game_id, *args, **kwargs)
+
+    return stage
+
+
+def may_need_film(fn):
+    """For a stage `fn(game_id, ..., film=...)` that reads the film only for what it has not already
+    worked out: it is handed `film`, a function returning the path, and the film is pulled on first call."""
+    import functools
+
+    @functools.wraps(fn)
+    def stage(game_id, *args, **kwargs):
+        with lazy_source(game_film(game_id), log=kwargs.get("log", print)) as film:
+            return fn(game_id, *args, film=film, **kwargs)
+
+    return stage

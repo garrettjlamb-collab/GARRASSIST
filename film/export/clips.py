@@ -6,6 +6,7 @@ from pathlib import Path
 
 import cv2
 
+from film.common.cloud import may_need_film
 from film.common.ffmpeg import ffmpeg_exe
 from film.common.manifest import Manifest
 from film.common.paths import game_dir
@@ -38,7 +39,8 @@ def clip_path(game_dir_path: Path, event_id: str) -> Path:
     return Path(game_dir_path) / "clips" / f"{event_id}.mp4"
 
 
-def clips_for_game(game_id: str, force: bool = False, log=print) -> int:
+@may_need_film
+def clips_for_game(game_id: str, force: bool = False, log=print, *, film) -> int:
     gd = game_dir(game_id)
     m = Manifest.load(gd)
     n = 0
@@ -46,7 +48,7 @@ def clips_for_game(game_id: str, force: bool = False, log=print) -> int:
         out = clip_path(gd, e.id)
         if out.exists() and not force:
             continue
-        cut_clip(Path(m.source), e.clip["start"], e.clip["end"], out)
+        cut_clip(film(), e.clip["start"], e.clip["end"], out)
         n += 1
     log(f"clips {game_id}: {n} cut")
     return n

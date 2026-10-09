@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import importlib
 import os
+import sys
 
 import certifi
 
@@ -41,7 +42,13 @@ def main(argv: list[str] | None = None) -> int:
     if getattr(args, "func", None) is None:
         parser.print_help()
         return 1
-    return int(args.func(args) or 0)
+    from film.common.cloud import CloudError
+
+    try:
+        return int(args.func(args) or 0)
+    except CloudError as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        return 2
 
 
 if __name__ == "__main__":

@@ -3,6 +3,7 @@ from __future__ import annotations
 from datetime import datetime
 from pathlib import Path
 
+from film.common.cloud import local_source
 from film.common.manifest import Manifest
 from film.common.paths import game_dir, game_id_for
 from film.common.video import iter_frames, probe
@@ -26,11 +27,12 @@ def ingest(source: Path, date: str | None = None, profile: str | None = None, fp
     source = Path(source).resolve()
     if date is None:
         date = datetime.fromtimestamp(source.stat().st_mtime).strftime("%Y-%m-%d")
-    info = probe(source)
     samples = []
-    if profile is None:
-        samples = sample_frames(source, info.duration_s)
-        profile = detect_profile(samples)
+    with local_source(source):
+        info = probe(source)
+        if profile is None:
+            samples = sample_frames(source, info.duration_s)
+            profile = detect_profile(samples)
     manifest = Manifest(
         game_id=game_id_for(source, date), source=str(source), date=date,
         duration_s=info.duration_s, width=info.width, height=info.height,

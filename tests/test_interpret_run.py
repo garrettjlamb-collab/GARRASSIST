@@ -140,7 +140,7 @@ def test_hoop_offset_is_shared_by_every_track_of_the_same_basket(monkeypatch):
     path = {"rim_w": 50.0, "frames": [{"dt": 0.0, "balls": [[0.5, 0.0, 0.8]]}, {"dt": 0.3, "balls": [[0.5, 0.6, 0.8]]}]}
     arrivals = [Arrival(t=float(i), frame=i * 10, rim_id=10 + i, rim_box=(100.0, 60.0, 150.0, 90.0), source="ball", conf=0.8) for i in range(10)]
     rims = pd.DataFrame([{"frame": a.frame, "track_id": a.rim_id, "x1": 100.0, "y1": 60.0, "x2": 150.0, "y2": 90.0} for a in arrivals])
-    monkeypatch.setattr(R, "ball_paths", lambda gd, m, arr, r, det: [path] * len(arr))
+    monkeypatch.setattr(R, "ball_paths", lambda gd, m, arr, r, det, film=None: [path] * len(arr))
     given = []
 
     class Recording(FakeClassifier):

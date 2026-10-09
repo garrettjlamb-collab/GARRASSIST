@@ -5,6 +5,7 @@ from pathlib import Path
 
 import pandas as pd
 
+from film.common.cloud import lazy_source
 from film.common.device import pick_device
 from film.common.manifest import Manifest
 from film.common.paths import game_dir
@@ -27,16 +28,18 @@ from film.train.rimclf import CLASSES, RimClassifier
 PATHS_FILE = "ballpaths.json"
 
 
-def ball_paths(gd: Path, m: Manifest, arrivals: list[Arrival], rims: pd.DataFrame, detector) -> list[dict]:
+def ball_paths(gd: Path, m: Manifest, arrivals: list[Arrival], rims: pd.DataFrame, detector, film=None) -> list[dict]:
     """The ball's path after each arrival. Kept in the game folder so only new arrivals are read from the
-    film again; a different ball detector starts the file over."""
+    film again; a different ball detector starts the file over. `film` returns the film's path (see
+    film.common.cloud.lazy_source) and is only called when there is something new to read."""
+    film = film or (lambda: Path(m.source))
     file = gd / PATHS_FILE
     stored = json.loads(file.read_text()) if file.exists() else {}
     known = stored.get("paths", {}) if stored.get("detector") == detector.name else {}
     paths = {}
     for a in arrivals:
         key = f"{a.frame}-r{a.rim_id}"
-        paths[key] = known.get(key) or read_ball_path(Path(m.source), a.t, a.rim_box, m.width, m.height, detector,
+        paths[key] = known.get(key) or read_ball_path(film(), a.t, a.rim_box, m.width, m.height, detector,
                                                       rim_at=rim_follower(rims, a.rim_id, m.fps))
     file.write_text(json.dumps({"detector": detector.name, "paths": paths}))
     return [paths[f"{a.frame}-r{a.rim_id}"] for a in arrivals]
@@ -45,9 +48,11 @@ def ball_paths(gd: Path, m: Manifest, arrivals: list[Arrival], rims: pd.DataFram
 VIEWS_FILE = "picviews.json"
 
 
-def picture_scores(gd: Path, m: Manifest, arrivals: list[Arrival], rims: pd.DataFrame, hoop_dx: list[float], pictures) -> list[dict]:
+def picture_scores(gd: Path, m: Manifest, arrivals: list[Arrival], rims: pd.DataFrame, hoop_dx: list[float], pictures,
+                   film=None) -> list[dict]:
     """The picture classifier's class probabilities for each arrival. Kept in the game folder, so only new
     arrivals are cut from the film again; a different picture classifier starts the file over."""
+    film = film or (lambda: Path(m.source))
     file = gd / VIEWS_FILE
     stored = json.loads(file.read_text()) if file.exists() else {}
     known = stored.get("scores", {}) if stored.get("model") == pictures.version else {}
@@ -55,7 +60,7 @@ def picture_scores(gd: Path, m: Manifest, arrivals: list[Arrival], rims: pd.Data
     todo = [i for i, k in enumerate(keys) if k not in known]
     for start in range(0, len(todo), 32):                          # a view is 600 kB: a few at a time
         chunk = todo[start:start + 32]
-        views = [read_rim_view(Path(m.source), arrivals[i].t, arrivals[i].rim_box, hoop_dx=hoop_dx[i],
+        views = [read_rim_view(film(), arrivals[i].t, arrivals[i].rim_box, hoop_dx=hoop_dx[i],
                                rim_at=rim_follower(rims, arrivals[i].rim_id, m.fps)) for i in chunk]
         for i, row in zip(chunk, pictures.scores(views)):
             known[keys[i]] = [round(float(v), 4) for v in row]
@@ -68,13 +73,15 @@ def classify_arrivals(gd: Path, m: Manifest, arrivals: list[Arrival], rims: pd.D
                       pictures=None) -> list[dict]:
     """One opinion per arrival (see fuse): the ball-path classifier's call, joined by the picture classifier's
     when there is one."""
-    paths = ball_paths(gd, m, arrivals, rims, detector)
-    # The hoop's offset from the rim box is a property of the basket, not of one stretch of tracking.
-    sides = basket_sides(rims, m.width)
-    side_of = [sides.get(a.rim_id, a.rim_id) for a in arrivals]
-    offsets = {s: hoop_offset([p for k, p in zip(side_of, paths) if k == s]) for s in set(side_of)}
-    path_scores = [clf.predict(path_features(p, offsets[s]))[2] for s, p in zip(side_of, paths)]
-    seen = picture_scores(gd, m, arrivals, rims, [offsets[s] for s in side_of], pictures) if pictures is not None else [None] * len(arrivals)
+    with lazy_source(lambda: Path(m.source)) as film:                # pulled from iCloud only if an arrival is new
+        paths = ball_paths(gd, m, arrivals, rims, detector, film=film)
+        # The hoop's offset from the rim box is a property of the basket, not of one stretch of tracking.
+        sides = basket_sides(rims, m.width)
+        side_of = [sides.get(a.rim_id, a.rim_id) for a in arrivals]
+        offsets = {s: hoop_offset([p for k, p in zip(side_of, paths) if k == s]) for s in set(side_of)}
+        path_scores = [clf.predict(path_features(p, offsets[s]))[2] for s, p in zip(side_of, paths)]
+        seen = (picture_scores(gd, m, arrivals, rims, [offsets[s] for s in side_of], pictures, film=film)
+                if pictures is not None else [None] * len(arrivals))
     return [fuse(a, b) for a, b in zip(path_scores, seen)]
 
 

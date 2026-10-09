@@ -18,6 +18,13 @@ def register(sub) -> None:
 
 
 def run(args) -> int:
+    from film.common.cloud import local_source
+
+    with local_source(args.source):              # one pull for all four stages, put back when the last ends
+        return _run(args)
+
+
+def _run(args) -> int:
     import sys
 
     from film.common.paths import game_dir

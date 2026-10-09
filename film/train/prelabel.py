@@ -5,6 +5,7 @@ from pathlib import Path
 
 import numpy as np
 
+from film.common.cloud import needs_film
 from film.common.device import pick_device
 from film.common.manifest import Manifest
 from film.common.paths import game_dir
@@ -80,6 +81,7 @@ def first_frame_at(source: Path, t: float, fps: float) -> np.ndarray | None:
     return None
 
 
+@needs_film
 def prelabel_rims(game_id: str, n: int = 150, detector=None, device: str | None = None,
                   margin_s: float = 30.0, log=print) -> int:
     """Propose rim and backboard boxes on evenly spaced frames for the coach to confirm."""
@@ -104,6 +106,7 @@ AUTOLABEL_MIN_CONF = 0.2
 AUTOLABEL_MIN_IOU = 0.5
 
 
+@needs_film
 def autolabel_rims(game_id: str, n: int = 200, detector=None, device: str | None = None, min_conf: float = AUTOLABEL_MIN_CONF,
                    margin_s: float = 30.0, log=print) -> int:
     """Training frames for a gym nobody has labeled: the rim detector's own boxes, kept only when the same
@@ -137,6 +140,7 @@ def autolabel_rims(game_id: str, n: int = 200, detector=None, device: str | None
     return saved
 
 
+@needs_film
 def prelabel_balls(game_id: str, n: int = 300, rim_detector=None, ball_detector=None, device: str | None = None,
                    margin_s: float = 30.0, after_shots: bool = False, propose: bool = True, log=print) -> int:
     """Propose ball boxes inside rim crops, sampled around known arrivals when events exist.
