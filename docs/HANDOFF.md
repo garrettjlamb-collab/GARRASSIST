@@ -249,6 +249,17 @@ new gyms") and left, saying do not stop until all are done. Ingested with `--pro
 Nobody could label, so `film prelabel rim --auto` was built: the detector's own boxes, kept when found again
 0.3 s later, go straight into `datasets/rim`. Then `rim@v4` (30 epochs) and the four games in sequence. He must
 still **mark the quarters** on each (Quarters tab) and review; the cards were built without marks.
+Results (`rim@v4` after `--auto` on all four gyms: Cortez 42, Tempe 49, Cactus Shadows 90, Moon Valley 68 frames;
+0.98 mAP50; 8-frame check went Tempe 3->8, CS 4->5, Moon Valley 4->5, Cortez 0->1):
+
+| Game | Cards | Strong | Safe (>= 0.9) | Disagree | Minutes |
+|---|---|---|---|---|---|
+| MDN vs Cactus Shadows | 374 | 300 | 184 | 47 | 26 |
+| MDN vs Tempe | 128 | 100 | 42 | 35 | 20 |
+| Moon Valley vs MDN (150 min film) | 468 (173 typed shot) | 159 | 88 | 52 | 50 |
+| Arcadia vs Cortez | see below | | | | |
+
+Moon Valley's last 40 minutes of film (empty court) hold only ~23 cards; quarter marks will clear them.
 Game ids carry "new-" and the download date. The Moon Valley overlay is a second Hudl scoreboard layout worth a
 profile of its own later (it would give made/missed for free in that gym).
 
