@@ -12,7 +12,7 @@ from film.common.video import iter_frames
 from film.interpret.ballpath import path_crop_box
 from film.interpret.events import load_events
 from film.perceive.ball import detector_tile, rim_crop_box
-from film.perceive.detectors import load_detector
+from film.perceive.detectors import Box, load_detector
 from film.perceive.rims import rim_boxes
 from film.perceive.tracks import read_tracks
 from film.review.decisions import load_decisions
@@ -97,6 +97,44 @@ def prelabel_rims(game_id: str, n: int = 150, detector=None, device: str | None 
         count += 1
     log(f"prelabel rim: {count} frames queued for {game_id}")
     return count
+
+
+AUTOLABEL_RECHECK_S = 0.3
+AUTOLABEL_MIN_CONF = 0.2
+AUTOLABEL_MIN_IOU = 0.5
+
+
+def autolabel_rims(game_id: str, n: int = 200, detector=None, device: str | None = None, min_conf: float = AUTOLABEL_MIN_CONF,
+                   margin_s: float = 30.0, log=print) -> int:
+    """Training frames for a gym nobody has labeled: the rim detector's own boxes, kept only when the same
+    box is found again a third of a second later. A backboard holds still; the banners and scoreboards the
+    detector sometimes mistakes for one tend to come and go. Returns how many frames were saved."""
+    from film.perceive.rim_templates import iou
+    from film.train.datasets import accept_boxes
+
+    m = Manifest.load(game_dir(game_id))
+    det = detector or load_detector("rim", pick_device(device), profile=m.profile, fallback=False)
+    if det is None:
+        raise ValueError(f"{game_id}: no rim detector to label with; train one on a labeled gym first")
+    saved = 0
+    for t in sample_times(m.duration_s, n, margin_s):
+        image_id = f"{game_id}_{int(round(t * 10)):06d}"
+        if is_known("rim", image_id):
+            continue
+        frame = first_frame_at(Path(m.source), t, m.fps)
+        later = first_frame_at(Path(m.source), t + AUTOLABEL_RECHECK_S, m.fps)
+        if frame is None or later is None:
+            continue
+        again = [b for b in det.detect(later) if b.cls in CLASS_NAMES["rim"] and b.conf >= min_conf / 2]
+        steady = [b for b in det.detect(frame) if b.cls in CLASS_NAMES["rim"] and b.conf >= min_conf
+                  and any(iou(b, o) >= AUTOLABEL_MIN_IOU for o in again)]
+        if not steady:
+            continue
+        write_pending("rim", image_id, frame, steady, extra={"t": t, "auto": True})
+        accept_boxes("rim", image_id, [Box(b.x1, b.y1, b.x2, b.y2, 1.0, b.cls) for b in steady])
+        saved += 1
+    log(f"autolabel rim: {saved} frames saved for {game_id} from the detector's own steady boxes")
+    return saved
 
 
 def prelabel_balls(game_id: str, n: int = 300, rim_detector=None, ball_detector=None, device: str | None = None,

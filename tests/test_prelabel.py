@@ -172,3 +172,39 @@ def test_prelabel_balls_can_queue_crops_without_the_detectors_guesses(synthetic_
     n = prelabel_balls(m.game_id, n=10, rim_detector=rims, ball_detector=balls, propose=False, log=lambda *a: None)
     assert n == 5 and balls.calls == 0
     assert all(ds.read_pending("ball", i)["boxes"] == [] for i in ds.list_pending("ball"))
+
+
+def test_autolabel_rims_keeps_only_boxes_the_detector_finds_again_a_moment_later(synthetic_video, tmp_path, monkeypatch):
+    """A new gym with nobody to label it: the detector's own confident, steady boxes become training frames.
+    A box that is there at t but gone a third of a second later is a flicker, not a backboard."""
+    from film.train.prelabel import autolabel_rims
+
+    _env(monkeypatch, tmp_path)
+    m = ingest(synthetic_video, date="2026-01-01", profile="handheld")
+    calls = []
+
+    def fn(img, i):
+        calls.append(i)
+        steady = Box(100, 60, 150, 90, 0.4, "backboard")
+        flicker = Box(200, 20, 240, 50, 0.9, "backboard")
+        weak = Box(10, 10, 60, 40, 0.1, "backboard")
+        return [steady, weak] + ([flicker] if i % 2 == 0 else [])     # every first look sees the flicker, no second look does
+
+    n = autolabel_rims(m.game_id, n=4, detector=FakeDetector(fn=fn), min_conf=0.2, margin_s=0.5, log=lambda *a: None)
+    assert n == 4 and len(calls) == 8
+    labels = sorted((tmp_path / "datasets" / "rim" / "labels").glob("*/*.txt"))
+    assert len(labels) == 4
+    for path in labels:
+        lines = path.read_text().splitlines()
+        assert len(lines) == 1 and lines[0].startswith("1 ")                  # one backboard (class 1), the steady one
+    assert ds.list_pending("rim") == []
+
+
+def test_autolabel_rims_saves_nothing_for_a_frame_without_a_steady_box(synthetic_video, tmp_path, monkeypatch):
+    from film.train.prelabel import autolabel_rims
+
+    _env(monkeypatch, tmp_path)
+    m = ingest(synthetic_video, date="2026-01-01", profile="handheld")
+    det = FakeDetector(fn=lambda img, i: [Box(100 + 60 * (i % 2), 60, 150 + 60 * (i % 2), 90, 0.9, "backboard")])
+    assert autolabel_rims(m.game_id, n=3, detector=det, margin_s=0.5, log=lambda *a: None) == 0
+    assert not list((tmp_path / "datasets").rglob("*.jpg"))

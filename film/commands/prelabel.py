@@ -8,6 +8,8 @@ def register(sub) -> None:
     parser.add_argument("--n", type=int, default=None, help="how many to queue (rim 150, ball 300, rimclf none-samples 40)")
     parser.add_argument("--after-shots", action="store_true",
                         help="ball only: crops from just after confirmed shots where the detector lost the ball")
+    parser.add_argument("--auto", action="store_true",
+                        help="rim only: save the detector's own steady boxes as labels, for a gym nobody can label right now")
     parser.add_argument("--no-proposals", action="store_true",
                         help="ball only: queue bare crops, for a gym where the detector's guesses are mostly wrong")
     parser.add_argument("--device", default=None)
@@ -15,6 +17,11 @@ def register(sub) -> None:
 
 
 def run(args) -> int:
+    if args.what == "rim" and args.auto:
+        from film.train.prelabel import autolabel_rims
+
+        autolabel_rims(args.game_id, n=args.n or 200, device=args.device)
+        return 0
     if args.what == "rim":
         from film.train.prelabel import prelabel_rims
 
