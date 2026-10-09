@@ -35,7 +35,7 @@ rented GPU. He may buy a Mac mini later but has decided to prove it on the lapto
 
 ## State on 2026-10-01
 
-- `main`, 276 tests passing, **no git remote yet** (he will supply an SSH URL).
+- `main`, 280 tests passing, **no git remote yet** (he will supply an SSH URL).
 - Rung 1 of the spec is built and has run end to end on two real games.
 - Two games processed and reviewed by Garrett (Cactus Shadows: the 125 ball and scoreboard cards; its 108 motion cards are not reviewed).
 - Three more films are on disk that the pipeline **cannot run yet** because they have no burned-in scoreboard.
@@ -258,6 +258,23 @@ out in turn, 678 real shots and 564 non-shots across six games:
   real shots. **That is in-sample** (the model in service trained on these games); expect about 90% and about
   half the shots on a new game. The first new game is the real test: review it in full and compare.
 - Cost: about 8 minutes per held-out game on the laptop (8 epochs, ~1,000 clips).
+
+## 2026-10-09: six more films; the Marcos de Niza Hudl skin is readable
+
+- `~/Desktop/Full Games/NEW @Cactus Shadows - Angle 1.mp4` (iPad, CS gym, backboard 8 of 8 unprompted) ->
+  `2026-10-09-new-cactus-shadows-angle-1`, profile handheld.
+- Five `NEW Marcos de Niza High School vs <St. Mary's | Cactus Shadows | Arcadia | Mesquite | Saguaro> ...
+  Tactical.mp4`: Hudl Focus at MDN, 150-minute films, the game in roughly the first 75 minutes, backboards tiny.
+  **Profile `hudl-mdn`** (`film/perceive/profiles/hudl_mdn.json`): home, away and period from the school's LED-dot
+  skin (threshold 0.15, cells measured from 36 frames), no clock (font defeats the segment zones), no fouls.
+  Validated on 25 minutes of MDN vs Arcadia (scores 0-0 -> 7-18 -> 20, period 1 -> 2). A profile with no `rims`
+  section uses the trained rim detector. Each game: perceive ~50 min including the 1 fps scoreboard pass.
+  Moon Valley's blue "ROCKETS" skin is a third layout, not fitted. Fitting a skin by hand took ~2 hours; worth
+  a tool that finds digit cells from lit columns (the approach that finally worked, see git history).
+- Garrett renamed the 2026-10-08 films (dropped "NEW "); manifests were repointed. Film names are fragile:
+  ingest should probably record a content hash, not only a path.
+- Runs are chained by a detached script (`run_mdn5.sh` in the session scratchpad; nohup + caffeinate) watched by a
+  Monitor, because the session's background-command limit is 2 hours.
 
 ## 2026-10-08: four new gyms, run unattended
 
