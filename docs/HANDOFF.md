@@ -257,8 +257,10 @@ Results (`rim@v4` after `--auto` on all four gyms: Cortez 42, Tempe 49, Cactus S
 | MDN vs Cactus Shadows | 374 | 300 | 184 | 47 | 26 |
 | MDN vs Tempe | 128 | 100 | 42 | 35 | 20 |
 | Moon Valley vs MDN (150 min film) | 468 (173 typed shot) | 159 | 88 | 52 | 50 |
-| Arcadia vs Cortez | see below | | | | |
+| Arcadia vs Cortez | 176 | 92 | 36 | 30 | 21 |
 
+Backboard found in 80% (CS), 85% (Tempe), 46% (Moon Valley, wide fixed view) and 48% (Cortez, 720p, near
+backboard often out of frame) of frames. All four await Garrett's quarter marks and review.
 Moon Valley's last 40 minutes of film (empty court) hold only ~23 cards; quarter marks will clear them.
 Game ids carry "new-" and the download date. The Moon Valley overlay is a second Hudl scoreboard layout worth a
 profile of its own later (it would give made/missed for free in that gym).
