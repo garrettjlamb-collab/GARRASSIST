@@ -155,3 +155,21 @@ def test_read_clock_with_no_dots_is_none():
 
 def test_read_clock_with_an_unrecognised_digit_is_none():
     assert read_clock(_clock_mask([0, 4, "ab", 8], True, True), CLOCK_FIELD) is None
+
+
+def test_a_profile_may_have_no_clock_and_its_own_lit_threshold():
+    """The Marcos de Niza Hudl skin: LED-dot digits that fill a segment zone only sparsely, and a clock font
+    the segment zones cannot read. Scores and period are enough for made-or-missed."""
+    import cv2
+    from film.perceive.scoreboard import load_profile, read_scoreboard
+
+    frame = cv2.imread("fixtures/frames/hudl_mdn_40_71_p4.jpg")
+    read = read_scoreboard(frame, load_profile("hudl-mdn"), t=3984.0)
+    assert (read.home, read.away, read.period) == (40, 71, 4)
+    assert read.clock_s is None and read.home_fouls is None and read.conf == 0.75
+
+
+def test_every_profile_file_is_a_choice_for_ingest():
+    from film.ingest.profile import PROFILES
+
+    assert "hudl-mdn" in PROFILES and "hudl-tactical" in PROFILES and "handheld" in PROFILES

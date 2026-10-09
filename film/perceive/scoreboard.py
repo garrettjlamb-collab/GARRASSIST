@@ -54,9 +54,9 @@ def _cells(field: dict) -> list[tuple[int, int, int, int]]:
     return [tuple(c) for c in field["cells"]]
 
 
-def read_clock(mask: np.ndarray, field: dict) -> float | None:
+def read_clock(mask: np.ndarray, field: dict, threshold: float = 0.3) -> float | None:
     """Clock cells read as M M : S S when both separator dots are lit, S S . t when only the bottom one is."""
-    digits = [decode_cell(mask, cell) for cell in _cells(field)]
+    digits = [decode_cell(mask, cell, threshold) for cell in _cells(field)]
     if any(d == -1 for d in digits) or all(d is None for d in digits):
         return None
     d = [0 if x is None else x for x in digits]
@@ -71,6 +71,7 @@ def read_clock(mask: np.ndarray, field: dict) -> float | None:
 
 def read_scoreboard(frame_bgr: np.ndarray, profile: dict, t: float = 0.0) -> ScoreboardRead:
     fields = profile["fields"]
+    threshold = float(profile.get("threshold", 0.3))        # LED-dot skins fill a segment zone only sparsely
     masks: dict[str, np.ndarray] = {}
 
     def mask_for(color: str) -> np.ndarray:
@@ -80,10 +81,12 @@ def read_scoreboard(frame_bgr: np.ndarray, profile: dict, t: float = 0.0) -> Sco
 
     def number(name: str) -> int | None:
         field = fields[name]
-        return decode_number(mask_for(field["color"]), _cells(field))
+        return decode_number(mask_for(field["color"]), _cells(field), threshold)
 
     home, away, period = number("home"), number("away"), number("period")
-    clock = read_clock(mask_for(fields["clock"]["color"]), fields["clock"])
+    # A skin whose clock font the segment zones cannot read leaves the clock out; the scores still give
+    # made-or-missed, and quarter marks supply what the clock would have.
+    clock = read_clock(mask_for(fields["clock"]["color"]), fields["clock"], threshold) if "clock" in fields else None
     home_fouls = number("home_fouls") if "home_fouls" in fields else None
     away_fouls = number("away_fouls") if "away_fouls" in fields else None
     got = sum(v is not None for v in (home, away, clock, period))

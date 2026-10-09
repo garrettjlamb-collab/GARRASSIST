@@ -1,0 +1,11 @@
+{
+  "name": "hudl-mdn",
+  "note": "Hudl Focus at Marcos de Niza: the school's own scoreboard skin, bottom left. LED-dot digits, so a lower lit threshold. No clock field: its font defeats the segment zones; quarter marks supply warmups. Team fouls are not read.",
+  "frame": [1920, 1080],
+  "threshold": 0.15,
+  "fields": {
+    "home":   {"color": "red",   "cells": [[100, 982, 15, 27], [117, 982, 15, 27]]},
+    "away":   {"color": "red",   "cells": [[213, 982, 15, 27], [230, 982, 15, 27]]},
+    "period": {"color": "amber", "cells": [[162, 984, 13, 22]]}
+  }
+}

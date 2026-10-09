@@ -6,7 +6,13 @@ from typing import Sequence
 import cv2
 import numpy as np
 
-PROFILES = ("hudl-tactical", "nfhs-auto", "nfhs-broadcast", "handheld")
+def _scoreboard_profiles() -> tuple[str, ...]:
+    """Every scoreboard skin with a profile file, as a choice for --profile (hudl-tactical, hudl-mdn, ...)."""
+    folder = resources.files("film.perceive.profiles")
+    return tuple(sorted(p.name[:-5].replace("_", "-") for p in folder.iterdir() if p.name.endswith(".json")))
+
+
+PROFILES = tuple(dict.fromkeys(_scoreboard_profiles() + ("nfhs-auto", "nfhs-broadcast", "handheld")))
 
 # The Hudl Focus scoreboard overlay, in a 1920x1080 frame: x1, y1, x2, y2.
 HUDL_OVERLAY_REGION = (0, 880, 340, 1080)
