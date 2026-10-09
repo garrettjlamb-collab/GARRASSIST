@@ -48,3 +48,51 @@ def video_factory(tmp_path):
         return make_test_video(tmp_path / name, **kwargs)
 
     return _make
+
+
+class FakeCloud:
+    """Stands in for iCloud: a set of cloud-only paths, and the two brctl calls that move a file in or out."""
+
+    def __init__(self):
+        self.cloud: set[Path] = set()
+        self.downloads: list[Path] = []
+        self.evictions: list[Path] = []
+        self.refuse_evict = False
+        self.fail_download: str | None = None
+        self.stall_download = False
+
+    def is_cloud_only(self, path) -> bool:
+        return Path(path).resolve() in self.cloud
+
+    def offload(self, path) -> Path:
+        """Put a file in the cloud-only state, as the coach would with Remove Download."""
+        self.cloud.add(Path(path).resolve())
+        return Path(path)
+
+    def download(self, path) -> None:
+        from film.common.cloud import CloudError
+
+        if self.fail_download:
+            raise CloudError(self.fail_download)
+        self.downloads.append(Path(path))
+        if not self.stall_download:
+            self.cloud.discard(Path(path).resolve())
+
+    def evict(self, path) -> bool:
+        self.evictions.append(Path(path))
+        if self.refuse_evict:
+            return False
+        self.cloud.add(Path(path).resolve())
+        return True
+
+
+@pytest.fixture
+def cloud_env(tmp_path, monkeypatch):
+    from film.common import cloud
+
+    fake = FakeCloud()
+    monkeypatch.setenv("FILM_GAMES_DIR", str(tmp_path / "games"))
+    monkeypatch.setattr(cloud, "BACKEND", fake)
+    monkeypatch.setattr(cloud, "is_cloud_only", fake.is_cloud_only)
+    monkeypatch.setattr(cloud, "_sleep", lambda s: None)
+    return fake
