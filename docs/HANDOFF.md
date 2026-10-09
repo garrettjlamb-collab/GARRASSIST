@@ -234,6 +234,24 @@ out in turn, 678 real shots and 564 non-shots across six games:
   half the shots on a new game. The first new game is the real test: review it in full and compare.
 - Cost: about 8 minutes per held-out game on the laptop (8 epochs, ~1,000 clips).
 
+## 2026-10-08: four new gyms, run unattended
+
+Garrett downloaded four films to `~/Desktop/Full Games/NEW ...` (new gyms on purpose, "to help you get used to
+new gyms") and left, saying do not stop until all are done. Ingested with `--profile handheld` (no scoreboard):
+
+| Game id | Film | Gym and camera (from frames) | `rim@v3` on 8 frames |
+|---|---|---|---|
+| `2026-10-08-new-arcadia-vs-cortez-angle-1` | 720p, 59 min | Cortez (Austerman Gym), iPad low in the stands; the near backboard is often out of frame | 0 of 8 (0.15-0.23 at low confidence, on the right spot) |
+| `2026-10-08-new-marcos-de-niza-vs-tempe-angle-1` | 1080p, 55 min | iPad from the stands, gym not yet identified | 3 of 8 |
+| `2026-10-08-new-marcos-de-niza-vs-cactus-shadows-angle-1` | 1080p, 57 min | Cactus Shadows gym (Falcons), iPad from the stands | 4 of 8, right |
+| `2026-10-08-new-moon-valley-high-vs-...-tactical` | 1080p, **150 min** | Hudl Focus at Moon Valley, fixed wide view, a different burned-in scoreboard layout (ROCKETS / PERIOD / GUEST) that the Hudl profile does not recognise; backboards small in the top corners; the last ~40 minutes are an empty court | 4 of 8 |
+
+Nobody could label, so `film prelabel rim --auto` was built: the detector's own boxes, kept when found again
+0.3 s later, go straight into `datasets/rim`. Then `rim@v4` (30 epochs) and the four games in sequence. He must
+still **mark the quarters** on each (Quarters tab) and review; the cards were built without marks.
+Game ids carry "new-" and the download date. The Moon Valley overlay is a second Hudl scoreboard layout worth a
+profile of its own later (it would give made/missed for free in that gym).
+
 ## Fouls on a shot card (built 2026-10-05)
 
 `W` on a shot card cycles **fouled on the shot** / **whistle first** / none; Enter saves it with the decision
