@@ -271,6 +271,17 @@ out in turn, 678 real shots and 564 non-shots across six games:
   section uses the trained rim detector. Each game: perceive ~50 min including the 1 fps scoreboard pass.
   Moon Valley's blue "ROCKETS" skin is a third layout, not fitted. Fitting a skin by hand took ~2 hours; worth
   a tool that finds digit cells from lit columns (the approach that finally worked, see git history).
+- Results of the 2026-10-09 batch (all unreviewed, no quarter marks yet):
+
+| Game | Cards | Strong | Safe | From the board | Final score read |
+|---|---|---|---|---|---|
+| @Cactus Shadows (iPad) | 232 | see review page | | 0 | no board |
+| MDN vs St. Mary's | 212 | 101 | 47 | 22 | 58-86 |
+| MDN vs Cactus Shadows | 228 | | | 20 | |
+| MDN vs Arcadia | 405 (about 115 after the final buzzer; the board was not reset) | 140 | 65 | 13 | 40-77 |
+| MDN vs Mesquite | 221 | | | 22 | |
+| MDN vs Saguaro | 226 | | | 27 | |
+
 - Garrett renamed the 2026-10-08 films (dropped "NEW "); manifests were repointed. Film names are fragile:
   ingest should probably record a content hash, not only a path.
 - Runs are chained by a detached script (`run_mdn5.sh` in the session scratchpad; nohup + caffeinate) watched by a
