@@ -259,6 +259,12 @@ out in turn, 678 real shots and 564 non-shots across six games:
   half the shots on a new game. The first new game is the real test: review it in full and compare.
 - Cost: about 8 minutes per held-out game on the laptop (8 epochs, ~1,000 clips).
 
+## Naming (2026-10-09)
+Game ids are folder names and keys into datasets, paths and views: **never rename a game folder**. A game now
+has a `title` for people (`film title <id> "..."`, shown on the review page); ids from new downloads no longer
+carry a "NEW " prefix. Titles currently carry Garrett's to-do step ("1 · Mark quarters, then review IN FULL ·
+..."); reset them to plain names once a game is reviewed. Dates in ids are still download dates.
+
 ## 2026-10-09: six more films; the Marcos de Niza Hudl skin is readable
 
 - `~/Desktop/Full Games/NEW @Cactus Shadows - Angle 1.mp4` (iPad, CS gym, backboard 8 of 8 unprompted) ->
@@ -335,6 +341,9 @@ flagged; the four earlier games have unflagged ones. Still to build: which team 
 ## What Garrett has asked for (requirements gathered in conversation)
 
 1. **Full box score eventually**, as automated as possible; he accepts reviewing some of it.
+   On 2026-10-09 he widened it: "time of possession, passes, literally anything analytically we can build I
+   want to try." Possession and passes need the ball followed across the court and players tracked by team:
+   the box-score rung's tracking work unlocks both. Keep a list of such asks here and tick them off.
    He named **turnovers, steals and blocks** explicitly (2026-10-02): they must be in the box score, not
    only shots, rebounds and fouls. A block is tied to a shot (a shot card can carry "blocked by #"); a
    turnover, and a steal when one caused it, come from possession changes, which need the ball tracked

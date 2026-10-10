@@ -47,6 +47,8 @@ a film kept in iCloud only (most of `~/Desktop/Full Games`) is pulled down when 
 back when the command ends. It says so when it does, and refuses if the disk has no room. A film you keep
 on the Mac is never offloaded. `uv run film doctor` lists where each game's film is.
 
+`uv run film title <game_id> "MDN vs St. Mary's (Hudl)"` names a game for the review page; the id stays.
+
 ## Reviewing
 
 `uv run film review` serves the page; add `#shots`, `#rim`, `#ball` or `#rimclf` to the address to open a
