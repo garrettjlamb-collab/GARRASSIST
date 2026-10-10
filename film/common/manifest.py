@@ -20,6 +20,11 @@ class Manifest:
     profile: str
     stages: dict = field(default_factory=dict)
     model_versions: dict = field(default_factory=dict)
+    title: str = ""                       # a name for people; the game id until someone sets one
+
+    def __post_init__(self) -> None:
+        if not self.title:
+            self.title = self.game_id
 
     @classmethod
     def load(cls, game_dir: Path) -> "Manifest":

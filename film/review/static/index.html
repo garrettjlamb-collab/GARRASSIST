@@ -91,7 +91,7 @@ async function loadGames() {
   state.games = games;
   $("#games").innerHTML = games.map(g => g.error
     ? `<div class="game broken" title="${esc(g.error)}"><b>${esc(g.game_id)}</b><small>cannot be read: ${esc(g.error)}</small></div>`
-    : `<div class="game ${g.game_id === state.game ? "sel" : ""}" data-id="${esc(g.game_id)}"><b>${esc(g.game_id)}</b><small>${esc(g.profile)} · ${g.decided}/${g.events} decided</small></div>`).join("")
+    : `<div class="game ${g.game_id === state.game ? "sel" : ""}" data-id="${esc(g.game_id)}"><b>${esc(g.title || g.game_id)}</b><small>${esc(g.profile)} · ${g.decided}/${g.events} decided${g.title && g.title !== g.game_id ? " · " + esc(g.game_id) : ""}</small></div>`).join("")
     || "<div class='muted'>No games yet. Run: film run &lt;file&gt;</div>";
   document.querySelectorAll(".game:not(.broken)").forEach(el => el.onclick = () => selectGame(el.dataset.id));
   const readable = games.filter(g => !g.error);

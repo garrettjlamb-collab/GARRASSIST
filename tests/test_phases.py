@@ -69,3 +69,19 @@ def test_this_game_ends_when_the_board_resets():
     phases = game_phases(jv_game())
     assert phases.game_over_t == 2825
     assert is_this_game(phases, 2600) and not is_this_game(phases, 2900)
+
+
+def test_a_board_with_scores_and_periods_but_no_clock_gives_quarters_from_the_score_activity():
+    """The Marcos de Niza skin: no clock read. Live play runs from just before the first score change to
+    just after the last; the board's period says which quarter. Pregame (0-0 for ten minutes) and the busy
+    gym after the final buzzer are not the game."""
+    tl = blank(0, 600, 1, 0, 0)                                     # pregame, board shows P1 0-0
+    tl += [ScoreboardRead(t=600 + i, period=1, clock_s=None, home=2 * (i // 60), away=i // 90, home_fouls=None, away_fouls=None, conf=0.75) for i in range(480)]
+    tl += blank(1080, 60, 2, 16, 5)                                 # break
+    tl += [ScoreboardRead(t=1140 + i, period=2, clock_s=None, home=16 + i // 50, away=5 + i // 40, home_fouls=None, away_fouls=None, conf=0.75) for i in range(480)]
+    tl += blank(1620, 900, 2, 25, 17)                               # final score stays up for 15 minutes
+    phases = game_phases(tl)
+    assert phases.known and phases.quarter_length_s is None
+    assert not is_live(phases, 300) and is_live(phases, 700) and is_live(phases, 1500)
+    assert not is_live(phases, 1620 + 300)                          # five minutes after the last score change
+    assert phases.quarters == {1: (phases.live[0][0], phases.live[0][1]), 2: (phases.live[1][0], phases.live[1][1])}

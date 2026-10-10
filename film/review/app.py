@@ -63,7 +63,7 @@ def _summary(gd: Path) -> dict:
     m = Manifest.load(gd)
     events = load_events(gd)
     decisions = load_decisions(gd)
-    return {"game_id": m.game_id, "profile": m.profile, "date": m.date, "events": len(events),
+    return {"game_id": m.game_id, "title": m.title, "profile": m.profile, "date": m.date, "events": len(events),
             "scoreboard": has_scoreboard(m.profile), "quarters": len(load_quarters(gd)),
             "decided": sum(1 for e in events if e.id in decisions),
             "stages": {name: info.get("status") for name, info in m.stages.items()}}

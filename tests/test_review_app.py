@@ -170,3 +170,13 @@ def test_a_foul_on_the_play_is_saved_with_the_decision_and_shown_again(synthetic
     assert events["shot-000001-r1"]["foul"] == "on_shot" and events["shot-000000-r1"]["foul"] is None
     bad = client.post(f"/api/games/{game_id}/decisions/shot-000001-r1", json={"status": "confirmed", "foul": "flagrant"})
     assert bad.status_code == 400
+
+
+def test_the_game_list_shows_titles(synthetic_video, tmp_path, monkeypatch):
+    _env(monkeypatch, tmp_path)
+    game_id, gd = _game(synthetic_video)
+    client = TestClient(create_app())
+    assert client.get("/api/games").json()[0]["title"] == game_id
+    from film.common.manifest import Manifest
+    m = Manifest.load(gd); m.title = "1 · Review in full: a game"; m.save(gd)
+    assert client.get("/api/games").json()[0]["title"] == "1 · Review in full: a game"

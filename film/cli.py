@@ -22,6 +22,7 @@ COMMANDS = [
     "film.commands.review",
     "film.commands.export",
     "film.commands.eval",
+    "film.commands.title",
     "film.commands.run",
 ]
 

@@ -33,3 +33,13 @@ def test_reingest_keeps_later_stages_only_when_nothing_changed(synthetic_video, 
     other = ingest(synthetic_video, date="2026-01-01", profile="handheld", fps=10.0)
     assert set(other.stages) == {"ingest"} and other.model_versions == {}
     assert set(Manifest.load(tmp_path / "games" / m.game_id).stages) == {"ingest"}
+
+
+def test_a_new_prefix_on_the_file_name_is_not_part_of_the_game_id(synthetic_video, tmp_path, monkeypatch):
+    import shutil
+    from film.ingest.run import ingest
+
+    monkeypatch.setenv("FILM_GAMES_DIR", str(tmp_path / "games"))
+    film = tmp_path / "NEW Marcos de Niza vs Tempe - Angle 1.mp4"
+    shutil.copy(synthetic_video, film)
+    assert ingest(film, date="2026-01-01", profile="test").game_id == "2026-01-01-marcos-de-niza-vs-tempe-angle-1"

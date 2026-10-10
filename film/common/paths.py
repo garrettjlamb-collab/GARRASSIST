@@ -35,4 +35,5 @@ def slugify(text: str) -> str:
 
 
 def game_id_for(source: Path, date: str) -> str:
-    return f"{date}-{slugify(source.stem)}"
+    stem = re.sub(r"^new\s+", "", source.stem, flags=re.IGNORECASE)      # "NEW ..." marks a fresh download, not the game
+    return f"{date}-{slugify(stem)}"

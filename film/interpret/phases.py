@@ -21,12 +21,41 @@ LIVE_TOLERANCE_S = 2.0      # a stretch is a quarter when it starts within this 
 END_GRACE_S = 3.0           # a quarter stays live this long after its clock is reset (buzzer-beaters)
 
 
+SCORE_LEAD_S = 90.0         # with no clock: live play starts this long before the first score change
+SCORE_TAIL_S = 120.0        # ... and ends this long after the last one
+
+
 @dataclass
 class GamePhases:
     quarter_length_s: float | None
     live: list[tuple[float, float]] = field(default_factory=list)      # [start, end) of each quarter
     known: bool = False                                              # False: no usable clock, treat all as live
     game_over_t: float | None = None                                 # the board was reset for the next game here
+    quarters: dict[int, tuple[float, float]] = field(default_factory=dict)   # period number -> its live span
+
+
+def _phases_from_scores(reads: list[ScoreboardRead]) -> GamePhases:
+    """A board that shows scores and the period but no clock (the Marcos de Niza skin): live play runs
+    from just before the first score change to just after the last, and the period says which quarter."""
+    changes = []
+    last_total = None
+    for r in reads:
+        if r.home is None or r.away is None:
+            continue
+        total = r.home + r.away
+        if last_total is not None and total > last_total:
+            changes.append(r.t)
+        last_total = total
+    if len(changes) < 2:
+        return GamePhases(quarter_length_s=None, known=False, game_over_t=_game_over_t(reads))
+    start, end = changes[0] - SCORE_LEAD_S, changes[-1] + SCORE_TAIL_S
+    spans: dict[int, list[float]] = {}
+    for r in reads:
+        if r.period is not None and start <= r.t <= end:
+            spans.setdefault(r.period, [r.t, r.t])[1] = r.t
+    quarters = {p: (lo, hi) for p, (lo, hi) in sorted(spans.items())}
+    return GamePhases(quarter_length_s=None, live=list(quarters.values()), known=True,
+                      game_over_t=_game_over_t(reads), quarters=quarters)
 
 
 def _stretches(reads: list[ScoreboardRead]) -> list[tuple[float, float]]:
@@ -68,6 +97,8 @@ def game_phases(timeline: list[ScoreboardRead]) -> GamePhases:
     stretches = _stretches(reads)
     long_starts = [round(c) for _, c in stretches if c >= MIN_QUARTER_S]
     if not long_starts:
+        if reads and all(r.clock_s is None for r in reads):
+            return _phases_from_scores(reads)
         return GamePhases(quarter_length_s=None, known=False, game_over_t=_game_over_t(reads))
     quarter = Counter(long_starts).most_common(1)[0][0]
     over = _game_over_t(reads)

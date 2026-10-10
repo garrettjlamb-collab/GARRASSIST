@@ -44,3 +44,13 @@ def test_load_ignores_unknown_keys(tmp_path):
     data = asdict(m) | {"written_by_a_newer_version": True}
     (tmp_path / "manifest.json").write_text(json.dumps(data), encoding="utf-8")
     assert Manifest.load(tmp_path) == m
+
+
+def test_a_game_can_carry_a_title_for_people(tmp_path):
+    from film.common.manifest import Manifest
+
+    m = Manifest(game_id="g", source="x.mp4", date="2026-01-01", duration_s=1.0, width=1, height=1, src_fps=30.0, fps=10.0, profile="test")
+    assert m.title == "g"                                          # the id until someone names it
+    m.title = "MDN vs St. Mary's (Hudl)"
+    m.save(tmp_path)
+    assert Manifest.load(tmp_path).title == "MDN vs St. Mary's (Hudl)"
