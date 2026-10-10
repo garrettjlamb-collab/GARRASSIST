@@ -272,6 +272,17 @@ Quarters tab arrows step exactly 5 s (the player had focus and added its own ski
 confirmed cards to the back and lands on the first card to review. **Next: rebuild the classifier datasets from
 all sixteen games (`film prelabel rimclf <id>` each, ~3 min a game) and retrain `rimclf` and `picclf`.**
 
+## 2026-10-09 night: retrained on sixteen games
+
+`rimclf@v11` (0.684 leave-one-game-out, guessing 0.379) and `picclf@v2` (0.808 on St. Mary's held out, 0.899
+made versus missed) are in service; every game re-interpreted with them and with the repeat-crossing rule
+(`REPEAT_WINDOW_S`, `film/interpret/arrivals.py`). 2,010 decisions kept, 31 moved, 73 orphaned (mostly the
+merged duplicates). MDN vs Cactus Shadows (iPad): 373 -> 317 cards, confirmed pairs under 3 s 47 -> 9; Garrett
+still has 72 strong cards there. In-sample, safe cards are 1,113 of 1,117 right covering 69% of confirmed shots;
+the honest figure stays the held-out one (84-95%). Datasets: `datasets/rimclf` now holds about 2,900 items from
+sixteen games. Next: the five home Hudl games he plans to download; then the wall-scoreboard reader, clip
+cutting, rung 2.
+
 ## Naming (2026-10-09)
 Game ids are folder names and keys into datasets, paths and views: **never rename a game folder**. A game now
 has a `title` for people (`film title <id> "..."`, shown on the review page); ids from new downloads no longer
