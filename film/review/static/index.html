@@ -245,7 +245,8 @@ async function loadQuarters() {
         <kbd>Space</kbd> play/pause <kbd>←</kbd>/<kbd>→</kbd> 5 s <kbd>Shift</kbd>+<kbd>←</kbd>/<kbd>→</kbd> 1 min. ${q.scoreboard ? "This game has a scoreboard: marks here override it." : ""}</div>
     </div>`;
   const film = $("#film");
-  film.ontimeupdate = () => { $("#q-now").textContent = hms(film.currentTime); };
+  film.ontimeupdate = () => { if (!film.seeking) $("#q-now").textContent = hms(film.currentTime); };
+  film.onseeked = () => { state.seekTarget = null; $("#q-now").textContent = hms(film.currentTime); };
   $("#q-start").onclick = () => markQuarter("start");
   $("#q-end").onclick = () => markQuarter("end");
   $("#q-save").onclick = saveQuarters;
@@ -281,14 +282,22 @@ function saveQuarters() {
   });
 }
 
+// A big film seeks slowly; while a seek is still in flight currentTime reports the old position, so quick
+// presses were being lost. Steps add up on a target instead, and the display shows the target at once.
+function seekBy(film, delta) {
+  const base = film.seeking && state.seekTarget != null ? state.seekTarget : film.currentTime;
+  state.seekTarget = Math.max(0, Math.min(film.duration || Infinity, base + delta));
+  film.currentTime = state.seekTarget;
+  $("#q-now").textContent = hms(state.seekTarget);
+}
+
 function quarterKeys(ev) {
   const film = $("#film");
   if (!film) return;
   if (ev.key === "[") markQuarter("start");
   else if (ev.key === "]") markQuarter("end");
   else if (ev.key === " ") { if (film.paused) film.play(); else film.pause(); }
-  else if (ev.key === "ArrowLeft") film.currentTime = Math.max(0, film.currentTime - (ev.shiftKey ? 60 : 5));
-  else if (ev.key === "ArrowRight") film.currentTime = film.currentTime + (ev.shiftKey ? 60 : 5);
+  else if (ev.key === "ArrowLeft" || ev.key === "ArrowRight") seekBy(film, (ev.key === "ArrowLeft" ? -1 : 1) * (ev.shiftKey ? 60 : 5));
   else return;
   ev.preventDefault();
 }
