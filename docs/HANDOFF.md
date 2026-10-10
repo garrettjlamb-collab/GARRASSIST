@@ -275,12 +275,12 @@ out in turn, 678 real shots and 564 non-shots across six games:
 
 | Game | Cards | Strong | Safe | From the board | Final score read |
 |---|---|---|---|---|---|
-| @Cactus Shadows (iPad) | 232 | see review page | | 0 | no board |
-| MDN vs St. Mary's | 212 | 101 | 47 | 22 | 58-86 |
-| MDN vs Cactus Shadows | 228 | | | 20 | |
+| @Cactus Shadows (iPad) | 232 | 88 | 45 | 0 | no board |
+| MDN vs St. Mary's | 212 | 84 | 47 | 22 | 58-86 |
+| MDN vs Cactus Shadows | 228 | 94 | 47 | 20 | 58-75 |
 | MDN vs Arcadia | 405 (about 115 after the final buzzer; the board was not reset) | 140 | 65 | 13 | 40-77 |
-| MDN vs Mesquite | 221 | | | 22 | |
-| MDN vs Saguaro | 226 | | | 27 | |
+| MDN vs Mesquite | 221 | 80 | 36 | 22 | 60-83 |
+| MDN vs Saguaro | 226 | 116 | 45 | 27 | 52-? |
 
 - Garrett renamed the 2026-10-08 films (dropped "NEW "); manifests were repointed. Film names are fragile:
   ingest should probably record a content hash, not only a path.
