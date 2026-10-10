@@ -233,7 +233,7 @@ async function loadQuarters() {
   state.marks = q.quarters.map(([a, b]) => [a, b]);
   el.innerHTML = `
     <div class="card wide">
-      <video id="film" src="/video/${esc(state.game)}" controls preload="metadata" style="width:100%;max-width:1280px"></video>
+      <video id="film" src="/video/${esc(state.game)}" controls preload="metadata" tabindex="-1" style="width:100%;max-width:1280px"></video>
       <div class="row" style="margin-top:8px">
         <button class="btn" id="q-start">Quarter starts here</button>
         <button class="btn" id="q-end">Quarter ends here</button>
@@ -242,10 +242,11 @@ async function loadQuarters() {
       <div id="q-list" style="margin-top:8px"></div>
       <div class="row" style="margin-top:8px"><button class="btn" id="q-save">Save quarters</button><span id="q-msg" class="muted"></span></div>
       <div class="keys">Drag or play the film to the tip-off and press <kbd>[</kbd> (quarter starts); to the buzzer and press <kbd>]</kbd> (quarter ends). Four times, plus overtime.
-        <kbd>Space</kbd> play/pause <kbd>←</kbd>/<kbd>→</kbd> 5 s <kbd>Shift</kbd>+<kbd>←</kbd>/<kbd>→</kbd> 1 min. ${q.scoreboard ? "This game has a scoreboard: marks here override it." : ""}</div>
+        <kbd>Space</kbd> play/pause <kbd>←</kbd>/<kbd>→</kbd> 5 s, always; drag the bar for big moves. ${q.scoreboard ? "This game has a scoreboard: marks here override it." : ""}</div>
     </div>`;
   const film = $("#film");
   film.ontimeupdate = () => { if (!film.seeking) $("#q-now").textContent = hms(film.currentTime); };
+  film.addEventListener("focus", () => film.blur());
   film.onseeked = () => { state.seekTarget = null; $("#q-now").textContent = hms(film.currentTime); };
   $("#q-start").onclick = () => markQuarter("start");
   $("#q-end").onclick = () => markQuarter("end");
@@ -294,12 +295,16 @@ function seekBy(film, delta) {
 function quarterKeys(ev) {
   const film = $("#film");
   if (!film) return;
+  // The player's own keyboard handling (arrows, space) must not fire as well: it was adding its own skips
+  // to ours. The video is not focusable and never keeps focus.
+  if (document.activeElement === film) film.blur();
   if (ev.key === "[") markQuarter("start");
   else if (ev.key === "]") markQuarter("end");
   else if (ev.key === " ") { if (film.paused) film.play(); else film.pause(); }
-  else if (ev.key === "ArrowLeft" || ev.key === "ArrowRight") seekBy(film, (ev.key === "ArrowLeft" ? -1 : 1) * (ev.shiftKey ? 60 : 5));
+  else if (ev.key === "ArrowLeft" || ev.key === "ArrowRight") seekBy(film, ev.key === "ArrowLeft" ? -5 : 5);
   else return;
   ev.preventDefault();
+  ev.stopPropagation();
 }
 
 async function loadLabel() {
