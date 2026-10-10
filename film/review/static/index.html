@@ -125,6 +125,10 @@ function renderShots() {
   if (!state.game) { el.innerHTML = "<p class='muted'>Pick a game.</p>"; return; }
   const decided = state.events.filter(e => e.decision).length;
   const e = state.events[state.index];
+  const isWeakCard = (x) => (x.signals || {}).source === "motion" || (x.flags || []).includes("clf-none");
+  const strongLeft = state.events.filter(x => !x.decision && !isWarm(x) && !isWeakCard(x)).length;
+  const stopNote = e && !e.decision && (isWeakCard(e) || isWarm(e)) && strongLeft === 0
+    ? `<div class="card" style="border-color:var(--ok)"><b>Strong cards done for this game.</b> What follows is optional: weak cards (motion only, or nothing seen at the rim) and warmups. Pick the next game, or keep going if you like.</div>` : "";
   const g = (state.games || []).find(x => x.game_id === state.game);
   const needMarks = g && !g.scoreboard && !g.quarters
     ? `<div class="card"><b>This game has no scoreboard.</b> Mark the quarters first, so warmup shots are set aside and each shot gets its quarter. <button class="btn" id="go-quarters">Mark quarters</button></div>` : "";
@@ -132,15 +136,16 @@ function renderShots() {
   const madeBadge = e.made === true ? "<span class='badge made'>MADE</span>" : e.made === false ? "<span class='badge miss'>MISSED</span>" : "<span class='badge none'>UNKNOWN</span>";
   const dec = e.decision ? `<span class='badge none'>${esc(e.decision.status)}</span>` : "";
   const warm = isWarm(e) ? "<span class='badge warm'>WARMUP · not counted</span>" : "";
+  const weakBadge = !isWarm(e) && isWeakCard(e) ? "<span class='badge none'>WEAK · optional</span>" : "";
   const foulBadge = e.foul === "on_shot" ? "<span class='badge warm'>FOULED ON THE SHOT</span>"
     : e.foul === "before_shot" ? "<span class='badge warm'>WHISTLE FIRST · not an attempt</span>" : "";
   el.innerHTML = `
     <div class="row"><b>${decided}/${state.events.length} decided</b><span class="muted">${state.index + 1} of ${state.events.length}</span>
-      <button class="btn" id="confirm-high">Confirm all above 0.9</button></div>
-    ${needMarks}
+      <button class="btn" id="confirm-high">Confirm all above 0.9</button><span class="muted"><b>${strongLeft}</b> strong cards left</span></div>
+    ${needMarks}${stopNote}
     <div class="card">
       <video id="clip" src="/clips/${esc(state.game)}/${esc(e.id)}.mp4" autoplay loop muted playsinline></video>
-      <div style="margin-top:8px">${warm}${madeBadge}${foulBadge}<span class="badge none">${esc(e.type)}</span>${dec}
+      <div style="margin-top:8px">${warm}${weakBadge}${madeBadge}${foulBadge}<span class="badge none">${esc(e.type)}</span>${dec}
         <b>Q${e.quarter ?? "?"} ${clock(e.clock_s)}</b> <span class="muted">t=${e.t.toFixed(1)}s · team ${esc(e.team ?? "?")} · conf ${e.confidence} · ${e.rim_id < 0 ? "scoreboard only" : "rim " + e.rim_id}</span></div>
       <div class="muted" style="margin-top:4px">${esc((e.flags || []).join(" ") || "no flags")} · ${esc(JSON.stringify(e.signals))}</div>
       <div class="keys"><kbd>Enter</kbd> confirm <kbd>M</kbd> toggle made <kbd>T</kbd> team <kbd>W</kbd> foul (on the shot / whistle first / none) <kbd>X</kbd> reject <kbd>U</kbd> unsure <kbd>L</kbd> open film <kbd>R</kbd> replay the play <kbd>F</kbd> speed <span id="rate">${state.rate}x</span> <kbd>J</kbd>/<kbd>K</kbd> prev/next</div>
