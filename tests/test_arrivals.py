@@ -121,3 +121,23 @@ def test_a_crossing_made_only_of_unsure_detections_is_not_an_arrival():
     for row in stale:
         row["conf"] = 0.55 if row["frame"] == 2 else 0.3
     assert find_ball_arrivals(rows_to_frame(stale), rims, FPS) == []
+
+
+def test_a_ball_that_hangs_on_the_rim_and_drops_again_is_one_shot():
+    """Zoomed in on the basket, a ball rolling round the rim crosses the rim line twice a second or two
+    apart. It is one shot unless the ball went back up well above the rim in between (a rebound and a
+    putback)."""
+    rims = rows_to_frame(rim_rows(range(0, 120)))
+    first = arc(0)                                                         # crosses the rim line near frame 9
+    hang = [(12 + i, 925.0, 495.0 + 10 * (i % 2)) for i in range(8)]       # bobbing on the rim, frames 12-19
+    drop = [(28 + i, 925.0, 490.0 + 15 * i) for i in range(6)]             # rolls off and drops through again, frames 28-33
+    found = find_ball_arrivals(rows_to_frame(ball_rows(first + hang + drop)), rims, FPS)
+    assert len(found) == 1                                                 # the ball never went back up: one shot
+
+    putback = arc(28, top=420.0)                                           # taken from 80 px (1.6 rim widths) above
+    found = find_ball_arrivals(rows_to_frame(ball_rows(first + hang + putback)), rims, FPS)
+    assert len(found) == 2                                                 # a genuine second shot
+
+    far = arc(80)                                                          # eight seconds later: a new shot either way
+    found = find_ball_arrivals(rows_to_frame(ball_rows(first + hang + far)), rims, FPS)
+    assert len(found) == 2

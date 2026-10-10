@@ -12,6 +12,12 @@ MAX_FRAME_GAP = 3
 # peak at 0.25-0.33, real ones at 0.5 or more.
 MIN_PEAK_CONF = 0.4
 PEAK_WINDOW_FRAMES = 8
+# Zoomed in on the basket, a ball rolling round the rim crosses the rim line more than once. A second
+# crossing within this window is the same shot unless the ball went back up above the rim by this much in
+# between (a rebound and a putback). Measured on sixteen reviewed games: a 3 s window and a rise of one rim
+# width drop 79 of 123 probable duplicates and lose 13 of 1,419 single shots; 4 s would lose 41.
+REPEAT_WINDOW_S = 3.0
+RISE_WIDTHS = 1.0
 MOTION_Z = 3.0
 MERGE_WINDOW_S = 2.0
 
@@ -40,6 +46,7 @@ def find_ball_arrivals(ball_df: pd.DataFrame, rim_df: pd.DataFrame, fps: float, 
         rim_id = int(rim_id)
         prev: tuple[int, float] | None = None
         last_t = -math.inf
+        highest_since = math.inf                      # the ball's highest point (smallest y) since the last arrival
         recent: list[tuple[int, float]] = []          # (frame, confidence) of the last detections at this rim
         for b in group.itertuples():
             recent = [(f, c) for f, c in recent if int(b.frame) - f <= PEAK_WINDOW_FRAMES] + [(int(b.frame), float(b.conf))]
@@ -53,9 +60,14 @@ def find_ball_arrivals(ball_df: pd.DataFrame, rim_df: pd.DataFrame, fps: float, 
             over_rim = rx1 - width <= cx <= rx2 + width
             crossed = prev is not None and int(b.frame) - prev[0] <= MAX_FRAME_GAP and prev[1] < ry1 <= cy
             sure = max(c for _, c in recent) >= MIN_PEAK_CONF
-            if crossed and over_rim and sure and float(b.t) - last_t >= min_gap_s:
+            went_back_up = highest_since < ry1 - RISE_WIDTHS * width
+            repeat = float(b.t) - last_t < REPEAT_WINDOW_S and not went_back_up
+            if crossed and over_rim and sure and float(b.t) - last_t >= min_gap_s and not repeat:
                 out.append(Arrival(t=float(b.t), frame=int(b.frame), rim_id=rim_id, rim_box=rim, source="ball", conf=0.8))
                 last_t = float(b.t)
+                highest_since = math.inf
+            else:
+                highest_since = min(highest_since, cy)
             prev = (int(b.frame), cy)
     return sorted(out, key=lambda a: a.t)
 
