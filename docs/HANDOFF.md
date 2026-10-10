@@ -259,6 +259,19 @@ out in turn, 678 real shots and 564 non-shots across six games:
   half the shots on a new game. The first new game is the real test: review it in full and compare.
 - Cost: about 8 minutes per held-out game on the laptop (8 epochs, ~1,000 clips).
 
+## 2026-10-10: ten more games reviewed (sixteen in all)
+
+Garrett reviewed the 2026-10-08 and 2026-10-09 games with the "Confirm all above 0.9" button, except two he did
+in full first (@Cactus Shadows iPad, MDN vs St. Mary's). Across the hand-reviewed strong cards: **446 of 496
+real (90%), made/missed right on 388 of 446 (87%)**; 670 cards taken by the button; 1,111 confirmed shots on
+these ten games. Honest button check (games unseen by `picclf@v1`): St. Mary's 42/44 right, @CS iPad 38/45.
+Left: MDN vs Cactus Shadows (iPad, 2026-10-08) not started; St. Mary's 18 strong cards. Reviews backed up in
+`games/_backups/<date>-reviews/`. Fixed on the way: a clockless board's quarters now come from runs of scoring
+split at 4-minute gaps (halftime was being counted as play; the period digit misreads during breaks), the
+Quarters tab arrows step exactly 5 s (the player had focus and added its own skips), and the queue sends
+confirmed cards to the back and lands on the first card to review. **Next: rebuild the classifier datasets from
+all sixteen games (`film prelabel rimclf <id>` each, ~3 min a game) and retrain `rimclf` and `picclf`.**
+
 ## Naming (2026-10-09)
 Game ids are folder names and keys into datasets, paths and views: **never rename a game folder**. A game now
 has a `title` for people (`film title <id> "..."`, shown on the review page); ids from new downloads no longer
