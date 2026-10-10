@@ -79,9 +79,13 @@ def test_a_board_with_scores_and_periods_but_no_clock_gives_quarters_from_the_sc
     tl += [ScoreboardRead(t=600 + i, period=1, clock_s=None, home=2 * (i // 60), away=i // 90, home_fouls=None, away_fouls=None, conf=0.75) for i in range(480)]
     tl += blank(1080, 60, 2, 16, 5)                                 # break
     tl += [ScoreboardRead(t=1140 + i, period=2, clock_s=None, home=16 + i // 50, away=5 + i // 40, home_fouls=None, away_fouls=None, conf=0.75) for i in range(480)]
-    tl += blank(1620, 900, 2, 25, 17)                               # final score stays up for 15 minutes
+    tl += blank(1620, 600, 4, 25, 17)                               # halftime: no scoring; the period cell misreads as 4
+    tl += [ScoreboardRead(t=2220 + i, period=3, clock_s=None, home=25 + i // 45, away=17 + i // 60, home_fouls=None, away_fouls=None, conf=0.75) for i in range(480)]
+    tl += blank(2700, 900, 3, 35, 24)                               # final score stays up for 15 minutes
     phases = game_phases(tl)
     assert phases.known and phases.quarter_length_s is None
     assert not is_live(phases, 300) and is_live(phases, 700) and is_live(phases, 1500)
-    assert not is_live(phases, 1620 + 300)                          # five minutes after the last score change
-    assert phases.quarters == {1: (phases.live[0][0], phases.live[0][1]), 2: (phases.live[1][0], phases.live[1][1])}
+    assert not is_live(phases, 1620 + 300)                          # halftime: five minutes without a score change
+    assert is_live(phases, 2400) and not is_live(phases, 2700 + 300)
+    assert list(phases.quarters) == [1, 2, 3] and phases.quarters[2][0] < 1200 < phases.quarters[2][1]
+    assert phases.live == list(phases.quarters.values())

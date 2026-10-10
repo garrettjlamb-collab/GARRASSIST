@@ -114,10 +114,13 @@ def interpret(game_id: str, classifier=None, use_classifier: bool = True, device
     events = build_shot_events(arrivals, timeline, preds, game_id, opinions=opinions)
     sb_only = scoreboard_only_events(timeline, events)
     events = sorted(events + sb_only, key=lambda e: (e.t, e.rim_id))
-    warmups = mark_dead_time(events, game_phases(timeline))
+    phases = game_phases(timeline)
+    warmups = mark_dead_time(events, phases)
     quarters = load_quarters(gd)
     if quarters:                                          # the coach's marks win over the scoreboard
         warmups = mark_quarters(events, quarters)
+    elif phases.quarters:                                 # a clockless board: quarters from the runs of scoring
+        warmups = mark_quarters(events, list(phases.quarters.values()))
     previous = load_events(gd)
     save_events(gd, events)
     carried = carry_over_decisions(gd, previous, events)       # the coach's review follows each shot to its new card

@@ -23,6 +23,8 @@ END_GRACE_S = 3.0           # a quarter stays live this long after its clock is 
 
 SCORE_LEAD_S = 90.0         # with no clock: live play starts this long before the first score change
 SCORE_TAIL_S = 120.0        # ... and ends this long after the last one
+BREAK_GAP_S = 240.0         # a stretch this long with no score change is a break (halftime), not play
+MIN_CHANGES = 2             # a run of play has at least this many score changes
 
 
 @dataclass
@@ -46,16 +48,26 @@ def _phases_from_scores(reads: list[ScoreboardRead]) -> GamePhases:
         if last_total is not None and total > last_total:
             changes.append(r.t)
         last_total = total
-    if len(changes) < 2:
+    if len(changes) < MIN_CHANGES:
         return GamePhases(quarter_length_s=None, known=False, game_over_t=_game_over_t(reads))
-    start, end = changes[0] - SCORE_LEAD_S, changes[-1] + SCORE_TAIL_S
-    spans: dict[int, list[float]] = {}
-    for r in reads:
-        if r.period is not None and start <= r.t <= end:
-            spans.setdefault(r.period, [r.t, r.t])[1] = r.t
-    quarters = {p: (lo, hi) for p, (lo, hi) in sorted(spans.items())}
-    return GamePhases(quarter_length_s=None, live=list(quarters.values()), known=True,
-                      game_over_t=_game_over_t(reads), quarters=quarters)
+    period_at = {r.t: r.period for r in reads}
+    # Runs of scoring: a new run starts at a long gap or when the board's period changes. The period digit
+    # is not trusted for the quarter number (it misreads during breaks); runs are numbered in order.
+    runs: list[list[float]] = [[changes[0]]]
+    for prev, t in zip(changes, changes[1:]):
+        if t - prev > BREAK_GAP_S or period_at.get(t) != period_at.get(prev):
+            runs.append([t])
+        else:
+            runs[-1].append(t)
+    runs = [r for r in runs if len(r) >= MIN_CHANGES]
+    spans: list[tuple[float, float]] = []
+    for r in runs:
+        lo, hi = r[0] - SCORE_LEAD_S, r[-1] + SCORE_TAIL_S
+        if spans and lo < spans[-1][1]:
+            lo = spans[-1][1]
+        spans.append((lo, hi))
+    quarters = {i + 1: span for i, span in enumerate(spans)}
+    return GamePhases(quarter_length_s=None, live=spans, known=True, game_over_t=_game_over_t(reads), quarters=quarters)
 
 
 def _stretches(reads: list[ScoreboardRead]) -> list[tuple[float, float]]:
