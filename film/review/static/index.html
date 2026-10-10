@@ -98,14 +98,25 @@ async function loadGames() {
   if (!state.game && readable.length) selectGame(readable[0].game_id);
 }
 
+const isWeak = (e) => (e.signals || {}).source === "motion" || (e.flags || []).includes("clf-none");
+
+// The queue: undecided strong cards first, in game order; then undecided weak ones; then warmups; decided
+// cards last. The coach only ever moves forward through what still needs him.
+function sortQueue() {
+  state.events.sort((a, b) => (!!a.decision - !!b.decision) || (isWarm(a) - isWarm(b)) || (isWeak(a) - isWeak(b)) || (a.t - b.t));
+}
+
+function nextUndecided(from) {
+  for (let i = from; i < state.events.length; i++) if (!state.events[i].decision) return i;
+  for (let i = 0; i < from; i++) if (!state.events[i].decision) return i;
+  return Math.min(from, state.events.length - 1);
+}
+
 async function selectGame(id) {
   state.game = id;
   state.events = await api(`/api/games/${id}/events`);
-  // Undecided game cards first, in game order; the weak ones (motion only, or the classifier saw nothing
-  // reach the rim) after the rest; warmups last.
-  const isWeak = (e) => (e.signals || {}).source === "motion" || (e.flags || []).includes("clf-none");
-  state.events.sort((a, b) => (isWarm(a) - isWarm(b)) || (!!a.decision - !!b.decision) || (isWeak(a) - isWeak(b)) || (a.t - b.t));
-  state.index = 0;
+  sortQueue();
+  state.index = nextUndecided(0);
   await loadGames();
   render();
 }
@@ -125,7 +136,7 @@ function renderShots() {
   if (!state.game) { el.innerHTML = "<p class='muted'>Pick a game.</p>"; return; }
   const decided = state.events.filter(e => e.decision).length;
   const e = state.events[state.index];
-  const isWeakCard = (x) => (x.signals || {}).source === "motion" || (x.flags || []).includes("clf-none");
+  const isWeakCard = isWeak;
   const strongLeft = state.events.filter(x => !x.decision && !isWarm(x) && !isWeakCard(x)).length;
   const stopNote = e && !e.decision && (isWeakCard(e) || isWarm(e)) && strongLeft === 0
     ? `<div class="card" style="border-color:var(--ok)"><b>Strong cards done for this game.</b> What follows is optional: weak cards (motion only, or nothing seen at the rim) and warmups. Pick the next game, or keep going if you like.</div>` : "";
@@ -167,7 +178,7 @@ function decide(status) {
     const e = state.events[state.index];
     if (!e) return;
     e.decision = await post(`/api/games/${state.game}/decisions/${e.id}`, { status, made: e.made, team: e.team, foul: e.foul || null });
-    state.index = Math.min(state.index + 1, state.events.length - 1);
+    state.index = nextUndecided(state.index + 1);
     renderShots();
     loadGames().catch(showError);
   });
@@ -182,6 +193,8 @@ function confirmHigh() {
         }
       }
     } finally {
+      sortQueue();                                   // the confirmed cards drop to the back, out of the way
+      state.index = nextUndecided(0);
       renderShots();
       loadGames().catch(showError);
     }
