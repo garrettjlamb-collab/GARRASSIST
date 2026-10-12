@@ -53,6 +53,9 @@ def save_decision(game_dir: Path, event_id: str, decision: dict) -> dict:
     path = decisions_path(game_dir)
     with _LOCK:
         everything = load_decisions(game_dir)
+        previous = everything.get(event_id) or {}
+        if "x" not in decision and "x" in previous:       # the card sends x/y only when the dot moved: keep the old dot
+            entry["x"], entry["y"] = previous["x"], previous.get("y")
         everything[event_id] = entry
         tmp = path.with_name(path.name + ".tmp")
         tmp.write_text(json.dumps(everything, indent=1))
@@ -74,6 +77,7 @@ def apply_decisions(events: list[dict], decisions: dict) -> list[dict]:
                     merged[key] = decision[key]
             if "x" in decision:
                 merged["x"], merged["y"] = decision["x"], decision.get("y")
+                merged["location_conf"] = None            # the coach's dot, not the machine's: no confidence to report
         if merged.get("x") is not None and merged.get("y") is not None:
             merged["zone"], merged["shot_type"] = zone_of(merged["x"], merged["y"]), shot_type_of(merged["x"], merged["y"])
         elif "x" in merged or "y" in merged:

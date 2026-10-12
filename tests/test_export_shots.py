@@ -89,3 +89,15 @@ def test_the_export_carries_the_dot_and_zone(synthetic_video, tmp_path, monkeypa
     assert rows[1]["x"] == "" and rows[1]["zone"] == ""
     shots = json.loads(json_path.read_text())["shots"]
     assert shots[0]["x"] == 3.0 and shots[1]["x"] is None
+
+
+def test_a_coach_dot_clears_the_machine_location_conf(synthetic_video, tmp_path, monkeypatch):
+    game_id, gd = _game(synthetic_video, tmp_path, monkeypatch)
+    events = [Event(id=f"shot-{i:06d}-r1", type="shot", t=1.0 + i * 0.4, rim_id=1, quarter=2, clock_s=125.0 - i, team="home",
+                    made=True, confidence=0.9, clip={"start": 0.5, "end": 1.5}, signals={}, flags=[],
+                    x=20.0, y=20.0, zone="mid-center", shot_type="midrange", location_conf=0.8) for i in range(3)]
+    save_events(gd, events)
+    save_decision(gd, "shot-000000-r1", {"status": "confirmed", "made": False, "x": 3.0, "y": 4.0})
+    rows = list(csv.DictReader(export_shots(game_id)[0].open()))
+    assert rows[0]["x"] == "3.0" and rows[0]["location_conf"] == ""          # the coach's dot, not the machine's
+    assert rows[1]["x"] == "20.0" and rows[1]["location_conf"] == "0.8"
