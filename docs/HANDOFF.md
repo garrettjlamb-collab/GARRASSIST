@@ -283,6 +283,13 @@ the honest figure stays the held-out one (84-95%). Datasets: `datasets/rimclf` n
 sixteen games. Next: the five home Hudl games he plans to download; then the wall-scoreboard reader, clip
 cutting, rung 2.
 
+## Home gym is Marcos de Niza (Garrett, 2026-10-12)
+
+The five MDN Hudl games are his home games. So the `hudl-mdn` skin is the one that matters most: reading its
+**clock** (not done; its font defeats the segment zones) would give warmups and the game clock on every home
+game without quarter marks. Arcadia is history. Build order agreed: MDN clock reader -> wall-scoreboard reader
+for iPad film -> clip cutting -> shot locations and the tracker export -> box score.
+
 ## Naming (2026-10-09)
 Game ids are folder names and keys into datasets, paths and views: **never rename a game folder**. A game now
 has a `title` for people (`film title <id> "..."`, shown on the review page); ids from new downloads no longer
