@@ -120,7 +120,7 @@ def interpret(game_id: str, classifier=None, use_classifier: bool = True, device
     quarters = load_quarters(gd)
     if quarters:                                          # the coach's marks win over the scoreboard
         warmups = mark_quarters(events, quarters)
-    elif phases.quarters:                                 # a clockless board: quarters from the runs of scoring
+    elif phases.quarters:                                 # the board's quarters, numbered by its period digit
         warmups = mark_quarters(events, list(phases.quarters.values()))
     previous = load_events(gd)
     save_events(gd, events)

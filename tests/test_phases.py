@@ -59,10 +59,10 @@ def test_empty_or_unreadable_timeline_treats_everything_as_live():
     assert is_live(game_phases(blank(0, 50, 1, None, None)), 10.0)
 
 
-def test_a_buzzer_beater_just_after_the_reset_is_still_live():
+def test_a_buzzer_beater_just_after_the_buzzer_is_still_live():
     phases = game_phases(jv_game())
-    assert is_live(phases, 865 + END_GRACE_S - 0.5)      # Q1's clock reset at 865
-    assert not is_live(phases, 865 + END_GRACE_S + 0.5)
+    assert is_live(phases, 845 + END_GRACE_S - 0.5)      # Q1's clock hit 0:00 at 845 and was held there
+    assert not is_live(phases, 845 + END_GRACE_S + 0.5)  # until the break clock was set at 865
 
 
 def test_this_game_ends_when_the_board_resets():
@@ -121,3 +121,105 @@ def test_an_isolated_misread_of_the_clock_does_not_start_a_new_stretch():
     tl[300].clock_s = tl[300].clock_s + 60.0
     phases = game_phases(tl, quarter_length_s=480.0)
     assert len(phases.live) == 1 and is_live(phases, 250) and is_live(phases, 400)
+
+
+def _score(reads, every: int, start_t: float | None = None, home: bool = True):
+    """Add a basket every `every` seconds to a run of reads (scoring is what makes a countdown a quarter)."""
+    t0 = start_t if start_t is not None else reads[0].t
+    for r in reads:
+        pts = 2 * max(0, int((r.t - t0) // every))
+        if home:
+            r.home = (r.home or 0) + pts
+        else:
+            r.away = (r.away or 0) + pts
+    return reads
+
+
+def _static(t0: float, period: int, clock: float, seconds: int, home: int = 0, away: int = 0) -> list[ScoreboardRead]:
+    return [
+        ScoreboardRead(t=t0 + i, period=period, clock_s=clock, home=home, away=away, home_fouls=0, away_fouls=0, conf=1.0)
+        for i in range(seconds)]
+
+
+def test_a_minutes_misread_that_lasts_a_while_does_not_end_the_quarter():
+    """At Marcos de Niza the 8:00 shows for a few seconds before the tip, then the 7 reads as 8 for the
+    first seconds the clock runs (8:51, 8:50, 8:49, then 7:49). Later a whole minute reads 8:xx for 7:xx.
+    Neither is a new clock: the seconds carry on counting."""
+    tl = _static(0, 1, 540, 300)                                     # pregame: 9:00 held on the board
+    q = _static(300, 2, 480, 10)                                     # 8:00 held until the tip
+    q += countdown(310, 2, 480, 480)                                 # the quarter
+    for r in q[10:14]:
+        r.clock_s += 60                                              # 7:5x reads as 8:5x right after the tip
+    for r in q[130:190]:
+        r.clock_s += 60                                              # and a whole minute of 6:xx reads as 7:xx
+    tl += _score(q, 40, start_t=310)
+    phases = game_phases(tl, quarter_length_s=480.0)
+    assert len(phases.live) == 1
+    assert not is_live(phases, 200) and is_live(phases, 320) and is_live(phases, 450) and is_live(phases, 700)
+
+
+def test_a_timeout_countdown_on_the_game_clock_does_not_end_the_quarter():
+    """The game clock shows the 30-second timeout countdown (0:30 down to 0:10) and then returns to
+    where the quarter stood. The quarter continues."""
+    q = countdown(0, 1, 480, 480)
+    for i, r in enumerate(q[200:221]):
+        r.clock_s = 30.0 - i                                         # a timeout at 4:40: the clock shows 0:30 .. 0:10
+    for r in q[221:260]:
+        r.clock_s = 280.0                                            # back to 4:40, held through the rest of the timeout
+    for r in q[260:]:
+        r.clock_s += 59                                              # then the countdown resumes from 4:40
+    tl = _score(q, 40)
+    phases = game_phases(tl, quarter_length_s=480.0)
+    assert len(phases.live) == 1 and is_live(phases, 210) and is_live(phases, 240) and is_live(phases, 400)
+
+
+def test_a_quarter_whose_first_minute_reads_a_minute_high_still_starts_on_time():
+    """The board is set to 8:00 but reads 9:00, and the whole first minute reads a minute high before the
+    digit settles. Most of the quarter reads right, so the quarter is 8:00 and starts where the clock was set."""
+    tl = _static(0, 1, 60, 80, 20, 18)                               # the break clock held at 1:00
+    q = countdown(80, 2, 480, 480, 20, 18)
+    for r in q[:60]:
+        r.clock_s += 60
+    tl += _score(q, 40, start_t=80)
+    phases = game_phases(tl, quarter_length_s=480.0)
+    assert len(phases.live) == 1 and phases.live[0][0] <= 81 and not is_live(phases, 50) and is_live(phases, 90)
+
+
+def test_the_tens_digit_of_the_halftime_clock_dropping_out_is_not_a_quarter():
+    """Halftime counts down from 15:00; the tens digit drops out now and then, so 14:06 reads 4:06 for
+    a stretch. No read of it is a quarter: nothing scores, and the countdown is one clock."""
+    half = countdown(0, 2, 900, 900, 30, 28)
+    for r in half[50:120]:
+        r.clock_s -= 600
+    for r in half[400:470]:
+        r.clock_s -= 600                                             # 8:20 .. 7:10 reads as the quarter length would
+    q = _score(countdown(900, 3, 480, 480, 30, 28), 40, start_t=900)
+    phases = game_phases(half + q, quarter_length_s=480.0)
+    assert len(phases.live) == 1 and not is_live(phases, 420) and is_live(phases, 1000)
+
+
+def test_quarters_are_numbered_by_the_board_period_and_overtime_is_half_a_quarter():
+    tl = []
+    for k, period in enumerate((1, 2, 3, 4)):
+        q = countdown(k * 600, period, 480, 480, 20 * k, 20 * k)
+        tl += _score(q, 60, start_t=k * 600)
+        tl += _static(k * 600 + 480, period, 0, 120, 20 * k + 14, 20 * k + 14)   # 0:00 held, final score of the quarter
+    ot = countdown(2400, 5, 240, 240, 80, 80)
+    tl += _score(ot, 60, start_t=2400, home=False)
+    phases = game_phases(tl, quarter_length_s=480.0)
+    assert list(phases.quarters) == [1, 2, 3, 4, 5] and phases.live == list(phases.quarters.values())
+    assert is_live(phases, 2500) and not is_live(phases, 2300)
+
+
+def test_a_quarter_whose_last_minute_went_unread_still_covers_it():
+    """At Saguaro the board became unreadable with 1:00 on the clock and stayed so until the break clock
+    was set three minutes later. The minute was played: the quarter runs on, up to three times the time
+    left, and never past the next clock setting."""
+    q = _score(countdown(0, 1, 480, 420), 40)                         # reads stop at 1:00
+    tl = q + _static(600, 2, 60, 30, 20, 20)                         # the break clock, set 180 s later
+    tl += _score(countdown(660, 2, 480, 480, 20, 20), 40, start_t=660)
+    phases = game_phases(tl, quarter_length_s=480.0)
+    assert len(phases.live) == 2
+    assert is_live(phases, 500) and is_live(phases, 595) and not is_live(phases, 605)
+    short = _score(countdown(0, 1, 480, 470), 40) + _static(900, 2, 60, 30, 24, 24)   # last read 0:11 at 469, nothing set for 15 min
+    assert not is_live(game_phases(short, quarter_length_s=480.0), 469 + 11 * 3 + END_GRACE_S + 1)
