@@ -369,6 +369,29 @@ Marked so far: Combs `shot-002608-r19`, `shot-033855-r183` (saved rejected), `sh
 `shot-024920-r172` ("same situation ... in the context of a foul happening"). RKDA was the first game he
 flagged; the four earlier games have unflagged ones. Still to build: which team and which player fouled.
 
+## 2026-10-12: the quarter finder was rewritten (the home games had no quarters)
+
+Re-reading the five Marcos de Niza Hudl games after the clock fixes showed three with no quarters at
+all and nearly every card marked warmup. The old `film/interpret/phases.py` split the clock reads into
+stretches at every upward reset and trusted the minutes digit, which on the MDN skin loses strokes
+(6 reads 5, 9 reads 3, 8 reads 9), lags a few seconds after a change (7:51 reads 8:51) and drops its
+tens digit at halftime (14:06 reads 4:06); and the 30-second timeout clock laid over the game clock
+ended a quarter early.
+
+Now every whole-minute clock setting that could be the quarter length (8:00, or a misread of it such
+as 9:00 or 3:00) is a hypothesis, followed forward with its frame locked: a read carries it on when its
+seconds fit a clock that ran for at most the time elapsed and its minutes field is something the true
+minutes could show on a seven-segment board (`plausible_minutes`: lost strokes, a one-minute lag, a
+dropped tens digit). A hypothesis is a quarter when its clock moved, most reads taken while it ran agree
+with it, and the board scored; it ends at the buzzer (two reads of 0:00) or where a clock was next set,
+and when the reads stop with time left it runs on up to three times that, never past the next setting.
+Overtime is a clock set to half the length after four quarters. A score that falls back ends the game
+only when it stays down for two minutes (a misread digit no longer ends it). Quarters are numbered by
+the board's period digit. All seven films with a scoreboard (two Arcadia Hudl, five MDN Hudl) now give
+four quarters; the five MDN games were re-interpreted (6 to 17 warmups each, 173 on the Arcadia game
+with its long pregame shootaround). Commit 150e4b5; 15 tests in `tests/test_phases.py` replay the
+failure modes.
+
 ## 2026-10-12: shot locations, plan A (court finder and dots on the card)
 
 Plan A of three is built: `docs/superpowers/plans/2026-10-12-shot-locations-a-court-and-dots.md`. Plan B is people,
