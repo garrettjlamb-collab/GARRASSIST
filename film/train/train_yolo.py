@@ -15,7 +15,7 @@ from film.interpret.ballpath import FEATURES, hoop_offset, path_features
 from film.train.rimclf import CLASSES, fit_rimclf
 
 MIN_GAIN_OVER_GUESSING = 0.10     # a classifier must beat the majority-class share of val by this much
-BASE_WEIGHTS = {"rim": "yolo11n.pt", "ball": "yolo11n.pt"}
+BASE_WEIGHTS = {"rim": "yolo11n.pt", "ball": "yolo11n.pt", "court": "yolo11n-pose.pt"}
 MIN_TRAIN, MIN_VAL = 20, 4
 
 

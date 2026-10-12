@@ -221,3 +221,21 @@ def test_a_picture_classifier_that_learned_nothing_is_not_put_into_service(monke
     version, folder = train_picclf_version("cpu", hold="game-b", arch="tiny", pretrained=False, epochs=2, lr=0.02, log=lines.append)
     assert registry.read_manifest(folder)["in_service"] is False and registry.latest("picclf") is None
     assert (folder / "not-good-enough.pt").exists() and any("not put into service" in line for line in lines)
+
+
+def test_train_court_uses_pose_weights_and_the_keypoint_yaml(monkeypatch, tmp_path):
+    _env(monkeypatch, tmp_path)
+    from film.interpret.court import POINT_NAMES
+    root = tmp_path / "datasets" / "court"
+    for split, n in (("train", 24), ("val", 6)):
+        (root / "images" / split).mkdir(parents=True)
+        (root / "labels" / split).mkdir(parents=True)
+        for i in range(n):
+            cv2.imwrite(str(root / "images" / split / f"{i}.jpg"), np.zeros((32, 32, 3), np.uint8))
+            (root / "labels" / split / f"{i}.txt").write_text("0 0.5 0.5 0.4 0.4 " + " ".join(["0.5 0.5 2"] * len(POINT_NAMES)) + "\n")
+    StubYOLO.created.clear()
+    version, folder = train_detector("court", device="cpu", epochs=1, yolo_cls=StubYOLO, log=lambda *a: None)
+    assert version == "v1" and registry.latest("court") == ("v1", folder)
+    assert StubYOLO.created[-1].endswith("yolo11n-pose.pt")
+    assert "kpt_shape: [18, 3]" in (root / "data.yaml").read_text()
+    assert registry.read_manifest(folder)["imgsz"] == 960

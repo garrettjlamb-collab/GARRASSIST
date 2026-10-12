@@ -9,7 +9,7 @@ import numpy as np
 from film.common import registry
 
 # The ball is about 12 px wide in the 320 px rim crop; running the crop at 640 doubles it for the detector.
-IMGSZ = {"rim": 640, "ball": 640}
+IMGSZ = {"rim": 640, "ball": 640, "court": 960}
 RIM_WORLD_CLASSES = {"basketball hoop": "rim", "backboard": "backboard"}
 BALL_WORLD_CLASSES = {"basketball": "ball"}
 WORLD_WEIGHTS = "yolov8s-worldv2.pt"
