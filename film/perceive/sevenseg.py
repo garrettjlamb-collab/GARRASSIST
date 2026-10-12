@@ -50,17 +50,20 @@ def lit_segments(mask: np.ndarray, cell, threshold: float = 0.3) -> str:
     return "".join(s for s, zone in SEGMENT_ZONES.items() if zone_fraction(mask, cell, zone) >= threshold)
 
 
-def decode_cell(mask: np.ndarray, cell, threshold: float = 0.3) -> int | None:
-    """The digit in a cell: None when blank, -1 when the lit pattern is not a digit."""
+def decode_cell(mask: np.ndarray, cell, threshold: float = 0.3, patterns: dict[str, int] | None = None) -> int | None:
+    """The digit in a cell: None when blank, -1 when the lit pattern is not a digit. `patterns` adds a
+    skin's own shapes (a 9 drawn without its bottom bar, say) to the standard ones."""
     lit = lit_segments(mask, cell, threshold)
     if not lit:
         return None
+    if patterns and lit in patterns:
+        return patterns[lit]
     return DIGIT_PATTERNS.get(lit, -1)
 
 
-def decode_number(mask: np.ndarray, cells, threshold: float = 0.3) -> int | None:
+def decode_number(mask: np.ndarray, cells, threshold: float = 0.3, patterns: dict[str, int] | None = None) -> int | None:
     """Right-aligned digits across cells. None if blank, unreadable, or a blank follows a digit."""
-    digits = [decode_cell(mask, cell, threshold) for cell in cells]
+    digits = [decode_cell(mask, cell, threshold, patterns) for cell in cells]
     if all(d is None for d in digits) or any(d == -1 for d in digits):
         return None
     value, started = 0, False

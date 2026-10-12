@@ -166,7 +166,37 @@ def test_a_profile_may_have_no_clock_and_its_own_lit_threshold():
     frame = cv2.imread("fixtures/frames/hudl_mdn_40_71_p4.jpg")
     read = read_scoreboard(frame, load_profile("hudl-mdn"), t=3984.0)
     assert (read.home, read.away, read.period) == (40, 71, 4)
-    assert read.clock_s is None and read.home_fouls is None and read.conf == 0.75
+    assert read.clock_s == 290.0 and read.home_fouls is None and read.conf == 1.0      # 4:50 on the board
+
+
+def test_a_profile_may_add_digit_patterns_for_its_font():
+    """The Marcos de Niza clock draws a 9 without the bottom bar: lit segments abcfg."""
+    import numpy as np
+    from film.perceive.sevenseg import decode_cell, decode_number, SEGMENT_ZONES
+
+    mask = np.zeros((40, 30), bool)
+    for seg in "abcfg":
+        x1, y1, x2, y2 = SEGMENT_ZONES[seg]
+        mask[int(y1 * 40):int(y2 * 40) + 1, int(x1 * 30):int(x2 * 30) + 1] = True
+    assert decode_cell(mask, (0, 0, 30, 40)) == -1
+    assert decode_cell(mask, (0, 0, 30, 40), patterns={"abcfg": 9}) == 9
+    assert decode_number(mask, [(0, 0, 30, 40)], patterns={"abcfg": 9}) == 9
+
+
+def test_a_clock_without_separator_dots_reads_as_minutes_and_seconds():
+    import numpy as np
+    from film.perceive.scoreboard import read_clock
+    from film.perceive.sevenseg import SEGMENT_ZONES, DIGIT_PATTERNS
+
+    by_digit = {v: k for k, v in DIGIT_PATTERNS.items()}
+    mask = np.zeros((40, 130), bool)
+    cells = [(0, 0, 30, 40), (33, 0, 30, 40), (66, 0, 30, 40), (99, 0, 30, 40)]
+    for cell, digit in zip(cells[1:], (4, 5, 0)):                       # "4:50", tens-of-minutes blank
+        for seg in by_digit[digit]:
+            x1, y1, x2, y2 = SEGMENT_ZONES[seg]
+            mask[int(y1 * 40):int(y2 * 40) + 1, cell[0] + int(x1 * 30):cell[0] + int(x2 * 30) + 1] = True
+    assert read_clock(mask, {"cells": cells, "format": "m:ss"}) == 290.0
+    assert read_clock(np.zeros((40, 130), bool), {"cells": cells, "format": "m:ss"}) is None
 
 
 def test_every_profile_file_is_a_choice_for_ingest():

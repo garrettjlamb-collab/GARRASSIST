@@ -1,11 +1,97 @@
 {
   "name": "hudl-mdn",
-  "note": "Hudl Focus at Marcos de Niza: the school's own scoreboard skin, bottom left. LED-dot digits, so a lower lit threshold. No clock field: its font defeats the segment zones; quarter marks supply warmups. Team fouls are not read.",
-  "frame": [1920, 1080],
+  "note": "Hudl Focus at Marcos de Niza: the school's own scoreboard skin, bottom left. LED-dot digits, so a lower lit threshold; the font's 9 has no bottom bar (patterns). Clock cells are minutes then seconds with no readable colon. Team fouls are not read. The minutes digit sits half behind the clock box's left edge, so its left segments (e, f) often read dark: the patterns allow for that.",
+  "frame": [
+    1920,
+    1080
+  ],
   "threshold": 0.15,
   "fields": {
-    "home":   {"color": "red",   "cells": [[100, 982, 15, 27], [117, 982, 15, 27]]},
-    "away":   {"color": "red",   "cells": [[213, 982, 15, 27], [230, 982, 15, 27]]},
-    "period": {"color": "amber", "cells": [[162, 984, 13, 22]]}
+    "home": {
+      "color": "red",
+      "cells": [
+        [
+          100,
+          982,
+          15,
+          27
+        ],
+        [
+          117,
+          982,
+          15,
+          27
+        ]
+      ]
+    },
+    "away": {
+      "color": "red",
+      "cells": [
+        [
+          213,
+          982,
+          15,
+          27
+        ],
+        [
+          230,
+          982,
+          15,
+          27
+        ]
+      ]
+    },
+    "period": {
+      "color": "amber",
+      "cells": [
+        [
+          162,
+          984,
+          13,
+          22
+        ]
+      ]
+    },
+    "clock": {
+      "color": "amber",
+      "format": "m:ss",
+      "cells": [
+        [
+          128,
+          930,
+          15,
+          27
+        ],
+        [
+          149,
+          930,
+          15,
+          27
+        ],
+        [
+          174,
+          930,
+          15,
+          27
+        ],
+        [
+          191,
+          930,
+          15,
+          27
+        ]
+      ]
+    }
+  },
+  "patterns": {
+    "abcfg": 9,
+    "abdef": 0,
+    "abdg": 2,
+    "bfg": 4,
+    "adfg": 5,
+    "ab": 7,
+    "abfg": 9,
+    "bcg": 4,
+    "acdg": 5
   }
 }

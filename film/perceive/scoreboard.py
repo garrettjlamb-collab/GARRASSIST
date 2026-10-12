@@ -54,11 +54,18 @@ def _cells(field: dict) -> list[tuple[int, int, int, int]]:
     return [tuple(c) for c in field["cells"]]
 
 
-def read_clock(mask: np.ndarray, field: dict, threshold: float = 0.3) -> float | None:
-    """Clock cells read as M M : S S when both separator dots are lit, S S . t when only the bottom one is."""
-    digits = [decode_cell(mask, cell, threshold) for cell in _cells(field)]
+def read_clock(mask: np.ndarray, field: dict, threshold: float = 0.3, patterns: dict | None = None) -> float | None:
+    """Clock cells read as M M : S S when both separator dots are lit, S S . t when only the bottom one is.
+    A field with `format: "m:ss"` has no readable dots: its cells are always minutes then seconds, and a
+    read needs the minutes cell and both seconds cells."""
+    digits = [decode_cell(mask, cell, threshold, patterns) for cell in _cells(field)]
     if any(d == -1 for d in digits) or all(d is None for d in digits):
         return None
+    if field.get("format") == "m:ss":
+        if any(x is None for x in digits[-2:]):              # both seconds digits; a blank minutes cell is 0:ss
+            return None
+        d = [0 if x is None else x for x in digits]
+        return float(d[0] * 600 + d[1] * 60 + d[2] * 10 + d[3])
     d = [0 if x is None else x for x in digits]
     top = box_fraction(mask, field["sep_top"]) >= 0.2
     bottom = box_fraction(mask, field["sep_bottom"]) >= 0.2
@@ -72,6 +79,7 @@ def read_clock(mask: np.ndarray, field: dict, threshold: float = 0.3) -> float |
 def read_scoreboard(frame_bgr: np.ndarray, profile: dict, t: float = 0.0) -> ScoreboardRead:
     fields = profile["fields"]
     threshold = float(profile.get("threshold", 0.3))        # LED-dot skins fill a segment zone only sparsely
+    patterns = profile.get("patterns")                       # a skin's own digit shapes
     masks: dict[str, np.ndarray] = {}
 
     def mask_for(color: str) -> np.ndarray:
@@ -81,12 +89,12 @@ def read_scoreboard(frame_bgr: np.ndarray, profile: dict, t: float = 0.0) -> Sco
 
     def number(name: str) -> int | None:
         field = fields[name]
-        return decode_number(mask_for(field["color"]), _cells(field), threshold)
+        return decode_number(mask_for(field["color"]), _cells(field), threshold, patterns)
 
     home, away, period = number("home"), number("away"), number("period")
     # A skin whose clock font the segment zones cannot read leaves the clock out; the scores still give
     # made-or-missed, and quarter marks supply what the clock would have.
-    clock = read_clock(mask_for(fields["clock"]["color"]), fields["clock"], threshold) if "clock" in fields else None
+    clock = read_clock(mask_for(fields["clock"]["color"]), fields["clock"], threshold, patterns) if "clock" in fields else None
     home_fouls = number("home_fouls") if "home_fouls" in fields else None
     away_fouls = number("away_fouls") if "away_fouls" in fields else None
     got = sum(v is not None for v in (home, away, clock, period))
