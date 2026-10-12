@@ -133,7 +133,7 @@ function shotTypeOf(x, y) {
 // Before a save the label follows the dot (client port); otherwise the server's values stand.
 function zoneLine(e) {
   if (e.x == null || e.y == null) return "No dot yet: click the court";
-  const zone = e.dotMoved ? zoneOf(e.x, e.y) : e.zone, type = e.dotMoved ? shotTypeOf(e.x, e.y) : e.shot_type;
+  const zone = e.dotMoved || !e.zone ? zoneOf(e.x, e.y) : e.zone, type = e.dotMoved || !e.shot_type ? shotTypeOf(e.x, e.y) : e.shot_type;
   return esc(ZONE_LABELS[zone] || zone || "") + " · " + esc(type || "") + (e.dotMoved ? " · unsaved" : e.location_conf != null ? " · dot conf " + e.location_conf : "");
 }
 
@@ -161,7 +161,10 @@ function drawHalfCourt(cv, e) {
 function setDot(e, x, y) {
   e.x = Math.max(0, Math.min(HALF.w, Math.round(x * 10) / 10)); e.y = Math.max(0, Math.min(HALF.h, Math.round(y * 10) / 10));
   e.dotMoved = true;
-  renderShots();
+  const cv = $("#court");
+  if (!cv) { renderShots(); return; }
+  drawHalfCourt(cv, e);
+  const z = $("#zone-line"); if (z) z.innerHTML = zoneLine(e);
 }
 const dotBody = (e) => e.dotMoved ? { x: e.x, y: e.y } : {};
 
@@ -236,7 +239,12 @@ function renderShots() {
   $("#confirm-high").onclick = confirmHigh;
   if ($("#go-quarters")) $("#go-quarters").onclick = () => { state.tab = "quarters"; render(); };
   drawHalfCourt($("#court"), e);
-  $("#court").onclick = (ev) => { const r = $("#court").getBoundingClientRect(); const [x, y] = toFt(ev.clientX - r.left, ev.clientY - r.top); setDot(e, x, y); };
+  $("#court").onclick = (ev) => {
+    const c = $("#court"), r = c.getBoundingClientRect();
+    const sx = CV.w / c.clientWidth, sy = CV.h / c.clientHeight;   // CSS scaling; clientLeft/Top skip the border
+    const [x, y] = toFt((ev.clientX - r.left - c.clientLeft) * sx, (ev.clientY - r.top - c.clientTop) * sy);
+    setDot(e, x, y);
+  };
   const video = $("#clip");
   video.onloadedmetadata = () => {
     const shotAt = e.clip ? e.t - e.clip.start : 0;
