@@ -500,9 +500,9 @@ async function courtKeys(ev) {
   } else if (k === "z") {
     state.zoom = !state.zoom; $("#cv").classList.toggle("zoom", state.zoom);
   } else if (k === "s") {
-    await guarded(async () => { await post(`/api/label/court/${l.image_id}/points`, { points: state.points }); state.skippedPoints = null; await loadLabel(); });
+    await guarded(async () => { await post(`/api/label/court/${l.image_id}/points`, { points: state.points }); await loadLabel(); });
   } else if (k === "d") {
-    await guarded(async () => { await post(`/api/label/court/${l.image_id}/skip`); state.skippedPoints = null; await loadLabel(); });
+    await guarded(async () => { await post(`/api/label/court/${l.image_id}/skip`); await loadLabel(); });
   } else return;
   ev.preventDefault();
 }
