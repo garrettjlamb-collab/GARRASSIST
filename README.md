@@ -99,6 +99,10 @@ made-or-missed clips.
 4. **Rim, and not on Hudl film.** For other cameras: `uv run film prelabel rim <game_id>`, the **Label rim**
    tab, about 150 frames, `uv run film train rim`. A trained rim model outranks the templates once it
    exists; set `FILM_RIM_DETECTOR=template` to keep the templates on Hudl film.
+5. **Court.** `uv run film prelabel court <game_id>` queues 40 frames; in **Label court** click each listed point
+   where it is in the frame (N when it is not in view), S to save. Then `uv run film train court` (about 30
+   minutes) and `uv run film court <game_id>` to fit the mapping through a game. Until plan B lands, dots are
+   placed by hand on the shot card: click the half court, arrows nudge a foot, Shift+arrows five.
 
 New versions land in `models/<name>/vN/` and are picked up automatically. Re-run `film perceive` (half an
 hour) and `film interpret` on a game to use a new detector; `film interpret` alone for a new classifier.
