@@ -54,7 +54,7 @@
   <section id="label" hidden></section>
 </main>
 <script>
-const state = { game: null, tab: "shots", events: [], index: 0, label: null, boxes: [], selected: -1, drawing: null, img: null, busy: false, rate: 1 };
+const state = { game: null, tab: "shots", events: [], index: 0, label: null, boxes: [], selected: -1, drawing: null, img: null, busy: false, rate: 1, skippedPoints: new Set(), pointIndex: -1 };
 const RATES = [1, 1.5, 2];
 const LEAD_IN_S = 3;   // each clip opens this long before the shot; R replays the whole play
 const isWarm = (e) => (e.flags || []).includes("warmup");
@@ -460,7 +460,7 @@ function renderCourtLabel() {
   img.onload = () => { state.img = img; drawPoints(); };
   img.src = l.image_url;
   $("#cv").onclick = (ev) => {
-    if (state.pointIndex < 0) return;
+    if (!(state.pointIndex >= 0)) return;
     const p = canvasPos(ev);
     state.points[COURT_POINTS[state.pointIndex]] = [p.x, p.y];
     state.pointIndex = COURT_POINTS.findIndex((n, i) => i > state.pointIndex && !(n in state.points));
@@ -490,7 +490,7 @@ async function courtKeys(ev) {
   if (!l || l.done) return;
   const k = ev.key.toLowerCase();
   if (k === "n") {
-    if (state.pointIndex < 0) return;
+    if (!(state.pointIndex >= 0)) return;
     state.skippedPoints.add(COURT_POINTS[state.pointIndex]);
     state.pointIndex = COURT_POINTS.findIndex((n, i) => i > state.pointIndex && !(n in state.points));
     drawPoints();
