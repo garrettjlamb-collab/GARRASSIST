@@ -25,9 +25,9 @@ before the next starts.
 
 ## 2. Court finder
 
-**Points.** Up to 14 per frame: the four court corners; at each end in view, the four lane corners, the two
-free-throw line ends, the top of the free-throw circle, and the two points where the three-point arc meets the
-baseline. (The NFHS arc, 19.75 ft, meets the baseline; there is no straight corner segment.)
+**Points.** Nine per end, eighteen named points in all, of which one end's nine are usually in view: the two
+court corners on that baseline, the two lane corners on the baseline, the two free-throw line ends, the top of
+the free-throw circle, and the two points where the three-point arc meets the baseline. (The NFHS arc, 19.75 ft, meets the baseline; there is no straight corner segment.)
 
 **Model.** A keypoint model in the same family as the backboard detector (YOLO pose/keypoint, nano), trained
 on frames labelled in a new **Label court** tab: the frame is shown with the 14 points listed; the coach clicks
@@ -86,7 +86,7 @@ direction. Ties or two people within a box-width: the nearer one, flagged `shoot
 
 **Spot.** The shooter's feet (bottom-centre of the box) at the release frame through the court mapping at
 that frame, folded to the half court. `zone` and suggested `shot_type` come from the tracker's rules, ported
-verbatim with the high-school arc (`film/interpret/zones.py`; the port is covered by tests that compare it
+with the high-school arc (a plain 19.75 ft distance test; a three within 10 ft of the baseline is a corner three) (`film/interpret/zones.py`; the port is covered by tests that compare it
 with the tracker's JavaScript on a grid of points). **Free throws:** clock stopped (or no ball movement for
 3 s on clockless film) and the shooter within 2 ft of the free-throw line -> placed at the line's midpoint,
 `shot_type = "free throw"`.
