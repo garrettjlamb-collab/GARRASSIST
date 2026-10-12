@@ -48,6 +48,10 @@ class ClassLabel(BaseModel):
     cls: str
 
 
+class PointsLabel(BaseModel):
+    points: dict[str, tuple[float, float]]
+
+
 class Quarters(BaseModel):
     quarters: list[tuple[float, float]]
 
@@ -78,7 +82,7 @@ def _safe_summary(gd: Path) -> dict:
 
 
 def _dataset(dataset: str) -> str:
-    if dataset not in ds.CLASS_NAMES and dataset != "rimclf":
+    if dataset not in ds.CLASS_NAMES and dataset not in ds.KEYPOINT_NAMES and dataset != "rimclf":
         raise HTTPException(404, f"no dataset {dataset}")
     return dataset
 
@@ -87,7 +91,7 @@ def _known_image(dataset: str, image_id: str) -> None:
     """404 unless the image is pending or was already accepted (accepts are idempotent)."""
     if image_id in ds.list_pending(dataset):
         return
-    accepted = ds._accepted_split(dataset, image_id) if dataset in ds.CLASS_NAMES else (
+    accepted = ds._accepted_split(dataset, image_id) if dataset in ds.CLASS_NAMES or dataset in ds.KEYPOINT_NAMES else (
         ds.find_class_images(dataset, image_id) and "x")
     if not accepted:
         raise HTTPException(404, f"no image {image_id} in {dataset}")
@@ -245,6 +249,20 @@ def create_app(films: Films | None = None) -> FastAPI:
         boxes = [Box(b.x1, b.y1, b.x2, b.y2, 1.0, b.cls) for b in body.boxes]
         try:
             return {"split": ds.accept_boxes(dataset, image_id, boxes)}
+        except FileNotFoundError:
+            raise HTTPException(404, f"no image {image_id} in {dataset}")
+
+    @app.post("/api/label/{dataset}/{image_id}/points")
+    def label_points(dataset: str, image_id: str, body: PointsLabel):
+        _dataset(dataset)
+        if dataset not in ds.KEYPOINT_NAMES:
+            raise HTTPException(400, f"{dataset} is not a keypoint dataset")
+        bad = sorted(set(body.points) - set(ds.KEYPOINT_NAMES[dataset]))
+        if bad:
+            raise HTTPException(400, f"unknown points {bad}")
+        _known_image(dataset, image_id)
+        try:
+            return {"split": ds.accept_points(dataset, image_id, {k: (float(x), float(y)) for k, (x, y) in body.points.items()})}
         except FileNotFoundError:
             raise HTTPException(404, f"no image {image_id} in {dataset}")
 

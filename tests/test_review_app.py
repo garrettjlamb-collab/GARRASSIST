@@ -180,3 +180,17 @@ def test_the_game_list_shows_titles(synthetic_video, tmp_path, monkeypatch):
     from film.common.manifest import Manifest
     m = Manifest.load(gd); m.title = "1 · Review in full: a game"; m.save(gd)
     assert client.get("/api/games").json()[0]["title"] == "1 · Review in full: a game"
+
+
+def test_court_points_are_accepted_over_the_api(synthetic_video, tmp_path, monkeypatch):
+    _env(monkeypatch, tmp_path)
+    client = TestClient(create_app())
+    ds.write_pending("court", "c1", np.zeros((100, 200, 3), np.uint8), [], extra={"t": 1.0, "points": {}})
+    nxt = client.get("/api/label/court/next").json()
+    assert nxt["image_id"] == "c1" and nxt["points"] == {}
+    r = client.post("/api/label/court/c1/points", json={"points": {"near-corner-left": [20, 80], "near-corner-right": [180, 80],
+                                                                   "near-ft-top": [100, 30], "near-ft-left": [70, 50]}})
+    assert r.status_code == 200 and r.json()["split"] in ("train", "val")
+    assert client.get("/api/label/court/next").json()["done"] is True
+    bad = client.post("/api/label/court/c1/points", json={"points": {"nowhere": [1, 2]}})
+    assert bad.status_code == 400

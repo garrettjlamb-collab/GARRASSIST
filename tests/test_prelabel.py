@@ -208,3 +208,14 @@ def test_autolabel_rims_saves_nothing_for_a_frame_without_a_steady_box(synthetic
     det = FakeDetector(fn=lambda img, i: [Box(100 + 60 * (i % 2), 60, 150 + 60 * (i % 2), 90, 0.9, "backboard")])
     assert autolabel_rims(m.game_id, n=3, detector=det, margin_s=0.5, log=lambda *a: None) == 0
     assert not list((tmp_path / "datasets").rglob("*.jpg"))
+
+
+def test_prelabel_court_queues_bare_frames(synthetic_video, tmp_path, monkeypatch):
+    from film.train.prelabel import prelabel_court
+
+    _env(monkeypatch, tmp_path)
+    m = ingest(synthetic_video, date="2026-01-01", profile="handheld")
+    assert prelabel_court(m.game_id, n=3, margin_s=0.5, log=lambda *a: None) == 3
+    ids = ds.list_pending("court")
+    assert len(ids) == 3 and all(ds.read_pending("court", i)["points"] == {} for i in ids)
+    assert prelabel_court(m.game_id, n=3, margin_s=0.5, log=lambda *a: None) == 0          # never queued twice
