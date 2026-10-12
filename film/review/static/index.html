@@ -99,12 +99,78 @@ async function loadGames() {
   if (!state.game && readable.length) selectGame(readable[0].game_id);
 }
 
+const ZONE_LABELS = {restricted:"Restricted Area", paint:"Paint", "mid-left":"Mid-Range Left", "mid-right":"Mid-Range Right", "mid-center":"Mid-Range Center", "corner-3-left":"Left Corner 3", "corner-3-right":"Right Corner 3", "wing-3-left":"Left Wing 3", "wing-3-right":"Right Wing 3", "top-3":"Top of Key 3"};
+
+// ---- The half court: feet on the tracker's half court, baseline at the bottom, basket near the bottom centre ----
+const HALF = { w: 50, h: 47, basketX: 25, basketY: 5.25, arc: 19.75, laneL: 17, laneR: 33, ftY: 19, ftR: 6, restricted: 4, cornerY: 10, floater: 9 };
+const CV = { w: 250, h: 235 };
+const toPx = (x, y) => [x / HALF.w * CV.w, CV.h - y / HALF.h * CV.h];
+const toFt = (px, py) => [px / CV.w * HALF.w, (CV.h - py) / CV.h * HALF.h];
+
+// Port of film/interpret/zones.py (zone_of, shot_type_of): same constants, same order of checks.
+function zoneOf(x, y) {
+  const dx = x - HALF.basketX, dy = y - HALF.basketY;
+  const dist = Math.hypot(dx, dy), ang = Math.atan2(dx, dy) * 180 / Math.PI;
+  if (dist <= HALF.restricted) return "restricted";
+  if (dist > HALF.arc) {
+    if (y < HALF.cornerY) return x < HALF.basketX ? "corner-3-left" : "corner-3-right";
+    if (ang < -35) return "wing-3-left";
+    if (ang > 35) return "wing-3-right";
+    return "top-3";
+  }
+  if (HALF.laneL <= x && x <= HALF.laneR && y <= HALF.ftY) return "paint";
+  if (ang < -25) return "mid-left";
+  if (ang > 25) return "mid-right";
+  return "mid-center";
+}
+function shotTypeOf(x, y) {
+  const dist = Math.hypot(x - HALF.basketX, y - HALF.basketY);
+  if (dist <= HALF.restricted) return "rim";
+  if (dist > HALF.arc) return "three";
+  if (dist <= HALF.floater && y <= HALF.ftY) return "floater";
+  return "midrange";
+}
+// Before a save the label follows the dot (client port); otherwise the server's values stand.
+function zoneLine(e) {
+  if (e.x == null || e.y == null) return "No dot yet: click the court";
+  const zone = e.dotMoved ? zoneOf(e.x, e.y) : e.zone, type = e.dotMoved ? shotTypeOf(e.x, e.y) : e.shot_type;
+  return esc(ZONE_LABELS[zone] || zone || "") + " · " + esc(type || "") + (e.dotMoved ? " · unsaved" : e.location_conf != null ? " · dot conf " + e.location_conf : "");
+}
+
+function drawHalfCourt(cv, e) {
+  const ctx = cv.getContext("2d");
+  ctx.fillStyle = "#1b2130"; ctx.fillRect(0, 0, CV.w, CV.h);
+  ctx.strokeStyle = "#8b95a7"; ctx.lineWidth = 1;
+  ctx.strokeRect(0.5, 0.5, CV.w - 1, CV.h - 1);
+  const [lx, ly] = toPx(HALF.laneL, HALF.ftY), [rx] = toPx(HALF.laneR, 0);
+  ctx.strokeRect(lx, ly, rx - lx, CV.h - ly);
+  const [bx, by] = toPx(HALF.basketX, HALF.basketY);
+  const r = (ft) => ft / HALF.w * CV.w;
+  ctx.beginPath(); ctx.arc(bx, by, r(HALF.arc), Math.PI, 2 * Math.PI); ctx.stroke();               // the arc, meeting the baseline
+  ctx.beginPath(); ctx.moveTo(bx - r(HALF.arc), by); ctx.lineTo(bx - r(HALF.arc), CV.h); ctx.moveTo(bx + r(HALF.arc), by); ctx.lineTo(bx + r(HALF.arc), CV.h); ctx.stroke();
+  const [fx, fy] = toPx(HALF.basketX, HALF.ftY);
+  ctx.beginPath(); ctx.arc(fx, fy, r(HALF.ftR), 0, 2 * Math.PI); ctx.stroke();
+  ctx.beginPath(); ctx.arc(bx, by, r(0.75), 0, 2 * Math.PI); ctx.strokeStyle = "#ff8c42"; ctx.stroke();
+  if (e.x != null && e.y != null) {
+    const [dx, dy] = toPx(e.x, e.y);
+    ctx.fillStyle = e.made ? "#3ddc84" : "#ff5c5c";
+    ctx.beginPath(); ctx.arc(dx, dy, 6, 0, 2 * Math.PI); ctx.fill();
+  }
+}
+
+function setDot(e, x, y) {
+  e.x = Math.max(0, Math.min(HALF.w, Math.round(x * 10) / 10)); e.y = Math.max(0, Math.min(HALF.h, Math.round(y * 10) / 10));
+  e.dotMoved = true;
+  renderShots();
+}
+const dotBody = (e) => e.dotMoved ? { x: e.x, y: e.y } : {};
+
 const isWeak = (e) => (e.signals || {}).source === "motion" || (e.flags || []).includes("clf-none");
 
 // The queue: undecided strong cards first, in game order; then undecided weak ones; then warmups; decided
 // cards last. The coach only ever moves forward through what still needs him.
 function sortQueue() {
-  state.events.sort((a, b) => (!!a.decision - !!b.decision) || (isWarm(a) - isWarm(b)) || (isWeak(a) - isWeak(b)) || (a.t - b.t));
+  state.events.sort((a, b) => (!!a.decision - !!b.decision) || (isWarm(a) - isWarm(b)) || (isWeak(a) - isWeak(b)) || ((a.x == null) - (b.x == null)) * -1 || (a.t - b.t));
 }
 
 function nextUndecided(from) {
@@ -157,14 +223,20 @@ function renderShots() {
     ${needMarks}${stopNote}
     <div class="card">
       <video id="clip" src="/clips/${esc(state.game)}/${esc(e.id)}.mp4" autoplay loop muted playsinline></video>
+      <div style="display:inline-block;vertical-align:top;margin-left:12px">
+        <canvas id="court" width="${CV.w}" height="${CV.h}" style="border-radius:6px;cursor:crosshair"></canvas>
+        <div class="muted" id="zone-line">${zoneLine(e)}</div>
+      </div>
       <div style="margin-top:8px">${warm}${weakBadge}${madeBadge}${foulBadge}<span class="badge none">${esc(e.type)}</span>${dec}
         <b>Q${e.quarter ?? "?"} ${clock(e.clock_s)}</b> <span class="muted">t=${e.t.toFixed(1)}s · team ${esc(e.team ?? "?")} · conf ${e.confidence} · ${e.rim_id < 0 ? "scoreboard only" : "rim " + e.rim_id}</span></div>
       <div class="muted" style="margin-top:4px">${esc((e.flags || []).join(" ") || "no flags")} · ${esc(JSON.stringify(e.signals))}</div>
-      <div class="keys"><kbd>Enter</kbd> confirm <kbd>M</kbd> toggle made <kbd>T</kbd> team <kbd>W</kbd> foul (on the shot / whistle first / none) <kbd>X</kbd> reject <kbd>U</kbd> unsure <kbd>L</kbd> open film <kbd>R</kbd> replay the play <kbd>F</kbd> speed <span id="rate">${state.rate}x</span> <kbd>J</kbd>/<kbd>K</kbd> prev/next</div>
+      <div class="keys"><kbd>Enter</kbd> confirm <kbd>M</kbd> toggle made <kbd>T</kbd> team <kbd>W</kbd> foul (on the shot / whistle first / none) <kbd>X</kbd> reject <kbd>U</kbd> unsure <kbd>L</kbd> open film <kbd>R</kbd> replay the play <kbd>Click</kbd> court places the dot <kbd>←↑↓→</kbd> nudge 1 ft (<kbd>Shift</kbd> 5 ft) <kbd>F</kbd> speed <span id="rate">${state.rate}x</span> <kbd>J</kbd>/<kbd>K</kbd> prev/next</div>
     </div>
     <div class="list">${state.events.map((x, i) => `<div class="${i === state.index ? "sel" : ""}" data-i="${i}">${x.decision ? "✓" : "·"}${isWarm(x) ? " warmup" : ""} ${esc(x.id)} Q${x.quarter ?? "?"} ${clock(x.clock_s)} ${x.made === true ? "made" : x.made === false ? "missed" : "?"} ${x.confidence}${x.foul ? " · foul" : ""}</div>`).join("")}</div>`;
   $("#confirm-high").onclick = confirmHigh;
   if ($("#go-quarters")) $("#go-quarters").onclick = () => { state.tab = "quarters"; render(); };
+  drawHalfCourt($("#court"), e);
+  $("#court").onclick = (ev) => { const r = $("#court").getBoundingClientRect(); const [x, y] = toFt(ev.clientX - r.left, ev.clientY - r.top); setDot(e, x, y); };
   const video = $("#clip");
   video.onloadedmetadata = () => {
     const shotAt = e.clip ? e.t - e.clip.start : 0;
@@ -174,11 +246,19 @@ function renderShots() {
   document.querySelectorAll(".list div").forEach(d => d.onclick = () => { state.index = +d.dataset.i; renderShots(); });
 }
 
+// After a save the dot is the server's: adopt its values and let zone/type come from them (the same rules as zoneOf).
+function settleDot(e) {
+  if (!e.dotMoved) return;
+  e.dotMoved = false;
+  if (e.x != null && e.y != null) { e.zone = zoneOf(e.x, e.y); e.shot_type = shotTypeOf(e.x, e.y); }
+}
+
 function decide(status) {
   return guarded(async () => {
     const e = state.events[state.index];
     if (!e) return;
-    e.decision = await post(`/api/games/${state.game}/decisions/${e.id}`, { status, made: e.made, team: e.team, foul: e.foul || null });
+    e.decision = await post(`/api/games/${state.game}/decisions/${e.id}`, { status, made: e.made, team: e.team, foul: e.foul || null, ...dotBody(e) });
+    settleDot(e);
     state.index = nextUndecided(state.index + 1);
     renderShots();
     loadGames().catch(showError);
@@ -190,7 +270,8 @@ function confirmHigh() {
     try {
       for (const e of state.events) {
         if (!e.decision && e.type === "shot" && e.confidence >= 0.9) {
-          e.decision = await post(`/api/games/${state.game}/decisions/${e.id}`, { status: "confirmed", made: e.made, team: e.team, foul: e.foul || null });
+          e.decision = await post(`/api/games/${state.game}/decisions/${e.id}`, { status: "confirmed", made: e.made, team: e.team, foul: e.foul || null, ...dotBody(e) });
+          settleDot(e);
         }
       }
     } finally {
@@ -221,6 +302,7 @@ function shotKeys(ev) {
   }
   else if (k === "j") { state.index = Math.max(0, state.index - 1); renderShots(); }
   else if (k === "k") { state.index = Math.min(state.events.length - 1, state.index + 1); renderShots(); }
+  else if (ev.key.startsWith("Arrow") && e.x != null) { const s = ev.shiftKey ? 5 : 1; setDot(e, e.x + (ev.key === "ArrowRight" ? s : ev.key === "ArrowLeft" ? -s : 0), e.y + (ev.key === "ArrowUp" ? s : ev.key === "ArrowDown" ? -s : 0)); }
   else return;
   ev.preventDefault();
 }
