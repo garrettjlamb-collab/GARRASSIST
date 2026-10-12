@@ -30,6 +30,8 @@ class Decision(BaseModel):
     made: bool | None = None
     team: str | None = None
     foul: str | None = None
+    x: float | None = None
+    y: float | None = None
 
 
 class BoxIn(BaseModel):

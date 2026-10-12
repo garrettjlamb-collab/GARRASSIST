@@ -207,3 +207,14 @@ def test_one_classifier_alone_scores_as_it_always_did():
 def test_a_motion_only_card_is_never_safe_to_accept_however_sure_the_classifiers_are():
     [e] = build_shot_events([A(10.0, source="motion")], [], [("made", 0.85)], "g", opinions=[_opinion()])
     assert e.confidence <= 0.5
+
+
+def test_an_event_carries_a_location_and_round_trips(tmp_path):
+    e = Event(id="shot-000100-r1", type="shot", t=10.0, rim_id=1, quarter=1, clock_s=100.0, team=None, made=True,
+              confidence=0.5, clip={"start": 2.0, "end": 13.0}, signals={}, flags=[], x=12.5, y=8.0, zone="mid-left",
+              shot_type="midrange", location_conf=0.8)
+    save_events(tmp_path, [e])
+    [back] = load_events(tmp_path)
+    assert (back.x, back.y, back.zone, back.shot_type, back.location_conf) == (12.5, 8.0, "mid-left", "midrange", 0.8)
+    old = Event.from_json({k: v for k, v in e.to_json().items() if k not in ("x", "y", "zone", "shot_type", "location_conf")})
+    assert old.x is None and old.zone is None

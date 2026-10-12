@@ -194,3 +194,13 @@ def test_court_points_are_accepted_over_the_api(synthetic_video, tmp_path, monke
     assert client.get("/api/label/court/next").json()["done"] is True
     bad = client.post("/api/label/court/c1/points", json={"points": {"nowhere": [1, 2]}})
     assert bad.status_code == 400
+
+
+def test_a_dot_is_saved_with_the_decision(synthetic_video, tmp_path, monkeypatch):
+    _env(monkeypatch, tmp_path)
+    game_id, gd = _game(synthetic_video)
+    client = TestClient(create_app())
+    r = client.post(f"/api/games/{game_id}/decisions/shot-000000-r1", json={"status": "confirmed", "made": True, "x": 10.0, "y": 12.0})
+    assert r.status_code == 200 and r.json()["x"] == 10.0
+    e = {x["id"]: x for x in client.get(f"/api/games/{game_id}/events").json()}["shot-000000-r1"]
+    assert (e["x"], e["y"], e["zone"]) == (10.0, 12.0, "mid-left")

@@ -32,6 +32,11 @@ class Event:
     signals: dict
     flags: list = field(default_factory=list)
     needs_location: bool = True
+    x: float | None = None
+    y: float | None = None
+    zone: str | None = None
+    shot_type: str | None = None
+    location_conf: float | None = None
 
     def to_json(self) -> dict:
         return asdict(self)

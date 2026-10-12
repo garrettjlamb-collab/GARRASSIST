@@ -6,6 +6,9 @@ import threading
 from datetime import datetime, timezone
 from pathlib import Path
 
+from film.interpret.court import HALF_DEPTH, WIDTH
+from film.interpret.zones import shot_type_of, zone_of
+
 _LOCK = threading.Lock()
 STATUSES = ("confirmed", "rejected", "unsure")
 # A foul on the play, as the coach saw it. "on_shot": fouled in the act of shooting. "before_shot": the whistle
@@ -35,6 +38,15 @@ def save_decision(game_dir: Path, event_id: str, decision: dict) -> dict:
             entry[key] = decision[key]
     if foul is not None:
         entry["foul"] = foul
+    if ("x" in decision) != ("y" in decision):
+        raise ValueError("a dot needs both x and y")
+    if "x" in decision and decision["x"] is not None:
+        x, y = float(decision["x"]), float(decision["y"])
+        if not (-2.0 <= x <= WIDTH + 2.0 and -2.0 <= y <= HALF_DEPTH + 2.0):
+            raise ValueError(f"the dot ({x:.1f}, {y:.1f}) is off the court")
+        entry["x"], entry["y"] = x, y
+    elif "x" in decision:
+        entry["x"] = entry["y"] = None
     Path(game_dir).mkdir(parents=True, exist_ok=True)
     path = decisions_path(game_dir)
     with _LOCK:
@@ -58,6 +70,10 @@ def apply_decisions(events: list[dict], decisions: dict) -> list[dict]:
             for key in ("made", "team"):
                 if key in decision:
                     merged[key] = decision[key]
+            if "x" in decision:
+                merged["x"], merged["y"] = decision["x"], decision["y"]
+        if merged.get("x") is not None and merged.get("y") is not None:
+            merged["zone"], merged["shot_type"] = zone_of(merged["x"], merged["y"]), shot_type_of(merged["x"], merged["y"])
         out.append(merged)
     return out
 

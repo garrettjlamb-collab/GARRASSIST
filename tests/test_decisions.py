@@ -99,3 +99,18 @@ def test_an_unknown_kind_of_foul_is_refused(tmp_path):
     with pytest.raises(ValueError, match="foul"):
         save_decision(tmp_path, "shot-1", {"status": "confirmed", "foul": "flagrant"})
     assert load_decisions(tmp_path) == {}
+
+
+def test_the_coachs_dot_overrides_the_location_and_sets_the_zone(tmp_path):
+    save_decision(tmp_path, "shot-1", {"status": "confirmed", "made": True, "x": 3.0, "y": 4.0})
+    save_decision(tmp_path, "shot-2", {"status": "confirmed", "made": True})
+    events = [{"id": "shot-1", "made": True, "team": None, "x": 20.0, "y": 20.0, "zone": "mid-center", "shot_type": "midrange"},
+              {"id": "shot-2", "made": True, "team": None, "x": 25.0, "y": 6.0, "zone": "restricted", "shot_type": "rim"}]
+    merged = apply_decisions(events, load_decisions(tmp_path))
+    assert (merged[0]["x"], merged[0]["y"], merged[0]["zone"], merged[0]["shot_type"]) == (3.0, 4.0, "corner-3-left", "three")
+    assert (merged[1]["x"], merged[1]["zone"]) == (25.0, "restricted")
+
+
+def test_a_dot_off_the_court_is_refused(tmp_path):
+    with pytest.raises(ValueError, match="court"):
+        save_decision(tmp_path, "shot-1", {"status": "confirmed", "x": 60.0, "y": 4.0})
