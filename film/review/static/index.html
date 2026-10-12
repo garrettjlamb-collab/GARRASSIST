@@ -447,6 +447,7 @@ const COURT_POINTS = ["near-corner-left", "near-corner-right", "near-lane-left",
 function renderCourtLabel() {
   const l = state.label;
   state.points = { ...(l.points || {}) };
+  state.skippedPoints = new Set();
   state.pointIndex = COURT_POINTS.findIndex(n => !(n in state.points));
   state.img = null;
   $("#label").innerHTML = `<div class="row"><b>${l.remaining} pending</b><span class="muted">${esc(l.image_id)}</span></div>
@@ -481,7 +482,7 @@ function drawPoints() {
     }
   }
   $("#pt-list").innerHTML = COURT_POINTS.map((n, i) =>
-    `<div class="${i === state.pointIndex ? "sel" : ""}">${n in state.points ? "✓" : state.skippedPoints && state.skippedPoints.has(n) ? "–" : "·"} ${esc(n)}</div>`).join("");
+    `<div class="${i === state.pointIndex ? "sel" : ""}">${n in state.points ? "✓" : state.skippedPoints.has(n) ? "–" : "·"} ${esc(n)}</div>`).join("");
 }
 
 async function courtKeys(ev) {
@@ -489,13 +490,13 @@ async function courtKeys(ev) {
   if (!l || l.done) return;
   const k = ev.key.toLowerCase();
   if (k === "n") {
-    state.skippedPoints = state.skippedPoints || new Set();
-    if (state.pointIndex >= 0) { state.skippedPoints.add(COURT_POINTS[state.pointIndex]); }
+    if (state.pointIndex < 0) return;
+    state.skippedPoints.add(COURT_POINTS[state.pointIndex]);
     state.pointIndex = COURT_POINTS.findIndex((n, i) => i > state.pointIndex && !(n in state.points));
     drawPoints();
   } else if (ev.key === "Backspace") {
     const placed = Object.keys(state.points);
-    if (placed.length) { const last = placed[placed.length - 1]; delete state.points[last]; state.pointIndex = COURT_POINTS.indexOf(last); drawPoints(); }
+    if (placed.length) { const last = placed[placed.length - 1]; delete state.points[last]; state.skippedPoints.delete(last); state.pointIndex = COURT_POINTS.indexOf(last); drawPoints(); }
   } else if (k === "z") {
     state.zoom = !state.zoom; $("#cv").classList.toggle("zoom", state.zoom);
   } else if (k === "s") {
