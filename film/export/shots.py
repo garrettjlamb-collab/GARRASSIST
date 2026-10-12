@@ -9,7 +9,8 @@ from film.export.clips import build_reel, clip_path
 from film.interpret.events import load_events
 from film.review.decisions import apply_decisions, load_decisions
 
-FIELDS = ["id", "t", "quarter", "clock_s", "team", "made", "confidence", "status", "flags", "foul", "counts"]
+FIELDS = ["id", "t", "quarter", "clock_s", "team", "made", "confidence", "status", "flags", "foul", "counts",
+          "x", "y", "zone", "shot_type", "location_conf"]
 
 
 def reviewed_shots(game_id: str, statuses=("confirmed", "unsure")) -> list[dict]:
@@ -36,7 +37,10 @@ def export_shots(game_id: str) -> tuple[Path, Path]:
         for e in rows:
             writer.writerow({"id": e["id"], "t": e["t"], "quarter": e["quarter"], "clock_s": e["clock_s"], "team": e["team"],
                              "made": e["made"], "confidence": e["confidence"], "status": e["decision"]["status"],
-                             "flags": " ".join(e.get("flags", [])), "foul": e.get("foul") or "", "counts": e["counts"]})
+                             "flags": " ".join(e.get("flags", [])), "foul": e.get("foul") or "", "counts": e["counts"],
+                             "x": "" if e.get("x") is None else e["x"], "y": "" if e.get("y") is None else e["y"],
+                             "zone": e.get("zone") or "", "shot_type": e.get("shot_type") or "",
+                             "location_conf": "" if e.get("location_conf") is None else e["location_conf"]})
     json_path.write_text(json.dumps({"format": "film-shot-times", "schemaVersion": 1, "gameId": game_id, "shots": rows}, indent=1))
     return csv_path, json_path
 

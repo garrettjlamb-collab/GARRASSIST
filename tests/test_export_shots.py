@@ -78,3 +78,14 @@ def test_the_export_says_which_shots_had_a_foul_and_which_do_not_count(synthetic
     assert [(r["foul"], r["counts"]) for r in rows] == [("before_shot", "False"), ("on_shot", "True"), ("", "True")]
     shots = json.loads(json_path.read_text())["shots"]
     assert [(s["foul"], s["counts"]) for s in shots] == [("before_shot", False), ("on_shot", True), (None, True)]
+
+
+def test_the_export_carries_the_dot_and_zone(synthetic_video, tmp_path, monkeypatch):
+    game_id, gd = _game(synthetic_video, tmp_path, monkeypatch)
+    save_decision(gd, "shot-000000-r1", {"status": "confirmed", "made": False, "x": 3.0, "y": 4.0})
+    csv_path, json_path = export_shots(game_id)
+    rows = list(csv.DictReader(csv_path.open()))
+    assert rows[0]["x"] == "3.0" and rows[0]["zone"] == "corner-3-left" and rows[0]["shot_type"] == "three"
+    assert rows[1]["x"] == "" and rows[1]["zone"] == ""
+    shots = json.loads(json_path.read_text())["shots"]
+    assert shots[0]["x"] == 3.0 and shots[1]["x"] is None
