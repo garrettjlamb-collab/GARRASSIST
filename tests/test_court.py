@@ -1,7 +1,6 @@
 import math
 
 import numpy as np
-import pytest
 
 from film.interpret.court import END_OF_POINT, FLIP_INDEX, POINT_NAMES, TEMPLATE, Mapping, fit_mapping, fold
 
@@ -87,3 +86,19 @@ def test_contains_tells_court_from_bench():
     m = fit_mapping({n: project(*TEMPLATE[n]) for n in names})
     assert m.contains(*project(25.0, 20.0)) and not m.contains(*project(-6.0, 20.0))
     assert m.contains(*project(-1.0, 20.0))                                  # within the 2 ft margin
+
+
+def test_the_tolerance_is_in_pixels_not_feet():
+    project = _camera()
+    names = ["near-corner-left", "near-corner-right", "near-ft-left", "near-ft-right", "near-ft-top", "near-lane-left"]
+    pts = {n: project(*TEMPLATE[n]) for n in names}
+    px, py = pts["near-lane-left"]
+    pts["near-lane-left"] = (px + 20.0, py)                  # about 1.7 ft at this scale: inside 8 ft, outside 8 px
+    m = fit_mapping(pts)
+    assert m is not None and m.points_used == 5 and m.error_px < 1.0
+
+
+def test_degenerate_points_return_none_instead_of_raising():
+    names = ["near-corner-left", "near-corner-right", "near-ft-left", "near-ft-right", "near-ft-top"]
+    collinear = {n: (TEMPLATE[n][0] * 10.0, 500.0) for n in names}      # every point on one pixel row
+    assert fit_mapping(collinear) is None

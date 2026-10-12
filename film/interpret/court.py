@@ -97,7 +97,12 @@ def fit_mapping(points: dict[str, tuple[float, float]], reproj_tol_px: float = 8
         return None
     if len(inliers) < len(names):
         back, _ = cv2.findHomography(np.array([TEMPLATE[n] for n in inliers]), np.array([points[n] for n in inliers]), 0)
-    H = np.linalg.inv(back)
+        if back is None:
+            return None
+    try:
+        H = np.linalg.inv(back)
+    except np.linalg.LinAlgError:
+        return None
     errors = []
     for n in inliers:
         v = back @ np.array([*TEMPLATE[n], 1.0])
