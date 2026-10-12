@@ -18,6 +18,7 @@ RESET_JUMP_S = 2.0          # a clock rise bigger than this starts a new stretch
 START_WINDOW_S = 10.0       # a stretch's starting clock is the highest clock in its first seconds
 MIN_QUARTER_S = 120.0       # starting values below this are breaks, never quarters
 LIVE_TOLERANCE_S = 2.0      # a stretch is a quarter when it starts within this of the quarter length
+KNOWN_TOLERANCE_S = 20.0    # ... or within this, when the profile states the quarter length and reads have gaps
 END_GRACE_S = 3.0           # a quarter stays live this long after its clock is reset (buzzer-beaters)
 
 
@@ -70,13 +71,29 @@ def _phases_from_scores(reads: list[ScoreboardRead]) -> GamePhases:
     return GamePhases(quarter_length_s=None, live=spans, known=True, game_over_t=_game_over_t(reads), quarters=quarters)
 
 
+GLITCH_S = 5.0              # a clock read this far from the median of its neighbours is a misread, not a reset
+
+
+def _deglitched(reads: list[ScoreboardRead]) -> list[ScoreboardRead]:
+    """Clock reads with lone outliers dropped: a read is kept when it sits within GLITCH_S of the median of
+    the five reads around it. A real reset moves every following read, so it survives."""
+    clocked = [r for r in reads if r.clock_s is not None]
+    kept = []
+    for i, r in enumerate(clocked):
+        window = sorted(x.clock_s for x in clocked[max(0, i - 2):i + 3])
+        median = window[len(window) // 2]
+        if abs(r.clock_s - median) <= GLITCH_S:
+            kept.append(r)
+    return kept
+
+
 def _stretches(reads: list[ScoreboardRead]) -> list[tuple[float, float]]:
     """(start_t, starting clock) for each stretch between upward clock resets."""
     out: list[tuple[float, float]] = []
     last_clock: float | None = None
     start_t: float | None = None
     best: float | None = None
-    for r in reads:
+    for r in _deglitched(reads):
         if r.clock_s is None:
             continue
         if last_clock is None or r.clock_s > last_clock + RESET_JUMP_S:
@@ -104,7 +121,24 @@ def _game_over_t(reads: list[ScoreboardRead]) -> float | None:
     return None
 
 
-def game_phases(timeline: list[ScoreboardRead]) -> GamePhases:
+def _scored_within(reads: list[ScoreboardRead], start: float, end: float) -> bool:
+    last = None
+    for r in reads:
+        if r.t < start or r.home is None or r.away is None:
+            continue
+        if r.t >= end:
+            break
+        total = r.home + r.away
+        if last is not None and total != last:
+            return True
+        last = total
+    return False
+
+
+def game_phases(timeline: list[ScoreboardRead], quarter_length_s: float | None = None) -> GamePhases:
+    """`quarter_length_s`, when the camera profile states it, beats the commonest long start (a board that
+    counts down 9:00 over and over before the game would otherwise set the quarter to 9:00), reads with gaps
+    may start a quarter a little short, and a quarter must see some scoring."""
     reads = sorted(timeline, key=lambda r: r.t)
     stretches = _stretches(reads)
     long_starts = [round(c) for _, c in stretches if c >= MIN_QUARTER_S]
@@ -112,7 +146,10 @@ def game_phases(timeline: list[ScoreboardRead]) -> GamePhases:
         if reads and all(r.clock_s is None for r in reads):
             return _phases_from_scores(reads)
         return GamePhases(quarter_length_s=None, known=False, game_over_t=_game_over_t(reads))
-    quarter = Counter(long_starts).most_common(1)[0][0]
+    known_length = quarter_length_s is not None
+    quarter = float(quarter_length_s) if known_length else Counter(long_starts).most_common(1)[0][0]
+    tolerance = KNOWN_TOLERANCE_S if known_length else LIVE_TOLERANCE_S
+    any_scores = any(r.home is not None and r.away is not None for r in reads)
     over = _game_over_t(reads)
     end_of_time = reads[-1].t + 1.0
     live: list[tuple[float, float]] = []
@@ -122,7 +159,9 @@ def game_phases(timeline: list[ScoreboardRead]) -> GamePhases:
             if start >= over:
                 continue
             end = min(end, over)
-        if abs(clock - quarter) <= LIVE_TOLERANCE_S:
+        if quarter - tolerance <= clock <= quarter + LIVE_TOLERANCE_S:
+            if known_length and any_scores and not _scored_within(reads, start, end):
+                continue                                              # a dead countdown, not a quarter
             live.append((start, end if over is not None and end >= over else end + END_GRACE_S))
     return GamePhases(quarter_length_s=float(quarter), live=live, known=True, game_over_t=over)
 

@@ -203,3 +203,23 @@ def test_every_profile_file_is_a_choice_for_ingest():
     from film.ingest.profile import PROFILES
 
     assert "hudl-mdn" in PROFILES and "hudl-tactical" in PROFILES and "handheld" in PROFILES
+
+
+def test_a_minute_digit_that_disagrees_with_the_countdown_by_one_is_repaired():
+    """The Marcos de Niza minutes digit loses its left strokes, so 6 reads as 5 and 9 as 8. The seconds are
+    sound and the clock only counts down, so a read whose seconds continue the countdown but whose minute is
+    off by exactly one takes the minute the countdown implies."""
+    from film.perceive.scoreboard import ScoreboardRead, repair_clock
+
+    reads = [ScoreboardRead(t=float(i), period=1, clock_s=None, home=0, away=0, home_fouls=None, away_fouls=None, conf=1.0) for i in range(8)]
+    truth = [7 * 60 + 2, 7 * 60 + 1, 7 * 60, 6 * 60 + 59, 6 * 60 + 58, 6 * 60 + 57, None, 6 * 60 + 55]
+    seen = [7 * 60 + 2, 7 * 60 + 1, 7 * 60, 5 * 60 + 59, 5 * 60 + 58, 6 * 60 + 57, None, 5 * 60 + 55]
+    for r, v in zip(reads, seen):
+        r.clock_s = None if v is None else float(v)
+    fixed = repair_clock(reads)
+    assert [r.clock_s for r in fixed] == [None if v is None else float(v) for v in truth]
+    assert [r.clock_s for r in reads] == [None if v is None else float(v) for v in seen]        # not in place
+
+    reset = [ScoreboardRead(t=float(i), period=2, clock_s=v, home=0, away=0, home_fouls=None, away_fouls=None, conf=1.0)
+             for i, v in enumerate([3.0, 2.0, 1.0, 0.0, 480.0, 479.0])]
+    assert [r.clock_s for r in repair_clock(reset)] == [3.0, 2.0, 1.0, 0.0, 480.0, 479.0]      # a real reset stands

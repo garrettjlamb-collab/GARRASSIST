@@ -106,6 +106,28 @@ def build_timeline(source: Path, profile: dict, limit_s: float | None = None) ->
     return [read_scoreboard(frame, profile, t=t) for t, frame in iter_frames(source, fps=1.0, end=limit_s)]
 
 
+REPAIR_RECENT_S = 90.0
+
+
+def repair_clock(reads: list[ScoreboardRead]) -> list[ScoreboardRead]:
+    """Reads whose seconds continue the countdown from the last trusted read but whose minute is off by
+    exactly one take the minute the countdown implies. Skins whose minutes digit loses strokes read 6 as 5
+    and 9 as 8; the seconds digits are sound. A read that is not within a minute of the countdown is left
+    alone (a reset, a stopped clock, or a true misread for the plausibility checks to judge)."""
+    out = []
+    last: ScoreboardRead | None = None
+    for r in sorted(reads, key=lambda x: x.t):
+        fixed = r
+        if r.clock_s is not None and last is not None and r.t - last.t <= REPAIR_RECENT_S:
+            expected = last.clock_s - (r.t - last.t)
+            if expected >= 0 and abs(r.clock_s - expected) in (60.0,) and (r.clock_s % 60) == (expected % 60):
+                fixed = ScoreboardRead(**{**r.to_json(), "clock_s": float(expected)})
+        out.append(fixed)
+        if fixed.clock_s is not None:
+            last = fixed
+    return out
+
+
 def _plausible(read: ScoreboardRead, last: ScoreboardRead) -> bool:
     if read.t - last.t > RECENT_S:
         return True
@@ -122,7 +144,7 @@ def _plausible(read: ScoreboardRead, last: ScoreboardRead) -> bool:
 
 def clean_timeline(reads: list[ScoreboardRead]) -> list[ScoreboardRead]:
     kept: list[ScoreboardRead] = []
-    for read in reads:
+    for read in repair_clock(reads):
         if read.conf < MIN_CONF:
             continue
         if kept and not _plausible(read, kept[-1]):

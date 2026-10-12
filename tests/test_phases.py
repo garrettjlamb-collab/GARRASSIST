@@ -89,3 +89,35 @@ def test_a_board_with_scores_and_periods_but_no_clock_gives_quarters_from_the_sc
     assert is_live(phases, 2400) and not is_live(phases, 2700 + 300)
     assert list(phases.quarters) == [1, 2, 3] and phases.quarters[2][0] < 1200 < phases.quarters[2][1]
     assert phases.live == list(phases.quarters.values())
+
+
+def test_a_known_quarter_length_beats_the_pregame_countdown():
+    """At Marcos de Niza the board counts down 9:00 over and over before the game, so the commonest long
+    start is not the quarter length. The profile says the quarter is 8:00; a stretch is a quarter when it
+    starts near that and some scoring happens in it. Reads come with gaps, so "near" is generous."""
+    tl = []
+    for k in range(4):
+        tl += countdown(k * 560, 1, 540, 540)                      # four 9:00 pregame countdowns, no scoring
+    tl += countdown(2240, 1, 472, 480, 0, 0)                        # Q1, the first read 8 s late (gap), scoring below
+    for r in tl[-480:]:
+        r.home = 2 * ((r.t - 2240) // 120)
+    tl += countdown(2720, 2, 480, 480, 8, 3)                        # Q2 with scoring
+    for r in tl[-480:]:
+        r.away = 3 + (r.t - 2720) // 100
+    tl += countdown(3200, 2, 480, 480, 8, 7)                        # a dead 8:00 countdown after the game: no scoring
+    phases = game_phases(tl, quarter_length_s=480.0)
+    assert phases.quarter_length_s == 480.0 and phases.known
+    assert not is_live(phases, 1000) and is_live(phases, 2300) and is_live(phases, 2900) and not is_live(phases, 3400)
+    assert len(phases.live) == 2
+
+
+def test_an_isolated_misread_of_the_clock_does_not_start_a_new_stretch():
+    """The Marcos de Niza minutes digit is half hidden: 8:00 reads as 9:00 now and then. One stray read
+    an hour before or after its neighbours must not split a quarter into fragments."""
+    tl = countdown(0, 1, 480, 480, 0, 0)
+    for r in tl[1:]:
+        r.home = 2 * (r.t // 120)
+    tl[200].clock_s = tl[200].clock_s + 60.0                          # a lone 9:xx read mid-quarter
+    tl[300].clock_s = tl[300].clock_s + 60.0
+    phases = game_phases(tl, quarter_length_s=480.0)
+    assert len(phases.live) == 1 and is_live(phases, 250) and is_live(phases, 400)

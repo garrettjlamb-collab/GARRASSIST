@@ -15,7 +15,7 @@ from film.interpret.phases import game_phases
 from film.interpret.quarters import load_quarters, mark_quarters
 from film.perceive.rims import basket_sides
 from film.perceive.run import MOTION_COLUMNS
-from film.perceive.scoreboard import load_timeline
+from film.perceive.scoreboard import has_scoreboard, load_profile, load_timeline
 from film.perceive.tracks import read_tracks
 from film.review.decisions import carry_over_decisions
 from film.interpret.ballpath import FEATURES, hoop_offset, path_features, read_ball_path
@@ -114,7 +114,8 @@ def interpret(game_id: str, classifier=None, use_classifier: bool = True, device
     events = build_shot_events(arrivals, timeline, preds, game_id, opinions=opinions)
     sb_only = scoreboard_only_events(timeline, events)
     events = sorted(events + sb_only, key=lambda e: (e.t, e.rim_id))
-    phases = game_phases(timeline)
+    quarter_length = load_profile(m.profile).get("quarter_length_s") if has_scoreboard(m.profile) else None
+    phases = game_phases(timeline, quarter_length_s=quarter_length)
     warmups = mark_dead_time(events, phases)
     quarters = load_quarters(gd)
     if quarters:                                          # the coach's marks win over the scoreboard
