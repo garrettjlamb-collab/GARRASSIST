@@ -35,3 +35,32 @@ def test_court_finder_maps_a_frame_when_enough_points_are_confident():
 def test_load_returns_none_without_a_model(tmp_path, monkeypatch):
     monkeypatch.setenv("FILM_MODELS_DIR", str(tmp_path))
     assert CourtFinder.load("cpu") is None
+
+
+def test_points_come_from_the_most_confident_instance():
+    n = len(POINT_NAMES)
+    xy_a = [[1.0, 1.0]] * n
+    xy_b = [[2.0, 2.0]] * n
+    kp = types.SimpleNamespace(xy=np.array([xy_a, xy_b]), conf=np.array([[0.9] * n, [0.9] * n]))
+    boxes = types.SimpleNamespace(conf=np.array([0.2, 0.9]))
+    pts = points_from_result(types.SimpleNamespace(keypoints=kp, boxes=boxes))
+    assert pts[POINT_NAMES[0]] == (2.0, 2.0)
+
+
+def test_missing_keypoint_confidence_keeps_every_point():
+    n = len(POINT_NAMES)
+    xy = [[float(i), float(i)] for i in range(n)]
+    kp = types.SimpleNamespace(xy=np.array([xy]), conf=None)
+    pts = points_from_result(types.SimpleNamespace(keypoints=kp, boxes=types.SimpleNamespace(conf=np.array([0.9]))))
+    assert len(pts) == n
+
+
+def test_wrong_point_count_is_refused():
+    xy = [[0.0, 0.0]] * (len(POINT_NAMES) - 1)
+    kp = types.SimpleNamespace(xy=np.array([xy]), conf=None)
+    try:
+        points_from_result(types.SimpleNamespace(keypoints=kp, boxes=types.SimpleNamespace(conf=np.array([0.9]))))
+    except ValueError as e:
+        assert "expected" in str(e)
+    else:
+        raise AssertionError("expected ValueError")

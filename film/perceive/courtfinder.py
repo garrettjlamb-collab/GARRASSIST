@@ -10,14 +10,21 @@ from film.perceive.detectors import IMGSZ
 MIN_KPT_CONF = 0.5
 
 
+def _np(t):
+    """Ultralytics hands back torch tensors on the device it ran on (mps on the laptop); numpy otherwise."""
+    return t.cpu().numpy() if hasattr(t, "cpu") else np.asarray(t)
+
+
 def points_from_result(result) -> dict[str, tuple[float, float]]:
     """Named points from an ultralytics pose result, the most confident court instance only."""
     kp = getattr(result, "keypoints", None)
     if kp is None or kp.xy is None or len(kp.xy) == 0:
         return {}
-    best = int(np.argmax(np.asarray(result.boxes.conf))) if result.boxes is not None and len(result.boxes.conf) else 0
-    xy = np.asarray(kp.xy[best])
-    conf = np.asarray(kp.conf[best]) if kp.conf is not None else np.ones(len(xy))
+    best = int(np.argmax(_np(result.boxes.conf))) if result.boxes is not None and len(result.boxes.conf) else 0
+    xy = _np(kp.xy[best])
+    if len(xy) != len(POINT_NAMES):
+        raise ValueError(f"court model gives {len(xy)} points, expected {len(POINT_NAMES)}")
+    conf = _np(kp.conf[best]) if kp.conf is not None else np.ones(len(xy))
     return {name: (float(x), float(y)) for name, (x, y), c in zip(POINT_NAMES, xy, conf) if c >= MIN_KPT_CONF}
 
 
