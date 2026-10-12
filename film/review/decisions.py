@@ -40,6 +40,8 @@ def save_decision(game_dir: Path, event_id: str, decision: dict) -> dict:
         entry["foul"] = foul
     if ("x" in decision) != ("y" in decision):
         raise ValueError("a dot needs both x and y")
+    if "x" in decision and (decision["x"] is None) != (decision["y"] is None):
+        raise ValueError("a dot needs both x and y")
     if "x" in decision and decision["x"] is not None:
         x, y = float(decision["x"]), float(decision["y"])
         if not (-2.0 <= x <= WIDTH + 2.0 and -2.0 <= y <= HALF_DEPTH + 2.0):
@@ -71,9 +73,11 @@ def apply_decisions(events: list[dict], decisions: dict) -> list[dict]:
                 if key in decision:
                     merged[key] = decision[key]
             if "x" in decision:
-                merged["x"], merged["y"] = decision["x"], decision["y"]
+                merged["x"], merged["y"] = decision["x"], decision.get("y")
         if merged.get("x") is not None and merged.get("y") is not None:
             merged["zone"], merged["shot_type"] = zone_of(merged["x"], merged["y"]), shot_type_of(merged["x"], merged["y"])
+        elif "x" in merged or "y" in merged:
+            merged["zone"] = merged["shot_type"] = None
         out.append(merged)
     return out
 

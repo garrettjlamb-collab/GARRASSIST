@@ -114,3 +114,22 @@ def test_the_coachs_dot_overrides_the_location_and_sets_the_zone(tmp_path):
 def test_a_dot_off_the_court_is_refused(tmp_path):
     with pytest.raises(ValueError, match="court"):
         save_decision(tmp_path, "shot-1", {"status": "confirmed", "x": 60.0, "y": 4.0})
+
+
+def test_a_half_given_dot_is_refused_and_nothing_is_saved(tmp_path):
+    for bad in ({"x": 5.0, "y": None}, {"x": None, "y": 5.0}):
+        with pytest.raises(ValueError, match="both x and y"):
+            save_decision(tmp_path, "shot-1", {"status": "confirmed", **bad})
+    assert load_decisions(tmp_path) == {}
+
+
+def test_clearing_the_dot_clears_the_zone_and_shot_type(tmp_path):
+    save_decision(tmp_path, "shot-1", {"status": "confirmed", "x": None, "y": None})
+    events = [{"id": "shot-1", "made": True, "team": None, "x": 20.0, "y": 20.0, "zone": "mid-center", "shot_type": "midrange"}]
+    [m] = apply_decisions(events, load_decisions(tmp_path))
+    assert (m["x"], m["y"], m["zone"], m["shot_type"]) == (None, None, None, None)
+
+
+def test_the_court_boundary_dots_are_accepted(tmp_path):
+    save_decision(tmp_path, "shot-1", {"status": "confirmed", "x": -2.0, "y": 0.0})
+    save_decision(tmp_path, "shot-2", {"status": "confirmed", "x": 52.0, "y": 0.0})
