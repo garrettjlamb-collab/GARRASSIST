@@ -95,3 +95,29 @@ def test_class_store_same_id_twice_and_class_change(monkeypatch, tmp_path):
     assert ds.accept_class("rimclf", "a", "missed") == found[0].parts[-3]       # idempotent, no pending
     assert ds.accept_class("rimclf", "a", "made") in ("train", "val")          # class change without pending moves it
     assert [p.parts[-2] for p in ds.find_class_images("rimclf", "a")] == ["made"]
+
+
+def test_accept_points_writes_a_yolo_pose_label(monkeypatch, tmp_path):
+    monkeypatch.setenv("FILM_DATASETS_DIR", str(tmp_path / "datasets"))
+    monkeypatch.setenv("FILM_LABELS_DIR", str(tmp_path / "labels"))
+    from film.interpret.court import POINT_NAMES
+    img = np.zeros((100, 200, 3), np.uint8)
+    ds.write_pending("court", "f1", img, [])
+    split = ds.accept_points("court", "f1", {"near-corner-left": (20.0, 80.0), "near-corner-right": (180.0, 80.0),
+                                             "near-ft-top": (100.0, 30.0), "near-ft-left": (70.0, 50.0)})
+    label = (tmp_path / "datasets" / "court" / "labels" / split / "f1.txt").read_text().split()
+    assert label[0] == "0" and len(label) == 5 + 3 * len(POINT_NAMES)
+    cx, cy, w, h = map(float, label[1:5])
+    assert abs(cx - 0.5) < 1e-6 and abs(w - 0.8) < 1e-6 and abs(cy - 0.55) < 1e-6 and abs(h - 0.5) < 1e-6
+    k = POINT_NAMES.index("near-ft-top")
+    assert label[5 + 3 * k:8 + 3 * k] == ["0.500000", "0.300000", "2"]
+    k = POINT_NAMES.index("far-ft-top")
+    assert label[5 + 3 * k:8 + 3 * k] == ["0.000000", "0.000000", "0"]
+    assert ds.list_pending("court") == []
+
+
+def test_court_data_yaml_describes_the_keypoints(monkeypatch, tmp_path):
+    monkeypatch.setenv("FILM_DATASETS_DIR", str(tmp_path / "datasets"))
+    from film.interpret.court import FLIP_INDEX
+    text = ds.data_yaml("court").read_text()
+    assert "kpt_shape: [18, 3]" in text and f"flip_idx: {FLIP_INDEX}" in text and "0: court" in text
