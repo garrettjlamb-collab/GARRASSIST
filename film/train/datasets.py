@@ -9,9 +9,11 @@ import cv2
 import numpy as np
 
 from film.common.paths import datasets_dir, labels_dir
+from film.interpret.court import FLIP_INDEX, POINT_NAMES
 from film.perceive.detectors import Box
 
 CLASS_NAMES = {"rim": ["rim", "backboard"], "ball": ["ball"]}
+KEYPOINT_NAMES = {"court": POINT_NAMES}        # keypoint datasets: one object class, named points
 VAL_EVERY = 5
 
 
@@ -70,8 +72,12 @@ def yolo_line(cls_idx: int, box: Box, w: int, h: int) -> str | None:
 def data_yaml(dataset: str) -> Path:
     root = datasets_dir() / dataset
     root.mkdir(parents=True, exist_ok=True)
-    names = CLASS_NAMES[dataset]
-    text = f"path: {root}\ntrain: images/train\nval: images/val\nnames:\n" + "".join(f"  {i}: {n}\n" for i, n in enumerate(names))
+    if dataset in KEYPOINT_NAMES:
+        text = (f"path: {root}\ntrain: images/train\nval: images/val\n"
+                f"kpt_shape: [{len(KEYPOINT_NAMES[dataset])}, 3]\nflip_idx: {FLIP_INDEX}\nnames:\n  0: {dataset}\n")
+    else:
+        names = CLASS_NAMES[dataset]
+        text = f"path: {root}\ntrain: images/train\nval: images/val\nnames:\n" + "".join(f"  {i}: {n}\n" for i, n in enumerate(names))
     path = root / "data.yaml"
     path.write_text(text)
     return path
@@ -143,6 +149,43 @@ def accept_boxes(dataset: str, image_id: str, boxes: list[Box]) -> str:
     lines = [ln for b in boxes if b.cls in names
              for ln in [yolo_line(names.index(b.cls), b, data["width"], data["height"])] if ln is not None]
     (root / "labels" / split / f"{image_id}.txt").write_text("\n".join(lines) + ("\n" if lines else ""))
+    remove_pending(dataset, image_id)
+    return split
+
+
+def accept_points(dataset: str, image_id: str, points: dict[str, tuple[float, float]]) -> str:
+    """Move a pending image into a YOLO pose dataset: one object (class 0) whose box bounds the given
+    points, and every named keypoint, visible (2) when given, absent (0) otherwise. Returns the split."""
+    names = KEYPOINT_NAMES[dataset]
+    if not (pending_dir(dataset) / f"{image_id}.json").exists():
+        done = _accepted_split(dataset, image_id)
+        if done is not None:
+            return done
+    data = read_pending(dataset, image_id)
+    w, h = data["width"], data["height"]
+    given = {n: (min(max(x, 0.0), w), min(max(y, 0.0), h)) for n, (x, y) in points.items() if n in names}
+    split = split_for_id(image_id)
+    root = datasets_dir() / dataset
+    for other in ("train", "val"):
+        if other != split:
+            for stale in (root / "images" / other / f"{image_id}.jpg", root / "labels" / other / f"{image_id}.txt"):
+                stale.unlink(missing_ok=True)
+    (root / "images" / split).mkdir(parents=True, exist_ok=True)
+    (root / "labels" / split).mkdir(parents=True, exist_ok=True)
+    shutil.copy(data["image"], root / "images" / split / f"{image_id}.jpg")
+    if given:
+        xs, ys = [p[0] for p in given.values()], [p[1] for p in given.values()]
+        x1, x2, y1, y2 = min(xs), max(xs), min(ys), max(ys)
+        fields = [f"{(x1 + x2) / 2 / w:.6f}", f"{(y1 + y2) / 2 / h:.6f}", f"{max(x2 - x1, 1.0) / w:.6f}", f"{max(y2 - y1, 1.0) / h:.6f}"]
+        for n in names:
+            if n in given:
+                fields += [f"{given[n][0] / w:.6f}", f"{given[n][1] / h:.6f}", "2"]
+            else:
+                fields += ["0.000000", "0.000000", "0"]
+        line = "0 " + " ".join(fields) + "\n"
+    else:
+        line = ""                                                   # a frame with no court in view
+    (root / "labels" / split / f"{image_id}.txt").write_text(line)
     remove_pending(dataset, image_id)
     return split
 

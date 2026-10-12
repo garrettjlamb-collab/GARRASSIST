@@ -1,9 +1,12 @@
 from __future__ import annotations
 
+import math
 from pathlib import Path
+from statistics import median
 
 from film.common.paths import game_dir
 from film.interpret.events import load_events
+from film.interpret.zones import zone_of
 from film.review.decisions import load_decisions
 
 
@@ -57,6 +60,14 @@ def evaluate(game_id: str, reference_times: list[float] | None = None, tol_s: fl
         "precision": confirmed / (confirmed + rejected) if confirmed + rejected else None,
         "made_compared": len(compared), "made_agreement": agree / len(compared) if compared else None,
     }
+    located = [e for e in by_status["confirmed"] if (decisions[e.id]["x"] if "x" in decisions[e.id] else e.x) is not None]
+    placed = [e for e in by_status["confirmed"] if decisions[e.id].get("x") is not None]
+    pairs = [(e, decisions[e.id]) for e in placed if e.x is not None and e.y is not None]
+    errors = [math.hypot(e.x - d["x"], e.y - d["y"]) for e, d in pairs]
+    zones_ok = [zone_of(e.x, e.y) == zone_of(d["x"], d["y"]) for e, d in pairs]
+    result.update({"located": len(located), "dot_placed_by_coach": len(placed),
+                   "median_dot_error_ft": median(errors) if errors else None,
+                   "zone_agreement": sum(zones_ok) / len(zones_ok) if zones_ok else None})
     if reference_times is not None:
         machine = [e.t for e in by_status["confirmed"] + by_status["unsure"]]
         matched, _, _ = match_times(machine, reference_times, tol_s)

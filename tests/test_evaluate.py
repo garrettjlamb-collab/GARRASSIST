@@ -51,3 +51,29 @@ def test_warmup_cards_do_not_count_against_precision(synthetic_video, tmp_path, 
     save_decision(gd, "shot-000001-r1", {"status": "rejected"})
     result = evaluate(m.game_id)
     assert result["shots"] == 1 and result["warmups"] == 2 and result["precision"] == 1.0 and result["undecided"] == 0
+
+
+def test_eval_reports_dot_error_against_the_coach(synthetic_video, tmp_path, monkeypatch):
+    monkeypatch.setenv("FILM_GAMES_DIR", str(tmp_path / "games"))
+    m = ingest(synthetic_video, date="2026-01-01", profile="test")
+    gd = game_dir(m.game_id)
+    events = [Event(id=f"shot-{i:06d}-r1", type="shot", t=10.0 * (i + 1), rim_id=1, quarter=1, clock_s=None, team=None,
+                    made=True, confidence=0.5, clip={"start": 0, "end": 1}, signals={}, flags=[]) for i in range(2)]
+    events[0].x, events[0].y, events[0].zone = 10.0, 10.0, "mid-left"
+    save_events(gd, events)
+    save_decision(gd, events[0].id, {"status": "confirmed", "made": True, "x": 13.0, "y": 14.0})
+    save_decision(gd, events[1].id, {"status": "confirmed", "made": True})
+    result = evaluate(m.game_id)
+    assert result["located"] == 1 and result["dot_placed_by_coach"] == 1
+    assert abs(result["median_dot_error_ft"] - 5.0) < 1e-6 and result["zone_agreement"] == 1.0
+
+
+def test_eval_dot_error_is_null_without_machine_dots(synthetic_video, tmp_path, monkeypatch):
+    monkeypatch.setenv("FILM_GAMES_DIR", str(tmp_path / "games"))
+    m = ingest(synthetic_video, date="2026-01-01", profile="test")
+    gd = game_dir(m.game_id)
+    save_events(gd, [Event(id="shot-000000-r1", type="shot", t=10.0, rim_id=1, quarter=1, clock_s=None, team=None,
+                           made=True, confidence=0.5, clip={"start": 0, "end": 1}, signals={}, flags=[])])
+    save_decision(gd, "shot-000000-r1", {"status": "confirmed", "x": 13.0, "y": 14.0})
+    result = evaluate(m.game_id)
+    assert result["located"] == 1 and result["median_dot_error_ft"] is None and result["zone_agreement"] is None

@@ -3,9 +3,9 @@ from __future__ import annotations
 
 def register(sub) -> None:
     parser = sub.add_parser("prelabel", help="queue frames, rim crops or rim montages for labeling, with proposed labels")
-    parser.add_argument("what", choices=["rim", "ball", "rimclf"])
+    parser.add_argument("what", choices=["rim", "ball", "rimclf", "court"])
     parser.add_argument("game_id")
-    parser.add_argument("--n", type=int, default=None, help="how many to queue (rim 150, ball 300, rimclf none-samples 40)")
+    parser.add_argument("--n", type=int, default=None, help="how many to queue (rim 150, ball 300, rimclf none-samples 40, court 40)")
     parser.add_argument("--after-shots", action="store_true",
                         help="ball only: crops from just after confirmed shots where the detector lost the ball")
     parser.add_argument("--auto", action="store_true",
@@ -17,6 +17,12 @@ def register(sub) -> None:
 
 
 def run(args) -> int:
+    if args.what == "court":
+        from film.train.prelabel import prelabel_court
+
+        prelabel_court(args.game_id, n=args.n or 40)
+        print("next: uv run film review, then open the Label court tab")
+        return 0
     if args.what == "rim" and args.auto:
         from film.train.prelabel import autolabel_rims
 

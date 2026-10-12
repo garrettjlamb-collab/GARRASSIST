@@ -99,3 +99,51 @@ def test_an_unknown_kind_of_foul_is_refused(tmp_path):
     with pytest.raises(ValueError, match="foul"):
         save_decision(tmp_path, "shot-1", {"status": "confirmed", "foul": "flagrant"})
     assert load_decisions(tmp_path) == {}
+
+
+def test_the_coachs_dot_overrides_the_location_and_sets_the_zone(tmp_path):
+    save_decision(tmp_path, "shot-1", {"status": "confirmed", "made": True, "x": 3.0, "y": 4.0})
+    save_decision(tmp_path, "shot-2", {"status": "confirmed", "made": True})
+    events = [{"id": "shot-1", "made": True, "team": None, "x": 20.0, "y": 20.0, "zone": "mid-center", "shot_type": "midrange"},
+              {"id": "shot-2", "made": True, "team": None, "x": 25.0, "y": 6.0, "zone": "restricted", "shot_type": "rim"}]
+    merged = apply_decisions(events, load_decisions(tmp_path))
+    assert (merged[0]["x"], merged[0]["y"], merged[0]["zone"], merged[0]["shot_type"]) == (3.0, 4.0, "corner-3-left", "three")
+    assert (merged[1]["x"], merged[1]["zone"]) == (25.0, "restricted")
+
+
+def test_a_dot_off_the_court_is_refused(tmp_path):
+    with pytest.raises(ValueError, match="court"):
+        save_decision(tmp_path, "shot-1", {"status": "confirmed", "x": 60.0, "y": 4.0})
+
+
+def test_a_half_given_dot_is_refused_and_nothing_is_saved(tmp_path):
+    for bad in ({"x": 5.0, "y": None}, {"x": None, "y": 5.0}):
+        with pytest.raises(ValueError, match="both x and y"):
+            save_decision(tmp_path, "shot-1", {"status": "confirmed", **bad})
+    assert load_decisions(tmp_path) == {}
+
+
+def test_clearing_the_dot_clears_the_zone_and_shot_type(tmp_path):
+    save_decision(tmp_path, "shot-1", {"status": "confirmed", "x": None, "y": None})
+    events = [{"id": "shot-1", "made": True, "team": None, "x": 20.0, "y": 20.0, "zone": "mid-center", "shot_type": "midrange"}]
+    [m] = apply_decisions(events, load_decisions(tmp_path))
+    assert (m["x"], m["y"], m["zone"], m["shot_type"]) == (None, None, None, None)
+
+
+def test_the_court_boundary_dots_are_accepted(tmp_path):
+    save_decision(tmp_path, "shot-1", {"status": "confirmed", "x": -2.0, "y": 0.0})
+    save_decision(tmp_path, "shot-2", {"status": "confirmed", "x": 52.0, "y": 0.0})
+
+
+def test_re_deciding_without_a_dot_keeps_the_dot_and_null_clears_it(tmp_path):
+    save_decision(tmp_path, "shot-1", {"status": "confirmed", "made": True, "x": 3.0, "y": 4.0})
+    save_decision(tmp_path, "shot-1", {"status": "confirmed", "made": False})          # J back, M, Enter
+    d = load_decisions(tmp_path)["shot-1"]
+    assert (d["x"], d["y"], d["made"]) == (3.0, 4.0, False)
+    events = [{"id": "shot-1", "made": True, "team": None, "x": 20.0, "y": 20.0, "zone": "mid-center", "shot_type": "midrange"}]
+    assert apply_decisions(events, load_decisions(tmp_path))[0]["zone"] == "corner-3-left"
+    save_decision(tmp_path, "shot-1", {"status": "confirmed", "x": None, "y": None})
+    d = load_decisions(tmp_path)["shot-1"]
+    assert d["x"] is None and d["y"] is None
+    save_decision(tmp_path, "shot-1", {"status": "unsure"})                            # a cleared dot stays cleared
+    assert load_decisions(tmp_path)["shot-1"]["x"] is None

@@ -101,6 +101,23 @@ def prelabel_rims(game_id: str, n: int = 150, detector=None, device: str | None 
     return count
 
 
+def prelabel_court(game_id: str, n: int = 40, margin_s: float = 30.0, log=print) -> int:
+    """Evenly spaced frames for the Label court tab, bare: the coach clicks the court's points."""
+    m = Manifest.load(game_dir(game_id))
+    count = 0
+    for t in sample_times(m.duration_s, n, margin_s):
+        image_id = f"{game_id}_{int(round(t * 10)):06d}"
+        if is_known("court", image_id):
+            continue
+        frame = first_frame_at(Path(m.source), t, m.fps)
+        if frame is None:
+            continue
+        write_pending("court", image_id, frame, [], extra={"t": t, "points": {}})
+        count += 1
+    log(f"prelabel court: {count} frames queued for {game_id}")
+    return count
+
+
 AUTOLABEL_RECHECK_S = 0.3
 AUTOLABEL_MIN_CONF = 0.2
 AUTOLABEL_MIN_IOU = 0.5

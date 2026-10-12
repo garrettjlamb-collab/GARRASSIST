@@ -369,6 +369,35 @@ Marked so far: Combs `shot-002608-r19`, `shot-033855-r183` (saved rejected), `sh
 `shot-024920-r172` ("same situation ... in the context of a foul happening"). RKDA was the first game he
 flagged; the four earlier games have unflagged ones. Still to build: which team and which player fouled.
 
+## 2026-10-12: shot locations, plan A (court finder and dots on the card)
+
+Plan A of three is built: `docs/superpowers/plans/2026-10-12-shot-locations-a-court-and-dots.md`. Plan B is people,
+release and automatic dots; plan C is teams, confidence and eval.
+
+- **Court geometry.** `film/interpret/court.py`: 18 named court points (`near-*`/`far-*`, `POINT_NAMES`), the
+  template in feet, `fold` to a half court, `FLIP_INDEX` (left-right mirror pairs, used as `flip_idx`), `Mapping`,
+  and `fit_mapping`, a RANSAC homography fitted feet to pixels (so the tolerance is in pixels) and then inverted.
+  Needs 4 inliers or returns None. It also returns None for a mirrored labelling (left/right names swapped: the
+  Jacobian determinant has the wrong sign), and `to_court` returns None for a pixel at or above the horizon.
+  `Mapping.end` is advisory: it is which end the labels called near and is not reliable on a sideline view (fliplr
+  augmentation and per-frame labelling); x/y are unaffected because `fold` cancels it, and a shot's end comes from the rim.
+- **Zones.** `film/interpret/zones.py`: `zone_of(x, y)` and `shot_type_of(x, y)` on the half court. The arc is the
+  NFHS 19.75 ft distance test; a corner three is y < 10 ft.
+- **Court finder.** `film/perceive/courtfinder.py`: a YOLO pose model named `court` (`kpt_shape [18, 3]`, imgsz 960).
+  `film/perceive/court_run.py` and `film/commands/court.py`: `film court <game_id>` fits the mapping through the
+  game and writes `games/<id>/court.parquet`; `mapping_at(mappings, t)` returns the mapping for a time.
+- **Labels.** `film prelabel court <game_id>` (`prelabel_court`, 40 frames). The **Label court** tab in the review
+  app posts to `/api/label/{ds}/{id}/points`, which calls `accept_points` in `film/train/datasets.py`. Dataset
+  layout: `datasets/court`, YOLO pose, 18 points, with `flip_idx` and `kpt_shape` in the data yaml.
+- **Training.** `film train court` (base `yolo11n-pose.pt`, imgsz 960, about 30 minutes; `--epochs` to shorten).
+- **The card.** A half court on the shot card: click places the dot, arrows nudge it 1 ft, Shift+arrows 5 ft.
+  Decisions carry `x`, `y`; events carry `x`, `y`, `zone`, `shot_type`, `location_conf`.
+- **Export and eval.** The shots export gains those fields. Eval reports `located`, `dot_placed_by_coach`,
+  `median_dot_error_ft` and `zone_agreement`; the last two are null until plan B places machine dots, because
+  there is nothing to compare against the coach's dot yet.
+- **Not done:** the first real labels, training and a `film court` run on a labelled game (needs Garrett;
+  Step 3 of the plan's Task 13). The mapping has not been checked by eye on real film.
+
 ## What Garrett has asked for (requirements gathered in conversation)
 
 1. **Full box score eventually**, as automated as possible; he accepts reviewing some of it.
