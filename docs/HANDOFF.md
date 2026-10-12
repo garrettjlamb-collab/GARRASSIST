@@ -377,7 +377,10 @@ release and automatic dots; plan C is teams, confidence and eval.
 - **Court geometry.** `film/interpret/court.py`: 18 named court points (`near-*`/`far-*`, `POINT_NAMES`), the
   template in feet, `fold` to a half court, `FLIP_INDEX` (left-right mirror pairs, used as `flip_idx`), `Mapping`,
   and `fit_mapping`, a RANSAC homography fitted feet to pixels (so the tolerance is in pixels) and then inverted.
-  Needs 4 inliers or returns None.
+  Needs 4 inliers or returns None. It also returns None for a mirrored labelling (left/right names swapped: the
+  Jacobian determinant has the wrong sign), and `to_court` returns None for a pixel at or above the horizon.
+  `Mapping.end` is advisory: it is which end the labels called near and is not reliable on a sideline view (fliplr
+  augmentation and per-frame labelling); x/y are unaffected because `fold` cancels it, and a shot's end comes from the rim.
 - **Zones.** `film/interpret/zones.py`: `zone_of(x, y)` and `shot_type_of(x, y)` on the half court. The arc is the
   NFHS 19.75 ft distance test; a corner three is y < 10 ft.
 - **Court finder.** `film/perceive/courtfinder.py`: a YOLO pose model named `court` (`kpt_shape [18, 3]`, imgsz 960).

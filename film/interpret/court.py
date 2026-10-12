@@ -66,17 +66,27 @@ class Mapping:
     points_used: int
     error_px: float
     conf: float
+    # Advisory only: which end the labels called near, by majority of the inlier points. On a sideline view it is not
+    # reliable (fliplr augmentation and per-frame labelling can swap near and far); x/y are unaffected because fold
+    # cancels the choice. A shot's end comes from the rim, not from this.
     end: str                           # "near" or "far": the end most of the points belong to
 
-    def to_court(self, px: float, py: float) -> tuple[float, float]:
+    def to_court(self, px: float, py: float) -> tuple[float, float] | None:
+        """Full-court feet for a pixel, or None when the pixel is at or above the horizon (no floor point there)."""
         v = self.H @ np.array([px, py, 1.0])
+        if v[2] <= 0:                  # fit_mapping scales H so w > 0 on the court; w <= 0 is the sky side
+            return None
         return (float(v[0] / v[2]), float(v[1] / v[2]))
 
-    def to_half(self, px: float, py: float) -> tuple[float, float]:
-        return fold(*self.to_court(px, py))
+    def to_half(self, px: float, py: float) -> tuple[float, float] | None:
+        p = self.to_court(px, py)
+        return None if p is None else fold(*p)
 
     def contains(self, px: float, py: float, margin: float = 2.0) -> bool:
-        x, y = self.to_court(px, py)
+        p = self.to_court(px, py)
+        if p is None:
+            return False
+        x, y = p
         return -margin <= x <= WIDTH + margin and -margin <= y <= FULL_DEPTH + margin
 
 
@@ -99,6 +109,17 @@ def fit_mapping(points: dict[str, tuple[float, float]], reproj_tol_px: float = 8
         back, _ = cv2.findHomography(np.array([TEMPLATE[n] for n in inliers]), np.array([points[n] for n in inliers]), 0)
         if back is None:
             return None
+    # Orientation guard. For a camera above the floor, det of the Jacobian of feet -> pixels is det(back) / w^3 and has
+    # one sign over the whole visible court. The template is right-handed (x right along the near baseline as seen from
+    # the near end, y away from it) and image y grows downward, so a true labelling gives a negative determinant
+    # everywhere; a positive one is the court seen in a mirror (left and right names swapped). Refuse both that and
+    # mixed signs (inliers on both sides of the horizon), rather than fit a mirrored court silently.
+    ws = np.array([(back @ np.array([*TEMPLATE[n], 1.0]))[2] for n in inliers])
+    jac = np.linalg.det(back) / ws ** 3
+    if not np.all(jac < 0):
+        return None
+    if ws[0] < 0:                      # scale so w > 0 on the court both ways: Mapping.to_court reads w <= 0 as sky
+        back = -back
     try:
         H = np.linalg.inv(back)
     except np.linalg.LinAlgError:

@@ -40,12 +40,13 @@ def test_flip_index_pairs_left_with_right():
 
 
 def _camera(scale=12.0, shear=0.3, ox=300.0, oy=100.0):
-    """A made-up camera: feet -> pixels with perspective, for synthetic tests."""
+    """A made-up camera: feet -> pixels with perspective, for synthetic tests. Pixel x is mirrored so the court is
+    seen the right way round (as from the far end, near baseline at the top), which fit_mapping's orientation guard needs."""
     H = np.array([[scale, shear * scale, ox], [0.0, scale * 0.6, oy], [0.0, 0.004, 1.0]])
 
     def project(x, y):
         v = H @ np.array([x, y, 1.0])
-        return (float(v[0] / v[2]), float(v[1] / v[2]))
+        return (float(1000.0 - v[0] / v[2]), float(v[1] / v[2]))
 
     return project
 
@@ -102,3 +103,39 @@ def test_degenerate_points_return_none_instead_of_raising():
     names = ["near-corner-left", "near-corner-right", "near-ft-left", "near-ft-right", "near-ft-top"]
     collinear = {n: (TEMPLATE[n][0] * 10.0, 500.0) for n in names}      # every point on one pixel row
     assert fit_mapping(collinear) is None
+
+
+def _pinhole(eye=(-25.0, 47.0, 20.0), target=(25.0, 47.0, 0.0), focal=900.0, size=(1920, 1080)):
+    """A real camera above the floor: here up in the stands beyond the x = 0 sideline, looking at centre court."""
+    eye, target = np.array(eye), np.array(target)
+    f = (target - eye) / np.linalg.norm(target - eye)
+    r = np.cross(f, [0.0, 0.0, 1.0]); r /= np.linalg.norm(r)
+    d = np.cross(f, r)                                         # image y grows downward
+    R = np.array([r, d, f])
+
+    def project(x, y):
+        c = R @ (np.array([x, y, 0.0]) - eye)
+        return (float(focal * c[0] / c[2] + size[0] / 2), float(focal * c[1] / c[2] + size[1] / 2))
+
+    return project, (size[0] / 2, size[1] / 2 - focal * 2.0)  # a pixel well above the horizon
+
+
+def test_a_mirrored_labelling_is_refused():
+    project, _ = _pinhole()
+    pts = {n: project(*TEMPLATE[n]) for n in POINT_NAMES}
+    m = fit_mapping(pts)
+    assert m is not None and m.points_used == 18
+    x, y = m.to_court(*project(12.0, 30.0))
+    assert abs(x - 12.0) < 0.1 and abs(y - 30.0) < 0.1
+    swapped = {POINT_NAMES[FLIP_INDEX[i]]: pts[n] for i, n in enumerate(POINT_NAMES)}     # left and right names swapped
+    assert fit_mapping(swapped) is None
+
+
+def test_a_point_above_the_horizon_has_no_court_position():
+    project, sky = _pinhole()
+    m = fit_mapping({n: project(*TEMPLATE[n]) for n in POINT_NAMES})
+    assert m.to_court(*sky) is None and m.to_half(*sky) is None and not m.contains(*sky)
+    w_negative = Mapping(H=np.array([[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, -0.01, 1.0]]), points_used=4, error_px=0.0,
+                         conf=1.0, end="near")
+    assert w_negative.to_court(0.0, 200.0) is None and w_negative.to_court(0.0, 100.0) is None
+    assert w_negative.to_court(0.0, 50.0) is not None
