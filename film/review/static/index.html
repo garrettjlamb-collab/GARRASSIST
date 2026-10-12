@@ -46,6 +46,7 @@
     <button data-tab="rim">Label rim</button>
     <button data-tab="ball">Label ball</button>
     <button data-tab="rimclf">Label clips</button>
+    <button data-tab="court">Label court</button>
   </nav>
   <div id="status"></div>
   <section id="shots"></section>
@@ -339,7 +340,7 @@ async function loadLabel() {
     $("#label").innerHTML = `<p>Nothing pending for <b>${esc(dataset)}</b>. Queue more with: film prelabel ${esc(dataset)} &lt;game_id&gt;</p>`;
     return;
   }
-  if (dataset === "rimclf") renderClipLabel(); else renderBoxLabel();
+  if (dataset === "rimclf") renderClipLabel(); else if (dataset === "court") renderCourtLabel(); else renderBoxLabel();
 }
 
 function renderClipLabel() {
@@ -396,7 +397,7 @@ function canvasPos(ev) {
 window.addEventListener("mouseup", (ev) => {
   const d = state.drawing;
   state.drawing = null;
-  if (!d || !$("#cv") || state.tab === "shots" || state.tab === "rimclf") return;
+  if (!d || !$("#cv") || state.tab === "shots" || state.tab === "rimclf" || state.tab === "court") return;
   const moved = Math.hypot(ev.clientX - d.sx, ev.clientY - d.sy);
   if (moved < 4) {
     let hit = -1, best = Infinity;
@@ -439,6 +440,72 @@ function drawBoxes() {
   }
 }
 
+const COURT_POINTS = ["near-corner-left", "near-corner-right", "near-lane-left", "near-lane-right", "near-ft-left", "near-ft-right",
+  "near-ft-top", "near-arc-left", "near-arc-right", "far-corner-left", "far-corner-right", "far-lane-left", "far-lane-right",
+  "far-ft-left", "far-ft-right", "far-ft-top", "far-arc-left", "far-arc-right"];
+
+function renderCourtLabel() {
+  const l = state.label;
+  state.points = { ...(l.points || {}) };
+  state.pointIndex = COURT_POINTS.findIndex(n => !(n in state.points));
+  state.img = null;
+  $("#label").innerHTML = `<div class="row"><b>${l.remaining} pending</b><span class="muted">${esc(l.image_id)}</span></div>
+    <div class="card wide" style="display:flex;gap:12px;align-items:flex-start">
+      <div><canvas id="cv" class="${state.zoom ? "zoom" : ""}" width="${l.width}" height="${l.height}"></canvas>
+      <div class="keys">Click where the highlighted point is. <kbd>N</kbd> not in view <kbd>Backspace</kbd> undo
+        <kbd>Z</kbd> zoom <kbd>S</kbd> save <kbd>D</kbd> skip frame. "near" is the end nearer the camera.</div></div>
+      <div id="pt-list" class="list" style="min-width:200px;max-height:none"></div></div>`;
+  const img = new Image();
+  img.onload = () => { state.img = img; drawPoints(); };
+  img.src = l.image_url;
+  $("#cv").onclick = (ev) => {
+    if (state.pointIndex < 0) return;
+    const p = canvasPos(ev);
+    state.points[COURT_POINTS[state.pointIndex]] = [p.x, p.y];
+    state.pointIndex = COURT_POINTS.findIndex((n, i) => i > state.pointIndex && !(n in state.points));
+    drawPoints();
+  };
+  drawPoints();
+}
+
+function drawPoints() {
+  const cv = $("#cv");
+  if (!cv) return;
+  if (state.img) {
+    const ctx = cv.getContext("2d");
+    ctx.drawImage(state.img, 0, 0);
+    ctx.font = "16px sans-serif"; ctx.lineWidth = 2; ctx.strokeStyle = "#3ddc84"; ctx.fillStyle = "#3ddc84";
+    for (const [name, [x, y]] of Object.entries(state.points)) {
+      ctx.beginPath(); ctx.moveTo(x - 8, y); ctx.lineTo(x + 8, y); ctx.moveTo(x, y - 8); ctx.lineTo(x, y + 8); ctx.stroke();
+      ctx.fillText(name.replace("near-", "n:").replace("far-", "f:"), x + 10, y - 6);
+    }
+  }
+  $("#pt-list").innerHTML = COURT_POINTS.map((n, i) =>
+    `<div class="${i === state.pointIndex ? "sel" : ""}">${n in state.points ? "✓" : state.skippedPoints && state.skippedPoints.has(n) ? "–" : "·"} ${esc(n)}</div>`).join("");
+}
+
+async function courtKeys(ev) {
+  const l = state.label;
+  if (!l || l.done) return;
+  const k = ev.key.toLowerCase();
+  if (k === "n") {
+    state.skippedPoints = state.skippedPoints || new Set();
+    if (state.pointIndex >= 0) { state.skippedPoints.add(COURT_POINTS[state.pointIndex]); }
+    state.pointIndex = COURT_POINTS.findIndex((n, i) => i > state.pointIndex && !(n in state.points));
+    drawPoints();
+  } else if (ev.key === "Backspace") {
+    const placed = Object.keys(state.points);
+    if (placed.length) { const last = placed[placed.length - 1]; delete state.points[last]; state.pointIndex = COURT_POINTS.indexOf(last); drawPoints(); }
+  } else if (k === "z") {
+    state.zoom = !state.zoom; $("#cv").classList.toggle("zoom", state.zoom);
+  } else if (k === "s") {
+    await guarded(async () => { await post(`/api/label/court/${l.image_id}/points`, { points: state.points }); state.skippedPoints = null; await loadLabel(); });
+  } else if (k === "d") {
+    await guarded(async () => { await post(`/api/label/court/${l.image_id}/skip`); state.skippedPoints = null; await loadLabel(); });
+  } else return;
+  ev.preventDefault();
+}
+
 async function boxKeys(ev) {
   const l = state.label;
   if (!l || l.done) return;
@@ -470,12 +537,13 @@ document.addEventListener("keydown", (ev) => {
   if (state.tab === "shots") shotKeys(ev);
   else if (state.tab === "quarters") quarterKeys(ev);
   else if (state.tab === "rimclf") clipKeys(ev);
+  else if (state.tab === "court") courtKeys(ev);
   else boxKeys(ev);
 });
 document.querySelectorAll("nav button").forEach(b => b.onclick = () => { state.tab = b.dataset.tab; render(); });
 // A link such as /#ball opens straight on that tab.
 const wanted = location.hash.slice(1);
-if (["shots", "quarters", "rim", "ball", "rimclf"].includes(wanted)) state.tab = wanted;
+if (["shots", "quarters", "rim", "ball", "rimclf", "court"].includes(wanted)) state.tab = wanted;
 loadGames();
 </script>
 </body>
