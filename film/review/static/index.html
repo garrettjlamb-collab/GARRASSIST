@@ -591,6 +591,17 @@ function courtDiagram() {
     ? `<text x="${M - 4}" y="${H / 2 + 3}" text-anchor="end" fill="#3ddc84">NEAR</text><text x="${W - M + 4}" y="${H / 2 + 3}" fill="#aaa">FAR</text>
        <text x="${W / 2}" y="10" text-anchor="middle" fill="#aaa">left sideline (your left standing on the near baseline)</text>`
     : `<text x="${W / 2}" y="${H - 4}" text-anchor="middle" fill="#3ddc84">NEAR: baseline lower in the picture</text><text x="${W / 2}" y="10" text-anchor="middle" fill="#aaa">FAR</text>`;
+  // Court markings at both ends, drawn in feet through at(): the lane, the free-throw circle, and the
+  // three-point arc with its straight legs to the baseline (same numbers as HALF on the shot card).
+  const poly = (pts) => `<polyline points="${pts.map(([x, y]) => at(x, y).join(",")).join(" ")}" fill="none" stroke="#666"/>`;
+  const circle = (cx, cy, rad) => poly(Array.from({ length: 49 }, (_, i) => [cx + rad * Math.cos(i / 48 * 2 * Math.PI), cy + rad * Math.sin(i / 48 * 2 * Math.PI)]));
+  for (const far of [false, true]) {
+    const f = ([x, y]) => far ? [50 - x, 94 - y] : [x, y];
+    out += poly([[17, 0], [17, 19], [33, 19], [33, 0]].map(f));
+    out += poly(Array.from({ length: 49 }, (_, i) => [25 + 19.75 * Math.cos(i / 48 * Math.PI), 5.25 + 19.75 * Math.sin(i / 48 * Math.PI)]).map(f));
+    out += poly([[25 - 19.75, 0], [25 - 19.75, 5.25]].map(f)) + poly([[25 + 19.75, 0], [25 + 19.75, 5.25]].map(f));
+    out += circle(...f([25, 19]), 6);
+  }
   for (const [k, [nx, ny]] of Object.entries(COURT_NEAR)) {
     for (const [end, x, y] of [["near", nx, ny], ["far", 50 - nx, 94 - ny]]) {
       const [px, py] = at(x, y), name = `${end}-${k}`, near = end === "near";
