@@ -1,6 +1,7 @@
 import numpy as np
 from fastapi.testclient import TestClient
 
+from film.common.manifest import Manifest
 from film.common.paths import game_dir
 from film.export.clips import clip_path, cut_clip
 from film.ingest.run import ingest
@@ -204,3 +205,16 @@ def test_a_dot_is_saved_with_the_decision(synthetic_video, tmp_path, monkeypatch
     assert r.status_code == 200 and r.json()["x"] == 10.0
     e = {x["id"]: x for x in client.get(f"/api/games/{game_id}/events").json()}["shot-000000-r1"]
     assert (e["x"], e["y"], e["zone"]) == (10.0, 12.0, "mid-left")
+
+
+def test_events_carry_which_side_of_the_picture_their_basket_is_on(synthetic_video, tmp_path, monkeypatch):
+    _env(monkeypatch, tmp_path)
+    game_id, gd = _game(synthetic_video)
+    client = TestClient(create_app())
+    assert client.get(f"/api/games/{game_id}/events").json()[0]["basket_side"] is None     # no rim tracks yet
+    from film.perceive.tracks import rows_to_frame, tracks_path
+    width = Manifest.load(gd).width
+    rows = [{"frame": f, "t": f / 10, "kind": "rim", "track_id": 1, "ref_id": None, "x1": width * 0.8, "y1": 10, "x2": width * 0.9, "y2": 40,
+             "conf": 0.9, "on_court": None, "court_x": None, "court_y": None, "team": None, "model_version": "t"} for f in range(5)]
+    rows_to_frame(rows).to_parquet(tracks_path(gd))
+    assert client.get(f"/api/games/{game_id}/events").json()[0]["basket_side"] == "right"

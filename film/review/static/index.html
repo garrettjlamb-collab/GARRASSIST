@@ -103,9 +103,29 @@ const ZONE_LABELS = {restricted:"Restricted Area", paint:"Paint", "mid-left":"Mi
 
 // ---- The half court: feet on the tracker's half court, baseline at the bottom, basket near the bottom centre ----
 const HALF = { w: 50, h: 47, basketX: 25, basketY: 5.25, arc: 19.75, laneL: 17, laneR: 33, ftY: 19, ftR: 6, restricted: 4, cornerY: 10, floater: 9 };
-const CV = { w: 250, h: 235 };
-const toPx = (x, y) => [x / HALF.w * CV.w, CV.h - y / HALF.h * CV.h];
-const toFt = (px, py) => [px / CV.w * HALF.w, (CV.h - py) / CV.h * HALF.h];
+// The card draws the half court the way the camera sees it: across, with the basket on the side of the
+// picture it is on (the event's basket_side; when unknown, the side last chosen). Feet are the tracker's
+// half court whatever the drawing: x across the baseline, y away from it. All drawing, clicks and nudges
+// go through one affine map from feet to canvas pixels.
+const SCALE = 5;                                                     // px per foot
+function courtView(e) {
+  let side = e && e.basket_side;
+  if (!side) { try { side = localStorage.getItem("basketSide") || "left"; } catch (err) { side = "left"; } }
+  return side;
+}
+function courtCanvasSize() { return { w: HALF.h * SCALE, h: HALF.w * SCALE }; }
+// [a, b, c, d, tx, ty]: px = a*x + c*y + tx, py = b*x + d*y + ty.  Basket on the left: the baseline is the
+// left edge, x runs down the picture (your left on the near baseline is the top sideline). On the right:
+// the mirror image, so the far sideline stays at the top.
+function courtMatrix(side) {
+  const { w, h } = courtCanvasSize();
+  return side === "right" ? [0, -SCALE, -SCALE, 0, w, h] : [0, SCALE, SCALE, 0, 0, 0];
+}
+function toPxM(m, x, y) { return [m[0] * x + m[2] * y + m[4], m[1] * x + m[3] * y + m[5]]; }
+function toFtM(m, px, py) {
+  const det = m[0] * m[3] - m[1] * m[2], dx = px - m[4], dy = py - m[5];
+  return [(m[3] * dx - m[2] * dy) / det, (-m[1] * dx + m[0] * dy) / det];
+}
 
 // Port of film/interpret/zones.py (zone_of, shot_type_of): same constants, same order of checks.
 function zoneOf(x, y) {
@@ -138,24 +158,27 @@ function zoneLine(e) {
 }
 
 function drawHalfCourt(cv, e) {
-  const ctx = cv.getContext("2d");
-  ctx.fillStyle = "#1b2130"; ctx.fillRect(0, 0, CV.w, CV.h);
+  const { w, h } = courtCanvasSize(), m = courtMatrix(courtView(e)), ctx = cv.getContext("2d");
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.fillStyle = "#1b2130"; ctx.fillRect(0, 0, w, h);
   ctx.strokeStyle = "#8b95a7"; ctx.lineWidth = 1;
-  ctx.strokeRect(0.5, 0.5, CV.w - 1, CV.h - 1);
-  const [lx, ly] = toPx(HALF.laneL, HALF.ftY), [rx] = toPx(HALF.laneR, 0);
-  ctx.strokeRect(lx, ly, rx - lx, CV.h - ly);
-  const [bx, by] = toPx(HALF.basketX, HALF.basketY);
-  const r = (ft) => ft / HALF.w * CV.w;
-  ctx.beginPath(); ctx.arc(bx, by, r(HALF.arc), Math.PI, 2 * Math.PI); ctx.stroke();               // the arc, meeting the baseline
-  ctx.beginPath(); ctx.moveTo(bx - r(HALF.arc), by); ctx.lineTo(bx - r(HALF.arc), CV.h); ctx.moveTo(bx + r(HALF.arc), by); ctx.lineTo(bx + r(HALF.arc), CV.h); ctx.stroke();
-  const [fx, fy] = toPx(HALF.basketX, HALF.ftY);
-  ctx.beginPath(); ctx.arc(fx, fy, r(HALF.ftR), 0, 2 * Math.PI); ctx.stroke();
-  ctx.beginPath(); ctx.arc(bx, by, r(0.75), 0, 2 * Math.PI); ctx.strokeStyle = "#ff8c42"; ctx.stroke();
+  ctx.strokeRect(0.5, 0.5, w - 1, h - 1);
+  ctx.setTransform(m[0], m[1], m[2], m[3], m[4], m[5]);              // from here on, feet
+  ctx.lineWidth = 1 / SCALE;
+  ctx.strokeRect(HALF.laneL, 0, HALF.laneR - HALF.laneL, HALF.ftY);
+  ctx.beginPath(); ctx.arc(HALF.basketX, HALF.basketY, HALF.arc, 0, Math.PI); ctx.stroke();        // the arc, away from the baseline
+  ctx.beginPath(); ctx.moveTo(HALF.basketX - HALF.arc, 0); ctx.lineTo(HALF.basketX - HALF.arc, HALF.basketY);
+  ctx.moveTo(HALF.basketX + HALF.arc, 0); ctx.lineTo(HALF.basketX + HALF.arc, HALF.basketY); ctx.stroke();
+  ctx.beginPath(); ctx.arc(HALF.basketX, HALF.ftY, HALF.ftR, 0, 2 * Math.PI); ctx.stroke();
+  ctx.strokeStyle = "#ff8c42"; ctx.beginPath(); ctx.arc(HALF.basketX, HALF.basketY, 0.75, 0, 2 * Math.PI); ctx.stroke();
   if (e.x != null && e.y != null) {
-    const [dx, dy] = toPx(e.x, e.y);
     ctx.fillStyle = e.made ? "#3ddc84" : "#ff5c5c";
-    ctx.beginPath(); ctx.arc(dx, dy, 6, 0, 2 * Math.PI); ctx.fill();
+    ctx.beginPath(); ctx.arc(e.x, e.y, 6 / SCALE, 0, 2 * Math.PI); ctx.fill();
   }
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.fillStyle = "#8b95a7"; ctx.font = "10px sans-serif"; ctx.textAlign = "center";
+  const side = courtView(e);
+  ctx.fillText("basket " + side + " · B flips", w / 2, h - 4);
 }
 
 function setDot(e, x, y) {
@@ -227,13 +250,13 @@ function renderShots() {
     <div class="card">
       <video id="clip" src="/clips/${esc(state.game)}/${esc(e.id)}.mp4" autoplay loop muted playsinline></video>
       <div style="display:inline-block;vertical-align:top;margin-left:12px">
-        <canvas id="court" width="${CV.w}" height="${CV.h}" style="border-radius:6px;cursor:crosshair"></canvas>
+        <canvas id="court" width="${courtCanvasSize().w}" height="${courtCanvasSize().h}" style="border-radius:6px;cursor:crosshair"></canvas>
         <div class="muted" id="zone-line">${zoneLine(e)}</div>
       </div>
       <div style="margin-top:8px">${warm}${weakBadge}${madeBadge}${foulBadge}<span class="badge none">${esc(e.type)}</span>${dec}
         <b>Q${e.quarter ?? "?"} ${clock(e.clock_s)}</b> <span class="muted">t=${e.t.toFixed(1)}s · team ${esc(e.team ?? "?")} · conf ${e.confidence} · ${e.rim_id < 0 ? "scoreboard only" : "rim " + e.rim_id}</span></div>
       <div class="muted" style="margin-top:4px">${esc((e.flags || []).join(" ") || "no flags")} · ${esc(JSON.stringify(e.signals))}</div>
-      <div class="keys"><kbd>Enter</kbd> confirm <kbd>M</kbd> toggle made <kbd>T</kbd> team <kbd>W</kbd> foul (on the shot / whistle first / none) <kbd>X</kbd> reject <kbd>U</kbd> unsure <kbd>L</kbd> open film <kbd>R</kbd> replay the play <kbd>Click</kbd> court places the dot <kbd>←↑↓→</kbd> nudge 1 ft (<kbd>Shift</kbd> 5 ft) <kbd>F</kbd> speed <span id="rate">${state.rate}x</span> <kbd>J</kbd>/<kbd>K</kbd> prev/next</div>
+      <div class="keys"><kbd>Enter</kbd> confirm <kbd>M</kbd> toggle made <kbd>T</kbd> team <kbd>W</kbd> foul (on the shot / whistle first / none) <kbd>X</kbd> reject <kbd>U</kbd> unsure <kbd>L</kbd> open film <kbd>R</kbd> replay the play <kbd>Click</kbd> court places the dot <kbd>←↑↓→</kbd> nudge 1 ft (<kbd>Shift</kbd> 5 ft) <kbd>B</kbd> basket on the other side <kbd>F</kbd> speed <span id="rate">${state.rate}x</span> <kbd>J</kbd>/<kbd>K</kbd> prev/next</div>
     </div>
     <div class="list">${state.events.map((x, i) => `<div class="${i === state.index ? "sel" : ""}" data-i="${i}">${x.decision ? "✓" : "·"}${isWarm(x) ? " warmup" : ""} ${esc(x.id)} Q${x.quarter ?? "?"} ${clock(x.clock_s)} ${x.made === true ? "made" : x.made === false ? "missed" : "?"} ${x.confidence}${x.foul ? " · foul" : ""}</div>`).join("")}</div>`;
   $("#confirm-high").onclick = confirmHigh;
@@ -241,8 +264,8 @@ function renderShots() {
   drawHalfCourt($("#court"), e);
   $("#court").onclick = (ev) => {
     const c = $("#court"), r = c.getBoundingClientRect();
-    const sx = CV.w / c.clientWidth, sy = CV.h / c.clientHeight;   // CSS scaling; clientLeft/Top skip the border
-    const [x, y] = toFt((ev.clientX - r.left - c.clientLeft) * sx, (ev.clientY - r.top - c.clientTop) * sy);
+    const { w, h } = courtCanvasSize(), sx = w / c.clientWidth, sy = h / c.clientHeight;   // CSS scaling; clientLeft/Top skip the border
+    const [x, y] = toFtM(courtMatrix(courtView(e)), (ev.clientX - r.left - c.clientLeft) * sx, (ev.clientY - r.top - c.clientTop) * sy);
     setDot(e, x, y);
   };
   const video = $("#clip");
@@ -310,7 +333,18 @@ function shotKeys(ev) {
   }
   else if (k === "j") { state.index = Math.max(0, state.index - 1); renderShots(); }
   else if (k === "k") { state.index = Math.min(state.events.length - 1, state.index + 1); renderShots(); }
-  else if (ev.key.startsWith("Arrow") && e.x != null) { const s = ev.shiftKey ? 5 : 1; setDot(e, e.x + (ev.key === "ArrowRight" ? s : ev.key === "ArrowLeft" ? -s : 0), e.y + (ev.key === "ArrowUp" ? s : ev.key === "ArrowDown" ? -s : 0)); }
+  else if (ev.key.startsWith("Arrow") && e.x != null) {             // nudge the way the arrow points on the picture
+    const s = ev.shiftKey ? 5 : 1, m = courtMatrix(courtView(e));
+    const dpx = (ev.key === "ArrowRight" ? s : ev.key === "ArrowLeft" ? -s : 0) * SCALE, dpy = (ev.key === "ArrowDown" ? s : ev.key === "ArrowUp" ? -s : 0) * SCALE;
+    const [x0, y0] = toFtM(m, 0, 0), [x1, y1] = toFtM(m, dpx, dpy);
+    setDot(e, e.x + (x1 - x0), e.y + (y1 - y0));
+  }
+  else if (ev.key === "b" || ev.key === "B") {                        // the basket is on the other side of the picture
+    const next = courtView(e) === "right" ? "left" : "right";
+    e.basket_side = next;
+    try { localStorage.setItem("basketSide", next); } catch (err) {}
+    drawHalfCourt($("#court"), e);
+  }
   else return;
   ev.preventDefault();
 }

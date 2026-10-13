@@ -15,7 +15,9 @@ from film.common.paths import game_dir, games_dir
 from film.export.clips import clip_path
 from film.interpret.events import load_events
 from film.interpret.quarters import apply_quarters, load_quarters, save_quarters
+from film.perceive.rims import basket_sides
 from film.perceive.scoreboard import has_scoreboard
+from film.perceive.tracks import read_tracks
 from film.perceive.detectors import Box
 from film.review.films import Films
 from film.review.decisions import apply_decisions, load_decisions, save_decision
@@ -73,6 +75,14 @@ def _summary(gd: Path) -> dict:
             "scoreboard": has_scoreboard(m.profile), "quarters": len(load_quarters(gd)),
             "decided": sum(1 for e in events if e.id in decisions),
             "stages": {name: info.get("status") for name, info in m.stages.items()}}
+
+
+def _basket_sides(gd: Path) -> dict[int, str]:
+    """Rim track id -> "left" or "right" half of the frame; empty when the game has no rim tracks."""
+    try:
+        return basket_sides(read_tracks(gd, "rim"), Manifest.load(gd).width)
+    except Exception:
+        return {}
 
 
 def _safe_summary(gd: Path) -> dict:
@@ -169,7 +179,11 @@ def create_app(films: Films | None = None) -> FastAPI:
     @app.get("/api/games/{game_id}/events")
     def events(game_id: str):
         gd = _gd(game_id)
-        return apply_decisions([e.to_json() for e in load_events(gd)], load_decisions(gd))
+        rows = apply_decisions([e.to_json() for e in load_events(gd)], load_decisions(gd))
+        sides = _basket_sides(gd)
+        for row in rows:                                   # which side of the picture the basket is on
+            row["basket_side"] = sides.get(row.get("rim_id"))
+        return rows
 
     @app.post("/api/games/{game_id}/decisions/{event_id}")
     def decide(game_id: str, event_id: str, decision: Decision):
