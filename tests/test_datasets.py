@@ -121,7 +121,7 @@ def test_court_data_yaml_describes_the_keypoints(monkeypatch, tmp_path):
     monkeypatch.setenv("FILM_DATASETS_DIR", str(tmp_path / "datasets"))
     from film.interpret.court import FLIP_INDEX
     text = ds.data_yaml("court").read_text()
-    assert "kpt_shape: [18, 3]" in text and f"flip_idx: {FLIP_INDEX}" in text and "0: court" in text
+    assert "kpt_shape: [22, 3]" in text and f"flip_idx: {FLIP_INDEX}" in text and "0: court" in text
 
 
 def test_read_points_gives_back_what_accept_points_stored(monkeypatch, tmp_path):

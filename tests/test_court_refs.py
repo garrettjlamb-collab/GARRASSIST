@@ -197,3 +197,19 @@ def test_one_wide_picture_that_covers_everything_still_gets_the_views_at_each_en
     close = [(10.0 * (i + 1), frame(pano, crop(160.0 * i, 60.0))) for i in range(5)]  # each inside the wide view
     times, share = choose_references(g, samples=wide + close, log=lambda *a: None)
     assert share == 1.0 and len(times) >= 3 and {10.0, 50.0} <= set(times)       # both ends are asked for
+
+
+def test_the_view_furthest_round_is_found_through_a_chain_of_neighbours(pano):
+    from film.perceive.court_refs import _spread_picks
+    from film.perceive.register import features, match
+
+    feats = [(10.0 * i, features(frame(pano, crop(300.0 * i, 60.0)))) for i in range(6)]
+    links = [set() for _ in feats]
+    for i in range(6):
+        for j in range(i + 1, 6):
+            if match(feats[i][1], feats[j][1]) is not None:
+                links[i].add(j)
+                links[j].add(i)
+    anchor = feats[0][1]
+    assert match(feats[5][1], anchor) is None                       # the far view shares nothing with the anchor
+    assert _spread_picks(feats, links, anchor, {1, 2, 3, 4, 5}) == [1, 5]

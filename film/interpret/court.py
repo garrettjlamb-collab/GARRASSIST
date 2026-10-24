@@ -15,6 +15,7 @@ BASKET = (25.0, 5.25)
 THREE_RADIUS = 19.75                    # NFHS: the line runs straight off the baseline to the basket's depth, then arcs
 LANE_LEFT, LANE_RIGHT, FT_LINE_Y = 19.0, 31.0, 19.0     # NFHS: the lane is 12 ft wide (the NBA's is 16)
 FT_CIRCLE_RADIUS = 6.0
+CENTRE_CIRCLE_RADIUS = 6.0
 
 _NEAR = {
     "corner-left": (0.0, 0.0), "corner-right": (WIDTH, 0.0),
@@ -31,13 +32,19 @@ def _rotate(point: tuple[float, float], length: float = FULL_DEPTH) -> tuple[flo
     return (WIDTH - x, length - y)
 
 
-POINT_NAMES: list[str] = [f"near-{k}" for k in _NEAR] + [f"far-{k}" for k in _NEAR]
+# Midcourt: the centre line at each sideline and where the centre circle crosses it. "left" is the near end's left,
+# the sideline of near-corner-left. Last in the list, so labels written before they existed still read.
+MID_NAMES = ["mid-left", "mid-right", "mid-circle-left", "mid-circle-right"]
+POINT_NAMES: list[str] = [f"near-{k}" for k in _NEAR] + [f"far-{k}" for k in _NEAR] + MID_NAMES
 
 
 def template(length: float = FULL_DEPTH) -> dict[str, tuple[float, float]]:
-    """The eighteen points on a court `length` feet long. Every court is 50 ft wide and marks its ends the same way;
+    """The 22 points on a court `length` feet long. Every court is 50 ft wide and marks its ends the same way;
     the length is not standard (84 ft is the high-school court, 94 ft the college one, and both are in use)."""
-    return {**{f"near-{k}": v for k, v in _NEAR.items()}, **{f"far-{k}": _rotate(v, length) for k, v in _NEAR.items()}}
+    mid = length / 2
+    return {**{f"near-{k}": v for k, v in _NEAR.items()}, **{f"far-{k}": _rotate(v, length) for k, v in _NEAR.items()},
+            "mid-left": (0.0, mid), "mid-right": (WIDTH, mid),
+            "mid-circle-left": (WIDTH / 2 - CENTRE_CIRCLE_RADIUS, mid), "mid-circle-right": (WIDTH / 2 + CENTRE_CIRCLE_RADIUS, mid)}
 
 
 TEMPLATE: dict[str, tuple[float, float]] = template()

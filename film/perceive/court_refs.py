@@ -116,13 +116,14 @@ def points_in_view(mapping: Mapping, w: int, h: int) -> dict[str, tuple[float, f
 def measure_length(refs: list[Reference]) -> float | None:
     """The court's length from the references: each one's own points plus the others' carried into it; wherever
     points of both ends meet in one picture, the length that fits them best (snapped to 74, 84 or 94 ft when within
-    3 ft). None when no picture holds points of both ends."""
+    3 ft). None when no picture holds points of an end and of midcourt or the other end."""
     sets = []
     for r in refs:
         carried, _ = place_points(r.features, [o for o in refs if o.image_id != r.image_id])
         pts = {**carried, **r.points}
         ends = Counter(END_OF_POINT[n] for n in pts)
-        if ends["near"] >= 2 and ends["far"] >= 2 and len(pts) >= 6:
+        two_marks = sum(ends[e] >= 2 for e in ("near", "far", "mid")) >= 2 and (ends["near"] >= 2 or ends["far"] >= 2)
+        if two_marks and len(pts) >= 6:
             sets.append(pts)
     if not sets:
         return None
@@ -238,15 +239,34 @@ def _ref_id(game_id: str, t: float) -> str:
 K_MIN = 3
 
 
-def _spread_picks(feats, anchor: Features, candidates: set[int]) -> list[int]:
+def _spread_picks(feats, links: list[set[int]], anchor: Features, candidates: set[int]) -> list[int]:
     """The candidates looking furthest left and furthest right of the anchor picture: where each frame's centre lands
-    in the anchor's pixels. A wide picture that lines up with everything still cuts off the baselines; these see them."""
-    xs = {}
-    for i in candidates:
+    in the anchor's pixels, through a chain of neighbours for a frame that does not line up with the anchor itself.
+    A wide picture that lines up with everything still cuts off the baselines; these see them."""
+    to_anchor: dict[int, np.ndarray] = {}
+    frontier = []
+    for i in range(len(feats)):
         m = match(feats[i][1], anchor)
         if m is not None:
-            f = feats[i][1]
-            xs[i] = project({"c": (f.width / 2, f.height / 2)}, m.H)["c"][0]
+            to_anchor[i] = m.H
+            frontier.append(i)
+    while frontier:
+        reached = []
+        for i in frontier:
+            for j in sorted(links[i]):
+                if j in to_anchor:
+                    continue
+                m = match(feats[j][1], feats[i][1])
+                if m is not None:
+                    to_anchor[j] = to_anchor[i] @ m.H
+                    reached.append(j)
+        frontier = reached
+    xs = {}
+    for i in candidates & set(to_anchor):
+        f = feats[i][1]
+        v = to_anchor[i] @ np.array([f.width / 2, f.height / 2, 1.0])
+        if v[2] > 1e-9:                                   # composed far round, a frame can land behind the anchor
+            xs[i] = float(v[0] / v[2])
     if not xs:
         return []
     return list(dict.fromkeys([min(xs, key=xs.get), max(xs, key=xs.get)]))
@@ -287,7 +307,7 @@ def choose_references(game_id: str, n: int = 90, k_max: int = 5, coverage: float
         covered |= {best} | links[best]
     if len(existing) + len(chosen) < K_MIN and (existing or chosen):
         anchor = existing[0].features if existing else feats[chosen[0]][1]
-        for i in _spread_picks(feats, anchor, candidates):
+        for i in _spread_picks(feats, links, anchor, candidates):
             if len(existing) + len(chosen) >= min(K_MIN, k_max):
                 break
             chosen.append(i)

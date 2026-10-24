@@ -204,11 +204,10 @@ def read_points(dataset: str, image_id: str) -> tuple[Path, dict[str, tuple[floa
     fields = label.read_text().split() if label.exists() else []
     points = {}
     names = KEYPOINT_NAMES[dataset]
-    if len(fields) >= 5 + 3 * len(names):
-        for i, name in enumerate(names):
-            x, y, v = (float(f) for f in fields[5 + 3 * i: 8 + 3 * i])
-            if v > 0:
-                points[name] = (x * w, y * h)
+    for i, name in enumerate(names[:max(0, (len(fields) - 5) // 3)]):     # a label from before a point existed is shorter
+        x, y, v = (float(f) for f in fields[5 + 3 * i: 8 + 3 * i])
+        if v > 0:
+            points[name] = (x * w, y * h)
     return image, points, w, h
 
 

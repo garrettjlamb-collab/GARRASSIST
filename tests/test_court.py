@@ -5,9 +5,11 @@ import numpy as np
 from film.interpret.court import END_OF_POINT, FLIP_INDEX, POINT_NAMES, TEMPLATE, Mapping, fit_mapping, fold
 
 
-def test_eighteen_named_points_nine_per_end():
-    assert len(POINT_NAMES) == 18 and len(set(POINT_NAMES)) == 18
+def test_twenty_two_named_points_nine_per_end_and_four_at_midcourt():
+    assert len(POINT_NAMES) == 22 and len(set(POINT_NAMES)) == 22
     assert sum(END_OF_POINT[n] == "near" for n in POINT_NAMES) == 9
+    assert [n for n in POINT_NAMES if END_OF_POINT[n] == "mid"] == POINT_NAMES[18:]
+    assert TEMPLATE["mid-left"] == (0.0, 47.0) and TEMPLATE["mid-circle-right"] == (31.0, 47.0)
     assert all(n in TEMPLATE for n in POINT_NAMES)
 
 
@@ -125,7 +127,7 @@ def test_a_mirrored_labelling_is_refused():
     project, _ = _pinhole()
     pts = {n: project(*TEMPLATE[n]) for n in POINT_NAMES}
     m = fit_mapping(pts)
-    assert m is not None and m.points_used == 18
+    assert m is not None and m.points_used == 22
     x, y = m.to_court(*project(12.0, 30.0))
     assert abs(x - 12.0) < 0.1 and abs(y - 30.0) < 0.1
     swapped = {POINT_NAMES[FLIP_INDEX[i]]: pts[n] for i, n in enumerate(POINT_NAMES)}     # left and right names swapped

@@ -566,10 +566,10 @@ function drawBoxes() {
 }
 
 const COURT_POINTS = ["near-corner-left", "near-corner-right", "near-lane-left", "near-lane-right", "near-ft-left", "near-ft-right",
-  "near-ft-top", "near-arc-left", "near-arc-right", "far-corner-left", "far-corner-right", "far-lane-left", "far-lane-right",
+  "near-ft-top", "near-arc-left", "near-arc-right", "mid-left", "mid-circle-left", "mid-circle-right", "mid-right", "far-corner-left", "far-corner-right", "far-lane-left", "far-lane-right",
   "far-ft-left", "far-ft-right", "far-ft-top", "far-arc-left", "far-arc-right"];
 
-// The 18 points drawn where they are, near end at the bottom (feet, as in film/interpret/court.py).
+// The 22 points drawn where they are (feet, as in film/interpret/court.py): nine at each end, four at midcourt.
 const COURT_NEAR = { "corner-left": [0, 0], "corner-right": [50, 0], "lane-left": [19, 0], "lane-right": [31, 0],
   "ft-left": [19, 19], "ft-right": [31, 19], "ft-top": [25, 25], "arc-left": [25 - 19.75, 0], "arc-right": [25 + 19.75, 0] };
 
@@ -619,6 +619,14 @@ function courtDiagram() {
       }
       out += `<circle cx="${px}" cy="${py}" r="3" fill="#3ddc84"/>${label}`;
     }
+  }
+  out += circle(25, 47, 6);
+  for (const [name, x, dx] of [["mid-left", 0, 0], ["mid-circle-left", 19, -1], ["mid-circle-right", 31, 1], ["mid-right", 50, 0]]) {
+    const [px, py] = at(x, 47), top = x < 25;
+    const label = across
+      ? `<text x="${px + (x === 0 || x === 50 ? 0 : 0)}" y="${py + (top ? -6 : 12)}" text-anchor="middle" fill="#ccc">${name}</text>`
+      : `<text x="${px + (top ? -5 : 5)}" y="${py - 4}" text-anchor="${top ? "end" : "start"}" fill="#ccc">${name}</text>`;
+    out += `<circle cx="${px}" cy="${py}" r="3" fill="#3ddc84"/>${label}`;
   }
   return out + "</svg>";
 }
