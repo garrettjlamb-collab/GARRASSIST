@@ -138,3 +138,25 @@ def test_check_references_measures_how_well_they_agree(synthetic_video, tmp_path
     assert all(r["shared"] >= 4 for r in report)
     assert all(r["median_px"] < 1.5 for r in report)
     assert all(r["worst"] == "near-ft-top" and 18.0 < r["max_px"] < 22.0 for r in report)
+
+
+def test_a_few_references_cover_a_panning_game(synthetic_video, tmp_path, monkeypatch, pano):
+    from film.perceive.court_refs import choose_references
+
+    _env(monkeypatch, tmp_path)
+    g = _game(synthetic_video)
+    samples = [(10.0 * (i + 1), frame(pano, crop(300.0 * i, 60.0))) for i in range(6)]   # neighbours overlap by half
+    times, share = choose_references(g, samples=samples, log=lambda *a: None)
+    assert share == 1.0 and 1 <= len(times) <= 3
+
+
+def test_a_marked_reference_counts_and_a_skipped_frame_is_never_asked_again(synthetic_video, tmp_path, monkeypatch, pano):
+    from film.perceive.court_refs import choose_references
+
+    _env(monkeypatch, tmp_path)
+    g = _game(synthetic_video)
+    samples = [(10.0 * (i + 1), frame(pano, crop(300.0 * i, 60.0))) for i in range(6)]
+    _add_ref(g, 99.0, frame(pano, crop(300.0, 60.0)), court_points_in(crop(300.0, 60.0)))   # sees what sample 2 sees
+    ds.mark_skipped("court", f"{g}_000500")                                                 # sample 5 (t = 50)
+    times, share = choose_references(g, samples=samples, log=lambda *a: None)
+    assert share == 1.0 and times == [40.0, 60.0]            # without the skipped middle frame it takes two

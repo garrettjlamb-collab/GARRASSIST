@@ -629,7 +629,10 @@ function renderCourtLabel() {
   state.skippedPoints = new Set();
   state.pointIndex = COURT_POINTS.findIndex(n => !(n in state.points));
   state.img = null;
-  $("#label").innerHTML = `<div class="row"><b>${l.remaining} pending</b><span class="muted">${esc(l.image_id)}</span></div>
+  const refNote = l.ref
+    ? `<div class="row"><b>Reference picture ${l.ref_index} of ${l.ref_count}</b><span>Mark every court point you can see, as
+       exactly as you can (<kbd>Z</kbd> zooms). These few pictures place the court in the whole game.</span></div>` : "";
+  $("#label").innerHTML = `<div class="row"><b>${l.remaining} pending</b><span class="muted">${esc(l.image_id)}</span></div>${refNote}
     <div class="card wide" style="display:flex;gap:12px;align-items:flex-start">
       <div><canvas id="cv" class="${state.zoom ? "zoom" : ""}" width="${l.width}" height="${l.height}"></canvas>
       <div class="keys">Click where the highlighted point is. <kbd>N</kbd> not in view <kbd>Backspace</kbd> undo

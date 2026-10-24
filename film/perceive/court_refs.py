@@ -188,3 +188,45 @@ def check_references(game_id: str, masks: list | tuple | None = None) -> list[di
                     "shared": len(errors), "median_px": round(median(errors.values()), 2) if errors else None,
                     "max_px": round(errors[worst], 2) if worst else None, "worst": worst})
     return out
+
+
+def _ref_id(game_id: str, t: float) -> str:
+    return f"{game_id}_{int(round(t * 10)):06d}"
+
+
+def choose_references(game_id: str, n: int = 90, k_max: int = 5, coverage: float = 0.95, samples=None,
+                      margin_s: float = 30.0, log=print) -> tuple[list[float], float]:
+    """Which frames to ask the coach to mark: n frames spread through the game, each lined up with every other,
+    then a greedy cover: the frame that lines up with the most not-yet-covered frames, until `coverage` of them line
+    up with a reference or there are k_max references. References he already marked count first; a frame he skipped
+    is never asked for again. Returns the chosen times and the share of the sampled frames they cover."""
+    from film.train.prelabel import first_frame_at, sample_times
+
+    m = Manifest.load(game_dir(game_id))
+    masks = mask_regions(m.profile)
+    if samples is None:
+        samples = ((t, first_frame_at(Path(m.source), t, m.fps)) for t in sample_times(m.duration_s, n, margin_s))
+    feats = [(t, features(frame, masks)) for t, frame in samples if frame is not None]
+    if not feats:
+        return [], 0.0
+    links: list[set[int]] = [set() for _ in feats]
+    for i in range(len(feats)):
+        for j in range(i + 1, len(feats)):
+            if match(feats[i][1], feats[j][1]) is not None:
+                links[i].add(j)
+                links[j].add(i)
+    existing = load_references(game_id, masks)
+    covered = {j for j, (_, f) in enumerate(feats) if any(match(r.features, f) is not None for r in existing)}
+    candidates = {i for i, (t, _) in enumerate(feats) if not ds.is_known(DATASET, _ref_id(game_id, t))}
+    chosen: list[int] = []
+    while len(existing) + len(chosen) < k_max and len(covered) < coverage * len(feats) and candidates:
+        gain, _, best = max((len(({i} | links[i]) - covered), len(links[i]), i) for i in candidates)
+        if gain == 0:
+            break
+        chosen.append(best)
+        candidates.discard(best)
+        covered |= {best} | links[best]
+    share = len(covered) / len(feats)
+    log(f"references for {game_id}: {len(existing)} marked, {len(chosen)} to mark; together they line up with "
+        f"{len(covered)} of {len(feats)} sampled frames ({share:.0%})")
+    return sorted(feats[i][0] for i in chosen), share

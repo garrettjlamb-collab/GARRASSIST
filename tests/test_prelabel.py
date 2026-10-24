@@ -219,3 +219,21 @@ def test_prelabel_court_queues_bare_frames(synthetic_video, tmp_path, monkeypatc
     ids = ds.list_pending("court")
     assert len(ids) == 3 and all(ds.read_pending("court", i)["points"] == {} for i in ids)
     assert prelabel_court(m.game_id, n=3, margin_s=0.5, log=lambda *a: None) == 0          # never queued twice
+
+
+def test_prelabel_court_refs_replaces_the_plain_queue_for_that_game(synthetic_video, tmp_path, monkeypatch):
+    from film.perceive import court_refs
+    from film.train.prelabel import prelabel_court, prelabel_court_refs
+
+    _env(monkeypatch, tmp_path)
+    m = ingest(synthetic_video, date="2026-01-01", profile="handheld")
+    other = ingest(synthetic_video, date="2026-01-02", profile="handheld")
+    prelabel_court(m.game_id, n=3, margin_s=0.5, log=lambda *a: None)
+    prelabel_court(other.game_id, n=2, margin_s=0.5, log=lambda *a: None)
+    monkeypatch.setattr(court_refs, "choose_references", lambda game_id, **kw: ([1.0, 2.0], 1.0))
+    assert prelabel_court_refs(m.game_id, log=lambda *a: None) == 2
+    mine = [i for i in ds.list_pending("court") if i.startswith(m.game_id + "_")]
+    assert mine == [f"{m.game_id}_000010", f"{m.game_id}_000020"]
+    first = ds.read_pending("court", mine[0])
+    assert first["ref"] is True and (first["ref_index"], first["ref_count"]) == (1, 2)
+    assert len([i for i in ds.list_pending("court") if i.startswith(other.game_id + "_")]) == 2      # left alone
