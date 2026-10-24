@@ -190,6 +190,28 @@ def accept_points(dataset: str, image_id: str, points: dict[str, tuple[float, fl
     return split
 
 
+def read_points(dataset: str, image_id: str) -> tuple[Path, dict[str, tuple[float, float]], int, int] | None:
+    """An accepted keypoint image read back: (image path, the visible named points in pixels, width, height).
+    None when the image was never accepted. The inverse of accept_points."""
+    split = _accepted_split(dataset, image_id)
+    if split is None:
+        return None
+    root = datasets_dir() / dataset
+    image = root / "images" / split / f"{image_id}.jpg"
+    shape = cv2.imread(str(image)).shape
+    h, w = shape[0], shape[1]
+    label = root / "labels" / split / f"{image_id}.txt"
+    fields = label.read_text().split() if label.exists() else []
+    points = {}
+    names = KEYPOINT_NAMES[dataset]
+    if len(fields) >= 5 + 3 * len(names):
+        for i, name in enumerate(names):
+            x, y, v = (float(f) for f in fields[5 + 3 * i: 8 + 3 * i])
+            if v > 0:
+                points[name] = (x * w, y * h)
+    return image, points, w, h
+
+
 # ---- class datasets (ImageFolder layout) ----
 
 def find_class_images(dataset: str, image_id: str) -> list[Path]:

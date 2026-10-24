@@ -14,7 +14,8 @@ from film.common.video import iter_frames
 from film.interpret.court import Mapping
 from film.perceive.courtfinder import CourtFinder
 
-COLUMNS = ["frame", "t", "end", "points_used", "error_px", "conf"] + [f"h{i}{j}" for i in range(3) for j in range(3)]
+COLUMNS = (["frame", "t", "end", "points_used", "error_px", "conf"] + [f"h{i}{j}" for i in range(3) for j in range(3)]
+           + ["source"])         # "model" (the court finder), "ref" (lined up with a reference picture) or "chain"
 FILE = "court.parquet"
 MAX_GAP_S = 2.0
 
@@ -37,14 +38,23 @@ def court_pass(game_id: str, finder=None, device: str | None = None, step_s: flo
         mapping = finder.mapping(frame)
         if mapping is None:
             continue
-        rows.append({"frame": int(round(t * m.fps)), "t": float(t), "end": mapping.end, "points_used": mapping.points_used,
-                     "error_px": mapping.error_px, "conf": mapping.conf, **{f"h{i}{j}": float(mapping.H[i, j]) for i in range(3) for j in range(3)}})
-    pd.DataFrame(rows, columns=COLUMNS).to_parquet(gd / FILE, index=False)
+        rows.append(mapping_row(t, m.fps, mapping, "model"))
+    write_mappings(gd, rows)
     m.model_versions["court"] = finder.version
     m.mark("court", "done", frames=n, fitted=len(rows), step_s=step, seconds=round(time.time() - started, 1))
     m.save(gd)
     log(f"court {game_id}: {len(rows)} of {n} frames fitted ({step} s apart) with {finder.version}")
     return m.stages["court"]
+
+
+def mapping_row(t: float, fps: float, mapping: Mapping, source: str) -> dict:
+    return {"frame": int(round(t * fps)), "t": float(t), "end": mapping.end, "points_used": mapping.points_used,
+            "error_px": mapping.error_px, "conf": mapping.conf,
+            **{f"h{i}{j}": float(mapping.H[i, j]) for i in range(3) for j in range(3)}, "source": source}
+
+
+def write_mappings(gd: Path, rows: list[dict]) -> None:
+    pd.DataFrame(rows, columns=COLUMNS).to_parquet(Path(gd) / FILE, index=False)
 
 
 def load_mappings(gd: Path) -> list[tuple[float, Mapping]]:
