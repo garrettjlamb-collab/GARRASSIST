@@ -160,3 +160,29 @@ def test_a_marked_reference_counts_and_a_skipped_frame_is_never_asked_again(synt
     ds.mark_skipped("court", f"{g}_000500")                                                 # sample 5 (t = 50)
     times, share = choose_references(g, samples=samples, log=lambda *a: None)
     assert share == 1.0 and times == [40.0, 60.0]            # without the skipped middle frame it takes two
+
+
+def test_the_court_length_is_measured_where_a_picture_holds_both_ends(synthetic_video, tmp_path, monkeypatch, pano):
+    from film.perceive.court_refs import measure_length
+
+    _env(monkeypatch, tmp_path)
+    g = _game(synthetic_video)
+    near, far, wide = crop(100.0, 60.0), crop(700.0, 60.0), crop(300.0, 40.0, zoom=0.6)
+    for t, G in ((10.0, near), (20.0, far), (30.0, wide)):
+        _add_ref(g, t, frame(pano, G), court_points_in(G, length=84.0))
+    assert measure_length(load_references(g, [])) == 84.0
+    shot = crop(650.0, 60.0)
+    info = refs_pass(g, frames=[(0.0, frame(pano, shot))], log=lambda *a: None)
+    assert info["length_ft"] == 84.0 and info["length_measured"] is True
+    (_, mapping), = load_mappings(game_dir(g))
+    assert mapping.length == 84.0
+    _close(mapping, shot, [(320, 180), (100, 300), (540, 80)])
+
+
+def test_one_end_alone_cannot_measure_the_length(synthetic_video, tmp_path, monkeypatch, pano):
+    from film.perceive.court_refs import measure_length
+
+    _env(monkeypatch, tmp_path)
+    g = _game(synthetic_video)
+    _add_ref(g, 10.0, frame(pano, A), court_points_in(A))
+    assert measure_length(load_references(g, [])) is None

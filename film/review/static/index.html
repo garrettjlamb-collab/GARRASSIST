@@ -102,7 +102,8 @@ async function loadGames() {
 const ZONE_LABELS = {restricted:"Restricted Area", paint:"Paint", "mid-left":"Mid-Range Left", "mid-right":"Mid-Range Right", "mid-center":"Mid-Range Center", "corner-3-left":"Left Corner 3", "corner-3-right":"Right Corner 3", "wing-3-left":"Left Wing 3", "wing-3-right":"Right Wing 3", "top-3":"Top of Key 3"};
 
 // ---- The half court: feet on the tracker's half court, baseline at the bottom, basket near the bottom centre ----
-const HALF = { w: 50, h: 47, basketX: 25, basketY: 5.25, arc: 19.75, laneL: 17, laneR: 33, ftY: 19, ftR: 6, restricted: 4, cornerY: 10, floater: 9 };
+// laneL/laneR: the 12 ft high-school lane as painted. paintL/paintR: the tracker's 16 ft paint zone (film/interpret/zones.py).
+const HALF = { w: 50, h: 47, basketX: 25, basketY: 5.25, arc: 19.75, laneL: 19, laneR: 31, paintL: 17, paintR: 33, ftY: 19, ftR: 6, restricted: 4, cornerY: 10, floater: 9 };
 // The card draws the half court the way the camera sees it: across, with the basket on the side of the
 // picture it is on (the event's basket_side; when unknown, the side last chosen). Feet are the tracker's
 // half court whatever the drawing: x across the baseline, y away from it. All drawing, clicks and nudges
@@ -138,7 +139,7 @@ function zoneOf(x, y) {
     if (ang > 35) return "wing-3-right";
     return "top-3";
   }
-  if (HALF.laneL <= x && x <= HALF.laneR && y <= HALF.ftY) return "paint";
+  if (HALF.paintL <= x && x <= HALF.paintR && y <= HALF.ftY) return "paint";
   if (ang < -25) return "mid-left";
   if (ang > 25) return "mid-right";
   return "mid-center";
@@ -569,9 +570,8 @@ const COURT_POINTS = ["near-corner-left", "near-corner-right", "near-lane-left",
   "far-ft-left", "far-ft-right", "far-ft-top", "far-arc-left", "far-arc-right"];
 
 // The 18 points drawn where they are, near end at the bottom (feet, as in film/interpret/court.py).
-const COURT_NEAR = { "corner-left": [0, 0], "corner-right": [50, 0], "lane-left": [17, 0], "lane-right": [33, 0],
-  "ft-left": [17, 19], "ft-right": [33, 19], "ft-top": [25, 25], "arc-left": [25 - Math.sqrt(19.75 ** 2 - 5.25 ** 2), 0],
-  "arc-right": [25 + Math.sqrt(19.75 ** 2 - 5.25 ** 2), 0] };
+const COURT_NEAR = { "corner-left": [0, 0], "corner-right": [50, 0], "lane-left": [19, 0], "lane-right": [31, 0],
+  "ft-left": [19, 19], "ft-right": [31, 19], "ft-top": [25, 25], "arc-left": [25 - 19.75, 0], "arc-right": [25 + 19.75, 0] };
 
 function courtLayout() {
   try { return localStorage.getItem("courtLayout") || "across"; } catch (e) { return "across"; }
@@ -597,7 +597,7 @@ function courtDiagram() {
   const circle = (cx, cy, rad) => poly(Array.from({ length: 49 }, (_, i) => [cx + rad * Math.cos(i / 48 * 2 * Math.PI), cy + rad * Math.sin(i / 48 * 2 * Math.PI)]));
   for (const far of [false, true]) {
     const f = ([x, y]) => far ? [50 - x, 94 - y] : [x, y];
-    out += poly([[17, 0], [17, 19], [33, 19], [33, 0]].map(f));
+    out += poly([[19, 0], [19, 19], [31, 19], [31, 0]].map(f));
     out += poly(Array.from({ length: 49 }, (_, i) => [25 + 19.75 * Math.cos(i / 48 * Math.PI), 5.25 + 19.75 * Math.sin(i / 48 * Math.PI)]).map(f));
     out += poly([[25 - 19.75, 0], [25 - 19.75, 5.25]].map(f)) + poly([[25 + 19.75, 0], [25 + 19.75, 5.25]].map(f));
     out += circle(...f([25, 19]), 6);

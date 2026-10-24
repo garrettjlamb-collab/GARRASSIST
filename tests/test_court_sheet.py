@@ -22,7 +22,7 @@ def test_court_lines_cover_both_ends_and_the_outline():
     allpts = np.vstack(lines)
     assert allpts[:, 0].min() == 0.0 and allpts[:, 0].max() == 50.0
     assert allpts[:, 1].min() == 0.0 and allpts[:, 1].max() == 94.0
-    assert len(lines) == 6 + 2 * 5
+    assert len(lines) == 6 + 2 * 7                           # outline; per end the lane (3), circle, two straights, arc
 
 
 def test_lines_are_drawn_where_the_mapping_puts_the_court():

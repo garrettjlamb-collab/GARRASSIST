@@ -13,10 +13,11 @@ def test_eighteen_named_points_nine_per_end():
 
 def test_template_is_the_tracker_court_with_the_high_school_arc():
     assert TEMPLATE["near-corner-left"] == (0.0, 0.0) and TEMPLATE["near-corner-right"] == (50.0, 0.0)
-    assert TEMPLATE["near-lane-left"] == (17.0, 0.0) and TEMPLATE["near-ft-right"] == (33.0, 19.0)
+    assert TEMPLATE["near-lane-left"] == (19.0, 0.0) and TEMPLATE["near-ft-right"] == (31.0, 19.0)     # a 12 ft lane
+    assert TEMPLATE["near-arc-left"] == (5.25, 0.0)
     assert TEMPLATE["near-ft-top"] == (25.0, 25.0)
     x, y = TEMPLATE["near-arc-left"]
-    assert y == 0.0 and math.isclose(math.hypot(x - 25.0, y - 5.25), 19.75, abs_tol=1e-6) and x < 25
+    assert y == 0.0 and math.isclose(25.0 - x, 19.75, abs_tol=1e-6)        # the straight piece, 19.75 ft from the basket
     fx, fy = TEMPLATE["far-corner-left"]
     assert (fx, fy) == (50.0, 94.0)                         # the far end is the near end rotated about centre court
 
@@ -139,3 +140,22 @@ def test_a_point_above_the_horizon_has_no_court_position():
                          conf=1.0, end="near")
     assert w_negative.to_court(0.0, 200.0) is None and w_negative.to_court(0.0, 100.0) is None
     assert w_negative.to_court(0.0, 50.0) is not None
+
+
+def test_a_shorter_court_moves_only_the_far_end():
+    from film.interpret.court import template
+
+    short = template(84.0)
+    assert short["near-ft-left"] == TEMPLATE["near-ft-left"]
+    assert short["far-corner-left"] == (50.0, 84.0) and short["far-ft-left"] == (31.0, 65.0)
+
+
+def test_a_mapping_folds_about_the_middle_of_its_own_court():
+    from film.interpret.court import template
+
+    pts = {n: (x * 10 + 100, 900 - y * 10) for n, (x, y) in template(84.0).items()}
+    m = fit_mapping(pts, length=84.0)
+    assert m is not None and m.length == 84.0
+    x, y = m.to_half(*pts["far-ft-top"])                       # the far free-throw circle's top, 25 ft from its baseline
+    assert abs(x - 25.0) < 0.01 and abs(y - 25.0) < 0.01
+    assert m.contains(*pts["far-corner-right"]) and not m.contains(100, 900 - 92 * 10)

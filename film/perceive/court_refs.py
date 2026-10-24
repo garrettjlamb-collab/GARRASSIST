@@ -24,7 +24,7 @@ import film.train.datasets as ds
 from film.common.manifest import Manifest
 from film.common.paths import datasets_dir, game_dir
 from film.common.video import iter_frames
-from film.interpret.court import TEMPLATE, Mapping, fit_mapping
+from film.interpret.court import END_OF_POINT, FULL_DEPTH, Mapping, fit_mapping, template
 from film.perceive.court_run import default_step, mapping_row, write_mappings
 from film.perceive.register import Features, features, mask_regions, match, project
 
@@ -36,6 +36,10 @@ CENTRE_MARGIN_FT = 15.0           # the middle of the picture must be on (or nea
 FIT_TOL_PX_AT_1080P = 8.0
 TRAIN_MIN_CONF = 0.8
 TRAIN_MIN_POINTS = 4
+LENGTHS_FT = np.arange(70.0, 94.01, 0.5)    # court lengths tried when measuring one
+STANDARD_LENGTHS_FT = (74.0, 84.0, 94.0)    # junior high, high school, college
+SNAP_FT = 3.0
+RESIDUAL_CAP_PX = 20.0                      # one slipped click cannot outvote the rest
 
 
 @dataclass(frozen=True)
@@ -88,8 +92,8 @@ def place_points(f: Features, refs: list[Reference]) -> tuple[dict[str, tuple[fl
     return points, max((i for i, _ in found), default=0)
 
 
-def _fit(points: dict, w: int, h: int) -> Mapping | None:
-    mapping = fit_mapping(points, reproj_tol_px=max(3.0, FIT_TOL_PX_AT_1080P * w / 1920))
+def _fit(points: dict, w: int, h: int, length: float = FULL_DEPTH) -> Mapping | None:
+    mapping = fit_mapping(points, reproj_tol_px=max(3.0, FIT_TOL_PX_AT_1080P * w / 1920), length=length)
     if mapping is None or not mapping.contains(w / 2, h / 2, margin=CENTRE_MARGIN_FT):
         return None
     return mapping
@@ -99,7 +103,7 @@ def points_in_view(mapping: Mapping, w: int, h: int) -> dict[str, tuple[float, f
     """The template's points through the fitted mapping, those inside the picture only."""
     back = np.linalg.inv(mapping.H)
     out = {}
-    for name, feet in TEMPLATE.items():
+    for name, feet in template(mapping.length).items():
         v = back @ np.array([*feet, 1.0])
         if v[2] <= 0:
             continue
@@ -107,6 +111,38 @@ def points_in_view(mapping: Mapping, w: int, h: int) -> dict[str, tuple[float, f
         if 0 <= x < w and 0 <= y < h:
             out[name] = (x, y)
     return out
+
+
+def measure_length(refs: list[Reference]) -> float | None:
+    """The court's length from the references: each one's own points plus the others' carried into it; wherever
+    points of both ends meet in one picture, the length that fits them best (snapped to 74, 84 or 94 ft when within
+    3 ft). None when no picture holds points of both ends."""
+    sets = []
+    for r in refs:
+        carried, _ = place_points(r.features, [o for o in refs if o.image_id != r.image_id])
+        pts = {**carried, **r.points}
+        ends = Counter(END_OF_POINT[n] for n in pts)
+        if ends["near"] >= 2 and ends["far"] >= 2 and len(pts) >= 6:
+            sets.append(pts)
+    if not sets:
+        return None
+
+    def cost(length: float) -> float:
+        T, total = template(length), 0.0
+        for pts in sets:
+            names = list(pts)
+            src = np.array([T[n] for n in names], np.float64)
+            dst = np.array([pts[n] for n in names], np.float64)
+            H, _ = cv2.findHomography(src, dst, cv2.RANSAC, 8.0)
+            if H is None:
+                return float("inf")
+            proj = cv2.perspectiveTransform(src.reshape(-1, 1, 2), H).reshape(-1, 2)
+            total += float(np.minimum(np.hypot(*(proj - dst).T), RESIDUAL_CAP_PX).mean())
+        return total
+
+    best = float(min(LENGTHS_FT, key=cost))
+    standard = min(STANDARD_LENGTHS_FT, key=lambda s: abs(s - best))
+    return standard if abs(standard - best) <= SNAP_FT else best
 
 
 def _save_training_frame(game_id: str, t: float, frame: np.ndarray, mapping: Mapping) -> bool:
@@ -132,6 +168,8 @@ def refs_pass(game_id: str, refs_from: str | None = None, step_s: float | None =
     if not refs:
         raise RuntimeError(f"{source_game} has no reference pictures: `film prelabel court {source_game} --refs`, "
                            "then mark them in the Label court tab")
+    measured = measure_length(refs)
+    length = measured or FULL_DEPTH
     step = step_s or default_step(m.profile)
     if frames is None:
         frames = iter_frames(Path(m.source), fps=1.0 / step)
@@ -149,7 +187,7 @@ def refs_pass(game_id: str, refs_from: str | None = None, step_s: float | None =
             back = match(carried.features, f)
             if back is not None:
                 points, source = project(carried.points, back.H), "chain"
-        mapping = _fit(points, w, h) if points else None
+        mapping = _fit(points, w, h, length) if points else None
         if mapping is None:
             continue
         if source == "chain":
@@ -164,10 +202,13 @@ def refs_pass(game_id: str, refs_from: str | None = None, step_s: float | None =
     write_mappings(gd, rows)
     m.model_versions["court"] = f"refs@{source_game}:{len(refs)}"
     m.mark("court", "done", frames=n, fitted=len(rows), step_s=step, refs=len(refs), refs_from=source_game,
+           length_ft=length, length_measured=measured is not None,
            from_ref=counts["ref"], chained=counts["chain"], training_frames=saved, seconds=round(time.time() - started, 1))
     m.save(gd)
     log(f"court {game_id}: {len(rows)} of {n} frames placed ({counts['ref']} by a reference, {counts['chain']} carried) "
-        f"from {len(refs)} reference pictures of {source_game}" + (f"; {saved} training frames saved" if train_every else ""))
+        f"from {len(refs)} reference pictures of {source_game}; court {length:g} ft long"
+        + (" (measured)" if measured else " (assumed: no picture shows both ends)")
+        + (f"; {saved} training frames saved" if train_every else ""))
     return m.stages["court"]
 
 

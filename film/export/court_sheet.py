@@ -11,7 +11,7 @@ import pandas as pd
 
 from film.common.manifest import Manifest
 from film.common.paths import game_dir
-from film.interpret.court import (BASKET, FT_CIRCLE_RADIUS, FT_LINE_Y, FULL_DEPTH, HALF_DEPTH, LANE_LEFT, LANE_RIGHT,
+from film.interpret.court import (BASKET, FT_CIRCLE_RADIUS, FT_LINE_Y, FULL_DEPTH, LANE_LEFT, LANE_RIGHT,
                                   THREE_RADIUS, WIDTH, Mapping)
 from film.perceive.court_run import FILE, load_mappings
 
@@ -30,22 +30,23 @@ def _arc(cx: float, cy: float, r: float, start: float, stop: float, n: int = 60)
 
 def _near_end() -> list[np.ndarray]:
     bx, by = BASKET
-    meet = math.asin(-by / THREE_RADIUS)                      # where the arc meets the baseline (y = 0)
     return [
         _segment((LANE_LEFT, 0.0), (LANE_LEFT, FT_LINE_Y)), _segment((LANE_RIGHT, 0.0), (LANE_RIGHT, FT_LINE_Y)),
         _segment((LANE_LEFT, FT_LINE_Y), (LANE_RIGHT, FT_LINE_Y)),
         _arc(BASKET[0], FT_LINE_Y, FT_CIRCLE_RADIUS, 0.0, 2 * math.pi),
-        _arc(bx, by, THREE_RADIUS, meet, math.pi - meet),
+        _segment((bx - THREE_RADIUS, 0.0), (bx - THREE_RADIUS, by)), _segment((bx + THREE_RADIUS, 0.0), (bx + THREE_RADIUS, by)),
+        _arc(bx, by, THREE_RADIUS, 0.0, math.pi),
     ]
 
 
-def court_lines() -> list[np.ndarray]:
-    """Every painted line of the template court, as polylines in full-court feet."""
-    outline = [_segment((0.0, 0.0), (WIDTH, 0.0)), _segment((WIDTH, 0.0), (WIDTH, FULL_DEPTH)),
-               _segment((WIDTH, FULL_DEPTH), (0.0, FULL_DEPTH)), _segment((0.0, FULL_DEPTH), (0.0, 0.0)),
-               _segment((0.0, HALF_DEPTH), (WIDTH, HALF_DEPTH)), _arc(WIDTH / 2, HALF_DEPTH, 6.0, 0.0, 2 * math.pi)]
+def court_lines(length: float = FULL_DEPTH) -> list[np.ndarray]:
+    """Every painted line of a template court `length` feet long, as polylines in full-court feet."""
+    mid = length / 2
+    outline = [_segment((0.0, 0.0), (WIDTH, 0.0)), _segment((WIDTH, 0.0), (WIDTH, length)),
+               _segment((WIDTH, length), (0.0, length)), _segment((0.0, length), (0.0, 0.0)),
+               _segment((0.0, mid), (WIDTH, mid)), _arc(WIDTH / 2, mid, 6.0, 0.0, 2 * math.pi)]
     near = _near_end()
-    far = [np.stack([WIDTH - p[:, 0], FULL_DEPTH - p[:, 1]], axis=1) for p in near]
+    far = [np.stack([WIDTH - p[:, 0], length - p[:, 1]], axis=1) for p in near]
     return outline + near + far
 
 
@@ -53,7 +54,7 @@ def draw_court(frame: np.ndarray, mapping: Mapping, color=LINE_COLOR, thickness:
     """The frame with the court's lines drawn where the mapping puts them. Pieces behind the camera are left out."""
     out = frame.copy()
     back = np.linalg.inv(mapping.H)
-    for line in court_lines():
+    for line in court_lines(mapping.length):
         v = back @ np.vstack([line.T, np.ones(len(line))])
         ok = v[2] > 1e-9
         px = (v[:2] / np.where(ok, v[2], 1.0)).T

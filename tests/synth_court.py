@@ -5,7 +5,7 @@ from __future__ import annotations
 import cv2
 import numpy as np
 
-from film.interpret.court import TEMPLATE
+from film.interpret.court import template
 
 PANO_W, PANO_H = 2600, 800
 FRAME_W, FRAME_H = 640, 360
@@ -44,10 +44,10 @@ def apply(H: np.ndarray, x: float, y: float) -> tuple[float, float]:
     return (float(v[0] / v[2]), float(v[1] / v[2]))
 
 
-def court_points_in(G: np.ndarray, inside_only: bool = True) -> dict[str, tuple[float, float]]:
-    """The template's named points in a frame's pixels; only those inside the frame unless told otherwise."""
+def court_points_in(G: np.ndarray, inside_only: bool = True, length: float = 94.0) -> dict[str, tuple[float, float]]:
+    """The template's named points (a court `length` ft long) in a frame's pixels; only those inside the frame."""
     out = {}
-    for name, feet in TEMPLATE.items():
+    for name, feet in template(length).items():
         px = apply(G @ P, *feet)
         if not inside_only or (0 <= px[0] < FRAME_W and 0 <= px[1] < FRAME_H):
             out[name] = px

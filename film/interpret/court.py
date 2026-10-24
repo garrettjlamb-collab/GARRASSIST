@@ -12,29 +12,35 @@ import numpy as np
 
 WIDTH, HALF_DEPTH, FULL_DEPTH = 50.0, 47.0, 94.0
 BASKET = (25.0, 5.25)
-THREE_RADIUS = 19.75                    # NFHS: the arc meets the baseline, no straight corner segment
-LANE_LEFT, LANE_RIGHT, FT_LINE_Y = 17.0, 33.0, 19.0
+THREE_RADIUS = 19.75                    # NFHS: the line runs straight off the baseline to the basket's depth, then arcs
+LANE_LEFT, LANE_RIGHT, FT_LINE_Y = 19.0, 31.0, 19.0     # NFHS: the lane is 12 ft wide (the NBA's is 16)
 FT_CIRCLE_RADIUS = 6.0
-
-_ARC_HALF_WIDTH = math.sqrt(THREE_RADIUS ** 2 - BASKET[1] ** 2)       # where the arc meets y = 0
 
 _NEAR = {
     "corner-left": (0.0, 0.0), "corner-right": (WIDTH, 0.0),
     "lane-left": (LANE_LEFT, 0.0), "lane-right": (LANE_RIGHT, 0.0),
     "ft-left": (LANE_LEFT, FT_LINE_Y), "ft-right": (LANE_RIGHT, FT_LINE_Y),
     "ft-top": (BASKET[0], FT_LINE_Y + FT_CIRCLE_RADIUS),
-    "arc-left": (BASKET[0] - _ARC_HALF_WIDTH, 0.0), "arc-right": (BASKET[0] + _ARC_HALF_WIDTH, 0.0),
+    # Where the three-point line meets the baseline: its straight piece stands THREE_RADIUS either side of the basket.
+    "arc-left": (BASKET[0] - THREE_RADIUS, 0.0), "arc-right": (BASKET[0] + THREE_RADIUS, 0.0),
 }
 
 
-def _rotate(point: tuple[float, float]) -> tuple[float, float]:
+def _rotate(point: tuple[float, float], length: float = FULL_DEPTH) -> tuple[float, float]:
     x, y = point
-    return (WIDTH - x, FULL_DEPTH - y)
+    return (WIDTH - x, length - y)
 
 
 POINT_NAMES: list[str] = [f"near-{k}" for k in _NEAR] + [f"far-{k}" for k in _NEAR]
-TEMPLATE: dict[str, tuple[float, float]] = {**{f"near-{k}": v for k, v in _NEAR.items()},
-                                            **{f"far-{k}": _rotate(v) for k, v in _NEAR.items()}}
+
+
+def template(length: float = FULL_DEPTH) -> dict[str, tuple[float, float]]:
+    """The eighteen points on a court `length` feet long. Every court is 50 ft wide and marks its ends the same way;
+    the length is not standard (84 ft is the high-school court, 94 ft the college one, and both are in use)."""
+    return {**{f"near-{k}": v for k, v in _NEAR.items()}, **{f"far-{k}": _rotate(v, length) for k, v in _NEAR.items()}}
+
+
+TEMPLATE: dict[str, tuple[float, float]] = template()
 END_OF_POINT: dict[str, str] = {n: n.split("-", 1)[0] for n in POINT_NAMES}
 
 
@@ -49,10 +55,10 @@ def _mirror_name(name: str) -> str:
 FLIP_INDEX: list[int] = [POINT_NAMES.index(_mirror_name(n)) for n in POINT_NAMES]
 
 
-def fold(x: float, y: float) -> tuple[float, float]:
+def fold(x: float, y: float, length: float = FULL_DEPTH) -> tuple[float, float]:
     """A full-court point onto the half court of the end it is in: the far end rotates about centre."""
-    if y > HALF_DEPTH:
-        return (WIDTH - x, FULL_DEPTH - y)
+    if y > length / 2:
+        return (WIDTH - x, length - y)
     return (x, y)
 
 
@@ -70,6 +76,7 @@ class Mapping:
     # reliable (fliplr augmentation and per-frame labelling can swap near and far); x/y are unaffected because fold
     # cancels the choice. A shot's end comes from the rim, not from this.
     end: str                           # "near" or "far": the end most of the points belong to
+    length: float = FULL_DEPTH         # the court's length in feet, which the far end's points were fitted at
 
     def to_court(self, px: float, py: float) -> tuple[float, float] | None:
         """Full-court feet for a pixel, or None when the pixel is at or above the horizon (no floor point there)."""
@@ -80,19 +87,21 @@ class Mapping:
 
     def to_half(self, px: float, py: float) -> tuple[float, float] | None:
         p = self.to_court(px, py)
-        return None if p is None else fold(*p)
+        return None if p is None else fold(*p, self.length)
 
     def contains(self, px: float, py: float, margin: float = 2.0) -> bool:
         p = self.to_court(px, py)
         if p is None:
             return False
         x, y = p
-        return -margin <= x <= WIDTH + margin and -margin <= y <= FULL_DEPTH + margin
+        return -margin <= x <= WIDTH + margin and -margin <= y <= self.length + margin
 
 
-def fit_mapping(points: dict[str, tuple[float, float]], reproj_tol_px: float = 8.0) -> Mapping | None:
-    """A homography from the named pixel points to the court template, RANSAC against bad points.
-    None with fewer than four points, or fewer than four inliers."""
+def fit_mapping(points: dict[str, tuple[float, float]], reproj_tol_px: float = 8.0,
+                length: float = FULL_DEPTH) -> Mapping | None:
+    """A homography from the named pixel points to the court template (`length` feet long), RANSAC against bad
+    points. None with fewer than four points, or fewer than four inliers."""
+    TEMPLATE = template(length)
     names = [n for n in points if n in TEMPLATE]
     if len(names) < MIN_POINTS:
         return None
@@ -131,4 +140,4 @@ def fit_mapping(points: dict[str, tuple[float, float]], reproj_tol_px: float = 8
     error = float(np.mean(errors))
     conf = min(1.0, len(inliers) / 8.0 + 0.5) * min(1.0, GOOD_ERROR_PX / max(error, GOOD_ERROR_PX))
     end = "far" if sum(END_OF_POINT[n] == "far" for n in inliers) * 2 > len(inliers) else "near"
-    return Mapping(H=H, points_used=len(inliers), error_px=error, conf=round(conf, 3), end=end)
+    return Mapping(H=H, points_used=len(inliers), error_px=error, conf=round(conf, 3), end=end, length=length)

@@ -6,8 +6,11 @@ from __future__ import annotations
 
 import math
 
-from film.interpret.court import BASKET, LANE_LEFT, LANE_RIGHT, THREE_RADIUS
+from film.interpret.court import BASKET, THREE_RADIUS
 
+# The tracker's paint is 16 ft wide (17-33), wider than the 12 ft high-school lane the court template marks; zones
+# follow the tracker so a film shot and a hand-charted one land in the same zone.
+PAINT_LEFT, PAINT_RIGHT = 17.0, 33.0
 RESTRICTED_RADIUS = 4.0
 PAINT_TOP = 19.0
 CORNER_Y = 10.0
@@ -42,7 +45,7 @@ def zone_of(x: float, y: float) -> str:
         if ang > 35:
             return "wing-3-right"
         return "top-3"
-    if LANE_LEFT <= x <= LANE_RIGHT and y <= PAINT_TOP:
+    if PAINT_LEFT <= x <= PAINT_RIGHT and y <= PAINT_TOP:
         return "paint"
     if ang < -25:
         return "mid-left"
@@ -67,6 +70,6 @@ def near_zone_line(x: float, y: float, feet: float = 1.5) -> bool:
     dist, _ = _polar(x, y)
     if abs(dist - THREE_RADIUS) <= feet:
         return True
-    if y <= PAINT_TOP + feet and (abs(x - LANE_LEFT) <= feet or abs(x - LANE_RIGHT) <= feet):
+    if y <= PAINT_TOP + feet and (abs(x - PAINT_LEFT) <= feet or abs(x - PAINT_RIGHT) <= feet):
         return True
-    return LANE_LEFT - feet <= x <= LANE_RIGHT + feet and abs(y - PAINT_TOP) <= feet
+    return PAINT_LEFT - feet <= x <= PAINT_RIGHT + feet and abs(y - PAINT_TOP) <= feet
