@@ -212,4 +212,4 @@ def test_the_view_furthest_round_is_found_through_a_chain_of_neighbours(pano):
                 links[j].add(i)
     anchor = feats[0][1]
     assert match(feats[5][1], anchor) is None                       # the far view shares nothing with the anchor
-    assert _spread_picks(feats, links, anchor, {1, 2, 3, 4, 5}) == [1, 5]
+    assert _spread_picks(feats, links, anchor, {1, 2, 3, 4, 5}) == [5, 1]        # the far one first

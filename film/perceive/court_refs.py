@@ -269,7 +269,9 @@ def _spread_picks(feats, links: list[set[int]], anchor: Features, candidates: se
             xs[i] = float(v[0] / v[2])
     if not xs:
         return []
-    return list(dict.fromkeys([min(xs, key=xs.get), max(xs, key=xs.get)]))
+    centre = anchor.width / 2                             # the end further from the anchor's own view first
+    ends = sorted(dict.fromkeys([min(xs, key=xs.get), max(xs, key=xs.get)]), key=lambda i: -abs(xs[i] - centre))
+    return ends
 
 
 def choose_references(game_id: str, n: int = 90, k_max: int = 5, coverage: float = 0.95, samples=None,
