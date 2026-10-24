@@ -443,8 +443,15 @@ Garrett did not want to mark 40 frames on each of two games. Plan:
   the tracker's 16 ft paint (`zones.PAINT_LEFT/RIGHT`) on purpose.
 - **Speed.** 0.06 s per sampled frame including decode on the laptop: a game is a few minutes, not a training run.
 - **Contact sheet.** `film/export/court_sheet.py`; `film court` writes `games/<id>/court_sheet.jpg` every run.
-- **State.** Mesquite (MDN Hudl) still has the 40 plain frames queued; `--refs` removes them for that game.
-  Prescott has one marked frame (0:30, near end only), which counts as its first reference.
+- **22 points.** Four midcourt points were added after the first pick on Prescott chose a midcourt view with
+  nothing to mark: `mid-left`/`mid-right` (centre line at each sideline, left = near-corner-left's sideline) and
+  `mid-circle-left`/`-right` (centre circle on the centre line). Last in `POINT_NAMES`, so 18-point labels still read.
+- **At least three pictures.** One wide post-game Hudl shot lined up with 89 of 90 frames but cut off both baselines,
+  so `choose_references` adds the views turned furthest left and right (positions chained through neighbours, the
+  one further from the first picture first) up to `K_MIN = 3`.
+- **State (2026-10-23).** Queued for Garrett in Label court: Mesquite 29:43 (left basket), 33:26 (right basket),
+  2:14:26 (wide, empty court); Prescott 7:04 (right basket), 59:36 (midcourt), plus his marked 0:30 (left basket).
+  After he marks them: `film court <id>` on both, check the sheets, then `--refs-from` Mesquite on the other MDN games.
 
 ## What Garrett has asked for (requirements gathered in conversation)
 
