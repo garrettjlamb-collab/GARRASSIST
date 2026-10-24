@@ -186,3 +186,14 @@ def test_one_end_alone_cannot_measure_the_length(synthetic_video, tmp_path, monk
     g = _game(synthetic_video)
     _add_ref(g, 10.0, frame(pano, A), court_points_in(A))
     assert measure_length(load_references(g, [])) is None
+
+
+def test_one_wide_picture_that_covers_everything_still_gets_the_views_at_each_end(synthetic_video, tmp_path, monkeypatch, pano):
+    from film.perceive.court_refs import choose_references
+
+    _env(monkeypatch, tmp_path)
+    g = _game(synthetic_video)
+    wide = [(5.0, frame(pano, crop(0.0, 40.0, zoom=0.5)))]                        # sees pixels 0-1280 of the gym
+    close = [(10.0 * (i + 1), frame(pano, crop(160.0 * i, 60.0))) for i in range(5)]  # each inside the wide view
+    times, share = choose_references(g, samples=wide + close, log=lambda *a: None)
+    assert share == 1.0 and len(times) >= 3 and {10.0, 50.0} <= set(times)       # both ends are asked for

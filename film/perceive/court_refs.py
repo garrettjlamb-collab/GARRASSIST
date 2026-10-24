@@ -235,12 +235,30 @@ def _ref_id(game_id: str, t: float) -> str:
     return f"{game_id}_{int(round(t * 10)):06d}"
 
 
+K_MIN = 3
+
+
+def _spread_picks(feats, anchor: Features, candidates: set[int]) -> list[int]:
+    """The candidates looking furthest left and furthest right of the anchor picture: where each frame's centre lands
+    in the anchor's pixels. A wide picture that lines up with everything still cuts off the baselines; these see them."""
+    xs = {}
+    for i in candidates:
+        m = match(feats[i][1], anchor)
+        if m is not None:
+            f = feats[i][1]
+            xs[i] = project({"c": (f.width / 2, f.height / 2)}, m.H)["c"][0]
+    if not xs:
+        return []
+    return list(dict.fromkeys([min(xs, key=xs.get), max(xs, key=xs.get)]))
+
+
 def choose_references(game_id: str, n: int = 90, k_max: int = 5, coverage: float = 0.95, samples=None,
                       margin_s: float = 30.0, log=print) -> tuple[list[float], float]:
     """Which frames to ask the coach to mark: n frames spread through the game, each lined up with every other,
     then a greedy cover: the frame that lines up with the most not-yet-covered frames, until `coverage` of them line
     up with a reference or there are k_max references. References he already marked count first; a frame he skipped
-    is never asked for again. Returns the chosen times and the share of the sampled frames they cover."""
+    is never asked for again. At least K_MIN references in all: when fewer cover the game, the views turned furthest
+    left and right of the first are added. Returns the chosen times and the share of the sampled frames they cover."""
     from film.train.prelabel import first_frame_at, sample_times
 
     m = Manifest.load(game_dir(game_id))
@@ -267,6 +285,13 @@ def choose_references(game_id: str, n: int = 90, k_max: int = 5, coverage: float
         chosen.append(best)
         candidates.discard(best)
         covered |= {best} | links[best]
+    if len(existing) + len(chosen) < K_MIN and (existing or chosen):
+        anchor = existing[0].features if existing else feats[chosen[0]][1]
+        for i in _spread_picks(feats, anchor, candidates):
+            if len(existing) + len(chosen) >= min(K_MIN, k_max):
+                break
+            chosen.append(i)
+            candidates.discard(i)
     share = len(covered) / len(feats)
     log(f"references for {game_id}: {len(existing)} marked, {len(chosen)} to mark; together they line up with "
         f"{len(covered)} of {len(feats)} sampled frames ({share:.0%})")
