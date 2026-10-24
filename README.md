@@ -99,11 +99,16 @@ made-or-missed clips.
 4. **Rim, and not on Hudl film.** For other cameras: `uv run film prelabel rim <game_id>`, the **Label rim**
    tab, about 150 frames, `uv run film train rim`. A trained rim model outranks the templates once it
    exists; set `FILM_RIM_DETECTOR=template` to keep the templates on Hudl film.
-5. **Court.** `uv run film prelabel court <game_id>` queues 40 frames; in **Label court** click each listed point
-   where it is in the frame (N when it is not in view), S to save. "Near" is the end whose baseline is lower in the
-   picture (closer to the camera); "left" is your left when you stand on that baseline facing up the court. Then `uv run film train court` (about 30
-   minutes) and `uv run film court <game_id>` to fit the mapping through a game. Until plan B lands, dots are
-   placed by hand on the shot card: click the half court, arrows nudge a foot, Shift+arrows five.
+5. **Court.** `uv run film prelabel court <game_id> --refs` picks the 3-5 **reference pictures** that between
+   them line up with the whole game (about 3 minutes). In **Label court** click every listed point you can see
+   (N when it is not in view, Z to zoom), S to save. "Near" is the left end of the picture; "left" is your left
+   standing on that baseline facing up the court (the diagram shows it). Then `uv run film court <game_id>` lines
+   every second of film up with the references, fits the court, measures its length when a picture shows both
+   ends, prints how well the references agree, and draws `games/<id>/court_sheet.jpg` to check by eye. A fixed
+   Hudl camera needs references once: `uv run film court <other_game> --refs-from <game_id>`. The older route
+   (40 frames per game, `film train court`, the trained finder) still works: `film court <id> --model`.
+   `--train-frames N` saves N reference-placed frames as training labels for that finder. Until plan B lands, dots
+   are placed by hand on the shot card: click the half court, arrows nudge a foot, Shift+arrows five.
 
 New versions land in `models/<name>/vN/` and are picked up automatically. Re-run `film perceive` (half an
 hour) and `film interpret` on a game to use a new detector; `film interpret` alone for a new classifier.

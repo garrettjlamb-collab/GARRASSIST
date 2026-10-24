@@ -421,6 +421,31 @@ release and automatic dots; plan C is teams, confidence and eval.
 - **Not done:** the first real labels, training and a `film court` run on a labelled game (needs Garrett;
   Step 3 of the plan's Task 13). The mapping has not been checked by eye on real film.
 
+## 2026-10-23: the court from reference pictures (no 40-frame labelling)
+
+Garrett did not want to mark 40 frames on each of two games. Plan:
+`docs/superpowers/plans/2026-10-23-court-from-reference-pictures.md`.
+
+- **Registration.** `film/perceive/register.py`: SIFT at 960 px wide, ratio test, RANSAC homography, a
+  plausibility guard. A camera that only turns (Hudl Focus pans and zooms inside a fixed sensor; an iPad on a
+  tripod) maps any frame to any other by one homography. Checked on film: a Hudl MDN frame lines up with one 50
+  minutes later (177 inliers); Prescott iPad frames 10 s apart, 846. Opposite ends share nothing (9 inliers).
+- **References.** `film/perceive/court_refs.py`. A reference is any marked court frame whose id is exactly
+  `<game_id>_<t*10:06d>` (machine-made labels end in `a`). `refs_pass` carries the references' points into each
+  frame, fits with `fit_mapping`, and carries the last placed frame forward up to 30 s when no reference lines up
+  (`source` = ref / chain in court.parquet). `choose_references` is a greedy cover over sampled frames;
+  `check_references` compares each reference with the others (median px, worst point); `measure_length` fits the
+  court length when a picture holds points of both ends (snaps to 74/84/94).
+- **The template was the NBA court.** Lane 16 ft and the three-point line meeting the baseline at 5.96 ft. Now
+  NFHS: lane 19-31 (12 ft), arc points at 5.25/44.75 (the straight piece), length a parameter
+  (`template(length)`, `Mapping.length`, `fold(x, y, length)`). On Garrett's one marked Prescott frame the NBA
+  template kept 5 of 7 points (60 px residuals on the corner and arc); NFHS fits all 7 within ~4 px. Zones keep
+  the tracker's 16 ft paint (`zones.PAINT_LEFT/RIGHT`) on purpose.
+- **Speed.** 0.06 s per sampled frame including decode on the laptop: a game is a few minutes, not a training run.
+- **Contact sheet.** `film/export/court_sheet.py`; `film court` writes `games/<id>/court_sheet.jpg` every run.
+- **State.** Mesquite (MDN Hudl) still has the 40 plain frames queued; `--refs` removes them for that game.
+  Prescott has one marked frame (0:30, near end only), which counts as its first reference.
+
 ## What Garrett has asked for (requirements gathered in conversation)
 
 1. **Full box score eventually**, as automated as possible; he accepts reviewing some of it.
