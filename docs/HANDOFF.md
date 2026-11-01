@@ -587,7 +587,8 @@ He reviewed everything but the 308 sure dots. He says he was picky on layups, nu
 - **Measured against all 415 of his dots with a machine dot:** good enough 56%; his dot in the paint 63%, outside 45% with arc side 72%. The best candidate, chosen perfectly, is good enough 76% with 3% over 10: so choosing the person is most of the big misses, but about a quarter of shots are not good enough whoever is chosen. Where the feet are read needs work (moving players, the moment of the release).
 - **`shooter@v1` (`film/perceive/shooter_trust.py`):** a linear choice model over candidates, trained on 488 dots. Left out by game it picks no better than the rules (54% to 56%), and gave 30% on no-dot shots, so **it moves no dots.** Its certainty does help: agree within 3 ft and probability 0.6+ is "trusted". Held out, trusted n123 good enough 80%, 2% over 10; not trusted n292 45%, 28%. Hidden only: n32 78%, 3%; n54 46%, 26%. The 0.6 line was chosen seeing those.
 - **Queue:** `film dotreview trust` writes `signals.trust` (no dots moved, checked). Of the 308: 30 hidden checks (1 in 5 trusted dots, new claim, `hidden_since_trust` in the score), 159 doubtful, 119 trusted to keep.
-- **Next:** where feet are read; threes outside the paint; free throws the rule misses.
+- **Fresh test, 30 hidden trusted dots, answered after the claim was fixed:** good enough 77%, median 3.0 ft, 0 over 10, arc 97%. With 0 of 30 the true rate of big misses could still be near 10%. He answered the 159 doubtful too (shown, so not independent): 23 kept, 136 moved. 119 trusted dots wait on the button.
+- **Next:** where feet are read; threes outside the paint; free throws the rule misses; the six low-camera courts.
 
 ## What Garrett has asked for (requirements gathered in conversation)
 
