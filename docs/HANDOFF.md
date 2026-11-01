@@ -531,6 +531,26 @@ the person is followed through the window, removed, and the rules choose again, 
 - **The scoreboard did not move:** 173/198 before, 172/198 after; threes 35/51 to 34/51. Non-players were not what makes threes wrong.
 - **Next:** threes. Look at where the wrong ones go: the wrong player near the flight's start, or the flight cut short.
 
+## 2026-11-01 (evening): the ball's path in 3D (branch threes, not merged)
+
+17 made threes were wrong; by eye 9 had the ball seen only late, 4 picked someone the ball passed over, 2 were about a foot inside
+the arc, 1 was the non-player filter removing the real shooter, 1 a partly hidden player. `film/interpret/camera.py` recovers the
+camera from a court fit (Zhang: square pixels, centre in the middle). Checked with nothing fitted to it: all five MDN games give a camera
+23.5 ft up and both Arcadia Hudl games about 21 ft, and the rim lands about 30 px from its box. `film/interpret/flight3d.py` fits a
+parabola under gravity ending at a rim at 10 ft to the sightings, and runs it back to 7 ft. `shotspots._from_path` gives the dot to
+a player within 3 ft of where it starts; with no one there the rule's choice stands, flagged `path-disagrees` if over 5 ft off.
+`court_run.mapping_between` blends fits, because the camera turns between them.
+
+- **Decided before the last run:** the path replaces the rule only if free throws get closer in feet and twos and threes are not
+  worse on both the tuned and the held-back games (Arcadia JV, JV vs Marcos). It passed narrowly; 7 ft and 3 ft were chosen with both sets in view.
+- **Scoreboard, after vs before:** tuned twos 102/107 (97/105), threes 38/46 (32/44); held twos 41/41 (41/42), threes 2/7 (2/7).
+  So the threes gain is **not confirmed on held-back games**, and Arcadia's gym stays weak.
+- **Feet, free throws only:** the rule's shooter lands a median 1.8 ft (tuned, n30) and 1.2 ft (held, n18) from the line; path-picked 1.1 (n19) and 0.9 (n5). The easiest
+  case in basketball, so it does not say what a contested live shot gets. Only the experiment measures this (`experiments/flight3d_score.py`), because film locate puts free throws on the line by rule.
+- **Confidence is still not useful:** tuned high 69/78, low 12/12; low is mostly twos. Do not tell him to trust it.
+- **iCloud:** a pull can sit for an hour and start when asked again, so `_pull` asks every 5 minutes.
+- **Next:** threes in Arcadia's gym; most fall back to the rule (held threes: flight 1/6, path 1/1). Then a confidence score that means something, or his 30 dots to measure live shots in feet.
+
 ## What Garrett has asked for (requirements gathered in conversation)
 
 1. **Full box score eventually**, as automated as possible; he accepts reviewing some of it.
