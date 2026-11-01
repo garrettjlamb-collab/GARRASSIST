@@ -19,6 +19,7 @@ COMMANDS = [
     "film.commands.court_draft",
     "film.commands.locate",
     "film.commands.dotcheck",
+    "film.commands.dotreview",
     "film.commands.interpret",
     "film.commands.prelabel",
     "film.commands.train",

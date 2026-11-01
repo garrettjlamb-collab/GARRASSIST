@@ -20,7 +20,7 @@ from film.perceive.rims import basket_sides
 from film.perceive.scoreboard import has_scoreboard
 from film.perceive.tracks import read_tracks
 from film.perceive.detectors import Box
-from film.review import dotcheck
+from film.review import dotcheck, dotreview
 from film.review.films import Films
 from film.review.decisions import apply_decisions, load_decisions, save_decision
 from film.train import datasets as ds
@@ -315,6 +315,31 @@ def create_app(films: Films | None = None) -> FastAPI:
             return {"split": ds.accept_points(dataset, image_id, {k: (float(x), float(y)) for k, (x, y) in body.points.items()})}
         except FileNotFoundError:
             raise HTTPException(404, f"no image {image_id} in {dataset}")
+
+    @app.get("/api/dotreview/next")
+    def dotreview_next():
+        return dotreview.next_shot()
+
+    @app.post("/api/dotreview/answer")
+    def dotreview_answer(body: DotAnswer):
+        try:
+            return dotreview.answer(body.game_id, body.event_id, body.x, body.y)
+        except KeyError:
+            raise HTTPException(404, "that shot is not in the dot review")
+        except ValueError as exc:
+            raise HTTPException(400, str(exc))
+
+    @app.post("/api/dotreview/skip")
+    def dotreview_skip(body: DotAnswer):
+        try:
+            return dotreview.skip(body.game_id, body.event_id)
+        except KeyError:
+            raise HTTPException(404, "that shot is not in the dot review")
+
+    @app.post("/api/dotreview/bulk")
+    def dotreview_bulk():
+        dotreview.bulk_approve()
+        return dotreview.next_shot()
 
     @app.get("/api/dotcheck/next")
     def dotcheck_next():
