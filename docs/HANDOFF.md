@@ -551,6 +551,12 @@ a player within 3 ft of where it starts; with no one there the rule's choice sta
 - **iCloud:** a pull can sit for an hour and start when asked again, so `_pull` asks every 5 minutes.
 - **Next:** threes in Arcadia's gym; most fall back to the rule (held threes: flight 1/6, path 1/1). Then a confidence score that means something, or his 30 dots to measure live shots in feet.
 
+## 2026-11-01 (night): dot check (branch dot-check, not merged)
+
+Garrett's own dots on 30 live shots, placed with the machine's hidden: `film dotcheck pick` queues them (`labels/dotcheck/queue.json`: 3 from each of 10 games, 10 three / 10 mid / 10 close by the machine's dot, seed 7,
+no free throws), the **Dot check** tab takes them, `film dotcheck score` prints median feet, within 3 and 6 ft, arc side and zone, by camera, method and shot kind, and a mirrored figure that would show the two courts disagreeing on left and right.
+The API never sends the machine's dot. Answers go to `labels/dotcheck/answers.jsonl` beside the machine's dot as it stood, and his dot onto the shot's decision. **State:** queued, 0 answered. Clip page tested on a scratch copy.
+
 ## What Garrett has asked for (requirements gathered in conversation)
 
 1. **Full box score eventually**, as automated as possible; he accepts reviewing some of it.
