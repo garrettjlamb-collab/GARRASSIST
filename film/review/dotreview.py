@@ -20,6 +20,7 @@ from film.review.decisions import load_decisions, save_decision
 
 HIGH_CONF = 0.8
 BLIND_ONE_IN = 10
+TRUST_CHECK_ONE_IN = 5
 SAME_DOT_FT = 0.05
 KEEP = ("status", "made", "team", "foul")
 
@@ -45,6 +46,11 @@ def is_blind(game_id: str, event_id: str) -> bool:
     return int(hashlib.sha1(f"{game_id}/{event_id}".encode()).hexdigest(), 16) % BLIND_ONE_IN == 0
 
 
+def is_trust_check(game_id: str, event_id: str) -> bool:
+    """One in five of the dots the trust model vouches for stays hidden, because its claim was chosen on the answers it was tested on."""
+    return int(hashlib.sha1(f"trust/{game_id}/{event_id}".encode()).hexdigest(), 16) % TRUST_CHECK_ONE_IN == 0
+
+
 def _rows() -> list[dict]:
     """Every confirmed live shot with no dot of his yet and nothing he skipped. Free throws are on the line by rule and are left out."""
     skipped = {(a["game_id"], a["event_id"]) for a in read_answers() if a.get("skipped")}
@@ -59,22 +65,29 @@ def _rows() -> list[dict]:
             if (gd.name, e.id) in skipped or not clip_path(gd, e.id).exists():
                 continue
             rows.append({"game_id": gd.name, "event_id": e.id, "x": e.x, "y": e.y, "conf": e.location_conf, "method": loc.get("method"), "made": d.get("made", e.made),
-                         "blind": is_blind(gd.name, e.id), "t": e.t, "clip": e.clip, "rim_id": e.rim_id})
+                         "blind": is_blind(gd.name, e.id), "t": e.t, "clip": e.clip, "rim_id": e.rim_id, "trust": e.signals.get("trust")})
+            if rows[-1]["trust"] and rows[-1]["trust"]["trusted"] and is_trust_check(gd.name, e.id):
+                rows[-1]["blind"] = True
     return rows
 
 
+def _sure(r: dict) -> bool:
+    """Once the trust model has judged a shot its word stands; before that, the machine's own confidence."""
+    return r["trust"]["trusted"] if r.get("trust") else (r["conf"] or 0) >= HIGH_CONF
+
+
 def _band(r: dict) -> int:
-    """0 sure dots hidden to check them, first: they say whether keeping the sure dots unseen is safe. 1 the machine's doubtful dots,
+    """0 sure dots hidden to check them, first: they say whether keeping the sure dots unseen is safe. 1 the doubtful dots,
     2 no dot at all, 3 sure dots that can be kept in one go."""
     if r["x"] is None:
         return 2
-    if (r["conf"] or 0) < HIGH_CONF:
+    if not _sure(r):
         return 1
     return 0 if r["blind"] else 3
 
 
 def queue() -> list[dict]:
-    return sorted(_rows(), key=lambda r: (_band(r), r["conf"] or 0, r["game_id"], r["t"]))
+    return sorted(_rows(), key=lambda r: (_band(r), (r["trust"] or {}).get("prob", r["conf"] or 0), r["game_id"], r["t"]))
 
 
 def next_shot() -> dict:
@@ -87,7 +100,7 @@ def next_shot() -> dict:
     card = {"done": False, **counts, "game_id": r["game_id"], "event_id": r["event_id"], "title": Manifest.load(game_dir(r["game_id"])).title, "t": r["t"], "clip": r["clip"],
             "rim_id": r["rim_id"], "made": r["made"], "blind": r["blind"] or r["x"] is None}
     if not card["blind"]:                  # a hidden card carries nothing that says where the machine put the dot
-        card.update(x=r["x"], y=r["y"], conf=r["conf"])
+        card.update(x=r["x"], y=r["y"], conf=(r["trust"] or {}).get("prob", r["conf"]))
     return card
 
 
@@ -116,7 +129,7 @@ def answer(game_id: str, event_id: str, x: float | None = None, y: float | None 
         same = r["x"] is not None and math.hypot(x - r["x"], y - r["y"]) <= SAME_DOT_FT and not blind
         source = "approved" if same else "coach"
     _save(r, x, y, source)
-    _log({"game_id": game_id, "event_id": event_id, "x": x, "y": y, "machine_x": r["x"], "machine_y": r["y"], "conf": r["conf"], "method": r["method"], "blind": blind, "source": source})
+    _log({"game_id": game_id, "event_id": event_id, "x": x, "y": y, "machine_x": r["x"], "machine_y": r["y"], "conf": r["conf"], "method": r["method"], "blind": blind, "source": source, "trust": r["trust"]})
     return next_shot()
 
 
@@ -131,7 +144,7 @@ def bulk_approve(log=print) -> int:
     rows = [r for r in queue() if _band(r) == 3]
     for r in rows:
         _save(r, r["x"], r["y"], "bulk")
-        _log({"game_id": r["game_id"], "event_id": r["event_id"], "x": r["x"], "y": r["y"], "machine_x": r["x"], "machine_y": r["y"], "conf": r["conf"], "method": r["method"], "blind": False, "source": "bulk"})
+        _log({"game_id": r["game_id"], "event_id": r["event_id"], "x": r["x"], "y": r["y"], "machine_x": r["x"], "machine_y": r["y"], "conf": r["conf"], "method": r["method"], "blind": False, "source": "bulk", "trust": r["trust"]})
     log(f"dot review: {len(rows)} dots kept unseen")
     return len(rows)
 
@@ -153,6 +166,8 @@ def score(answers: list[dict] | None = None) -> dict:
     blind = [a for a in rows if a.get("blind")]
     shown = [a for a in rows if not a.get("blind") and a["source"] != "bulk"]
     high = lambda a: (a.get("conf") or 0) >= HIGH_CONF
-    return {"hidden": {"all": measured(blind), "conf_0.8_up": measured([a for a in blind if high(a)]), "conf_under_0.8": measured([a for a in blind if not high(a)])},
+    judged = [a for a in blind if a.get("trust")]
+    return {"hidden_since_trust": {"trusted": measured([a for a in judged if a["trust"]["trusted"]]), "not_trusted": measured([a for a in judged if not a["trust"]["trusted"]])},
+            "hidden": {"all": measured(blind), "conf_0.8_up": measured([a for a in blind if high(a)]), "conf_under_0.8": measured([a for a in blind if not high(a)])},
             "shown_not_independent": {"approved": sum(a["source"] == "approved" for a in shown), "moved": sum(a["source"] == "coach" for a in shown), "moved_by": measured([a for a in shown if a["source"] == "coach"])},
             "bulk": sum(a["source"] == "bulk" for a in rows), "skipped": sum(bool(a.get("skipped")) for a in answers), "no_machine_dot_placed": sum(a.get("machine_x") is None for a in rows)}
