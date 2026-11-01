@@ -316,3 +316,18 @@ def test_a_shot_not_in_the_dot_check_is_refused(synthetic_video, tmp_path, monke
     game_id, gd, events = _dot_game(synthetic_video, monkeypatch, tmp_path)
     client = TestClient(create_app())
     assert client.post("/api/dotcheck/answer", json={"game_id": game_id, "event_id": events[0].id, "x": 1.0, "y": 1.0}).status_code == 404
+
+
+def test_a_doubtful_answer_leaves_the_score_and_his_dot_comes_off_the_shot(synthetic_video, tmp_path, monkeypatch):
+    from film.review import dotcheck
+    from film.review.decisions import load_decisions
+
+    game_id, gd, events = _dot_game(synthetic_video, monkeypatch, tmp_path)
+    dotcheck.pick(n=5, log=lambda m: None)
+    dotcheck.answer(game_id, events[0].id, 33.0, 24.0)
+    assert dotcheck.mark_doubtful([1])[0]["event_id"] == events[0].id
+    kept = load_decisions(gd)[events[0].id]
+    assert kept["x"] is None and kept["status"] == "confirmed" and kept["made"] is True
+    got = dotcheck.score()
+    assert got["answered"] == 0 and got["doubtful"] == 1
+    assert dotcheck.read_answers()[0]["x"] == 33.0                 # the answer itself stays in the log

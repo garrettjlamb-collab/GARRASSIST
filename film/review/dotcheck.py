@@ -138,15 +138,37 @@ def skip(game_id: str, event_id: str) -> dict:
     return next_shot()
 
 
+def mark_doubtful(shots: list[int]) -> list[dict]:
+    """Answers he says may be for the wrong shot, by their number on the page. They leave the score and his dot comes off the shot,
+    so it cannot replace the machine's in the export; the answer stays in the log, marked."""
+    answers = read_answers()
+    marked = []
+    for n in shots:
+        a = answers[n - 1]
+        a["doubtful"] = True
+        marked.append(a)
+        if a.get("skipped"):
+            continue
+        gd = game_dir(a["game_id"])
+        previous = load_decisions(gd).get(a["event_id"]) or {}
+        save_decision(gd, a["event_id"], {**{k: previous[k] for k in ("status", "made", "team", "foul") if k in previous}, "x": None, "y": None})
+    tmp = _dir() / "answers.tmp"
+    tmp.write_text("".join(json.dumps(a) + "\n" for a in answers))
+    tmp.replace(_dir() / "answers.jsonl")
+    return marked
+
+
 def score(answers: list[dict] | None = None) -> dict:
     answers = read_answers() if answers is None else answers
-    rows = [a for a in answers if not a.get("skipped") and a.get("machine_x") is not None]
+    doubtful = sum(bool(a.get("doubtful")) for a in answers)
+    rows = [a for a in answers if not a.get("skipped") and not a.get("doubtful") and a.get("machine_x") is not None]
     if not rows:
-        return {"answered": 0, "skipped": sum(bool(a.get("skipped")) for a in answers)}
+        return {"answered": 0, "skipped": sum(bool(a.get("skipped")) for a in answers), "doubtful": doubtful}
 
     def summary(group: list[dict]) -> dict:
         err = [math.hypot(a["x"] - a["machine_x"], a["y"] - a["machine_y"]) for a in group]
         return {"n": len(group), "median_ft": round(median(err), 1), "within_3ft": round(sum(e <= 3 for e in err) / len(err), 2), "within_6ft": round(sum(e <= 6 for e in err) / len(err), 2),
+                "over_10ft": round(sum(e > 10 for e in err) / len(err), 2),
                 "arc_side": round(sum(is_three(a["x"], a["y"]) == is_three(a["machine_x"], a["machine_y"]) for a in group) / len(group), 2),
                 "same_zone": round(sum(zone_of(a["x"], a["y"]) == zone_of(a["machine_x"], a["machine_y"]) for a in group) / len(group), 2)}
 
@@ -157,5 +179,5 @@ def score(answers: list[dict] | None = None) -> dict:
         by["his shot " + _kind(a["x"], a["y"])].append(a)
     # The same shots with the machine's dot mirrored: much better would mean the two courts disagree on which side is left.
     mirrored = median(math.hypot(a["x"] - (50 - a["machine_x"]), a["y"] - a["machine_y"]) for a in rows)
-    return {"answered": len(rows), "skipped": sum(bool(a.get("skipped")) for a in answers), "all": summary(rows), "mirrored_median_ft": round(mirrored, 1),
+    return {"answered": len(rows), "skipped": sum(bool(a.get("skipped")) for a in answers), "doubtful": doubtful, "all": summary(rows), "mirrored_median_ft": round(mirrored, 1),
             **{k: summary(v) for k, v in sorted(by.items())}}
