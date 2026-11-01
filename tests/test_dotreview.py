@@ -128,3 +128,29 @@ def test_a_later_decision_keeps_where_the_dot_came_from(game):
     save_decision(gd, "shot-low", {"status": "confirmed", "made": False})
     d = load_decisions(gd)["shot-low"]
     assert d["dot_source"] == "approved" and d["x"] == 30.0
+
+
+def _trust(gd, **by_id):
+    from film.interpret.events import load_events
+
+    events = load_events(gd)
+    for e in events:
+        if e.id in by_id:
+            e.signals["trust"] = by_id[e.id]
+    save_events(gd, events)
+
+
+def test_the_trust_model_overrides_the_machines_confidence(game):
+    game_id, gd = game
+    _trust(gd, **{"shot-sure": {"prob": 0.3, "agree": False, "trusted": False, "pick": [1, 1]}, "shot-low": {"prob": 0.9, "agree": True, "trusted": True, "pick": [30, 20]}})
+    order = [r["event_id"] for r in dotreview.queue()]
+    assert order.index("shot-sure") < order.index("shot-none") < order.index("shot-low")
+    assert dotreview.next_shot()["event_id"] == "shot-sure"
+
+
+def test_one_trusted_dot_in_five_stays_hidden_and_is_not_kept_in_bulk(game, monkeypatch):
+    game_id, gd = game
+    _trust(gd, **{"shot-sure": {"prob": 0.9, "agree": True, "trusted": True, "pick": [32, 22]}})
+    monkeypatch.setattr(dotreview, "is_trust_check", lambda g, e: True)
+    assert dotreview.next_shot()["event_id"] == "shot-sure" and dotreview.next_shot()["blind"] is True
+    assert dotreview.bulk_approve(log=lambda m: None) == 0

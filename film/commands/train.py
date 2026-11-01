@@ -3,7 +3,7 @@ from __future__ import annotations
 
 def register(sub) -> None:
     parser = sub.add_parser("train", help="fine-tune a model from the labeled datasets and register a new version")
-    parser.add_argument("what", choices=["rim", "ball", "rimclf", "picclf", "court", "official"])
+    parser.add_argument("what", choices=["rim", "ball", "rimclf", "picclf", "court", "official", "shooter"])
     parser.add_argument("--hold", default=None, help="picclf only: the game to score on (default: the one labeled last)")
     parser.add_argument("--epochs", type=int, default=None, help="detectors only, default 50")
     parser.add_argument("--device", default=None)
@@ -14,7 +14,14 @@ def run(args) -> int:
     from film.common.device import pick_device
 
     device = pick_device(args.device)
-    if args.what == "official":
+    if args.what == "shooter":
+        from film.perceive.shooter_trust import train
+        from film.review import dotcheck, dotreview
+
+        answers = [a for a in dotreview.read_answers() if not a.get("skipped") and a.get("source") in ("coach", "approved")]
+        answers += [a for a in dotcheck.read_answers() if not a.get("skipped") and not a.get("doubtful")]
+        train(answers)
+    elif args.what == "official":
         from film.perceive.official import train_official
 
         train_official()

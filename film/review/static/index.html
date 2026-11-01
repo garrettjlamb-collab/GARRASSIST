@@ -236,13 +236,13 @@ function render() {
 const dotApi = () => state.tab === "dotreview" ? "/api/dotreview" : "/api/dotcheck";
 
 function dotReviewHead(d) {
-  const bulk = d.bulk ? `<button class="btn" id="dot-bulk">Keep the ${d.bulk} surest dots unseen</button>` : "";
+  const bulk = d.bulk ? `<button class="btn" id="dot-bulk">Keep the ${d.bulk} trusted dots unseen</button>` : "";
   return `<div class="row"><b>${d.remaining} left</b><span class="muted">${d.doubtful} doubtful · ${d.checks} checks · ${d.no_dot} with no dot · ${d.bulk} sure · ${d.done_so_far} done</span>${bulk}</div>`;
 }
 
 function dotBulk() {
   const d = state.dot;
-  if (!window.confirm(`Keep ${d.bulk} dots at confidence 0.8 and up without looking at them? They stay marked as kept unseen.`)) return;
+  if (!window.confirm(`Keep ${d.bulk} trusted dots without looking at them? They stay marked as kept unseen.`)) return;
   guarded(async () => { await showDotCheck(await post("/api/dotreview/bulk")); });
 }
 
