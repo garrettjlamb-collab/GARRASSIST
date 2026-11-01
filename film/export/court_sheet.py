@@ -50,10 +50,10 @@ def court_lines(length: float = FULL_DEPTH) -> list[np.ndarray]:
     return outline + near + far
 
 
-def draw_court(frame: np.ndarray, mapping: Mapping, color=LINE_COLOR, thickness: int = 2) -> np.ndarray:
-    """The frame with the court's lines drawn where the mapping puts them. Pieces behind the camera are left out."""
-    out = frame.copy()
+def court_polylines(mapping: Mapping) -> list[list[list[int]]]:
+    """The court's lines where the mapping puts them, as polylines in pixels. Pieces behind the camera are left out."""
     back = np.linalg.inv(mapping.H)
+    out = []
     for line in court_lines(mapping.length):
         v = back @ np.vstack([line.T, np.ones(len(line))])
         ok = v[2] > 1e-9
@@ -63,10 +63,18 @@ def draw_court(frame: np.ndarray, mapping: Mapping, color=LINE_COLOR, thickness:
             if good and abs(x) < 1e5 and abs(y) < 1e5:
                 run.append([int(round(x)), int(round(y))])
             elif run:
-                cv2.polylines(out, [np.array(run, np.int32)], False, color, thickness, cv2.LINE_AA)
+                out.append(run)
                 run = []
         if len(run) > 1:
-            cv2.polylines(out, [np.array(run, np.int32)], False, color, thickness, cv2.LINE_AA)
+            out.append(run)
+    return out
+
+
+def draw_court(frame: np.ndarray, mapping: Mapping, color=LINE_COLOR, thickness: int = 2) -> np.ndarray:
+    """The frame with the court's lines drawn where the mapping puts them."""
+    out = frame.copy()
+    for run in court_polylines(mapping):
+        cv2.polylines(out, [np.array(run, np.int32)], False, color, thickness, cv2.LINE_AA)
     return out
 
 

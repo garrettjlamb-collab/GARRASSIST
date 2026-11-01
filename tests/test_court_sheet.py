@@ -42,3 +42,12 @@ def test_court_sheet_tiles_frames_from_court_parquet(synthetic_video, tmp_path, 
     path = court_sheet(m.game_id, n=12, cols=3, tile_width=320, log=lambda *a: None)
     sheet = cv2.imread(str(path))
     assert sheet.shape[:2] == (240, 960)
+
+
+def test_court_polylines_are_the_lines_draw_court_draws():
+    from film.export.court_sheet import court_polylines
+
+    lines = court_polylines(_mapping())
+    assert len(lines) == 6 + 2 * 7
+    ends = {tuple(p) for line in lines for p in (line[0], line[-1])}
+    assert (40, 200) in ends and (140, 200) in ends       # the near baseline runs corner to corner

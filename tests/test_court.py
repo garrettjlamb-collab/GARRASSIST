@@ -161,3 +161,50 @@ def test_a_mapping_folds_about_the_middle_of_its_own_court():
     x, y = m.to_half(*pts["far-ft-top"])                       # the far free-throw circle's top, 25 ft from its baseline
     assert abs(x - 25.0) < 0.01 and abs(y - 25.0) < 0.01
     assert m.contains(*pts["far-corner-right"]) and not m.contains(100, 900 - 92 * 10)
+
+
+def _true_handles(names):
+    """Marks for a court seen through a known, right-handed camera: feet -> pixels."""
+    from film.interpret.court import template
+
+    back = np.array([[0.0, 18.0, 100.0], [9.0, 0.0, 60.0], [0.0, 0.0002, 1.0]])
+    out = {}
+    for n in names:
+        v = back @ np.array([*template()[n], 1.0])
+        out[n] = (float(v[0] / v[2]), float(v[1] / v[2]))
+    return out
+
+
+NAMES = ["near-corner-left", "near-corner-right", "near-lane-left", "near-lane-right", "near-ft-left", "near-ft-right", "mid-left", "mid-right"]
+
+
+def test_fit_handles_recovers_a_true_labelling():
+    from film.interpret.court import fit_handles, template
+
+    px = _true_handles(NAMES)
+    m = fit_handles([template()[n] for n in NAMES], [px[n] for n in NAMES], [False] * len(NAMES))
+    assert m is not None and m.error_px < 0.01 and m.points_used == len(NAMES)
+    x, y = m.to_court(*px["near-ft-left"])
+    assert abs(x - 19) < 0.01 and abs(y - 19) < 0.01
+
+
+def test_a_pulled_spot_stays_where_it_was_put():
+    from film.interpret.court import fit_handles, template
+
+    px = _true_handles(NAMES)
+    rng = np.random.default_rng(3)
+    marks = [(x + rng.uniform(-12, 12), y + rng.uniform(-12, 12)) for x, y in (px[n] for n in NAMES)]
+    pulled = (px["near-ft-right"][0] + 40, px["near-ft-right"][1] - 30)
+    i = NAMES.index("near-ft-right")
+    marks[i] = pulled
+    m = fit_handles([template()[n] for n in NAMES], marks, [k == i for k in range(len(NAMES))])
+    back = np.linalg.inv(m.H) @ np.array([*template()["near-ft-right"], 1.0])
+    assert np.hypot(back[0] / back[2] - pulled[0], back[1] / back[2] - pulled[1]) < 3.0
+
+
+def test_fit_handles_refuses_a_mirror_and_too_few_marks():
+    from film.interpret.court import _mirror_name, fit_handles, template
+
+    px = _true_handles(NAMES)
+    assert fit_handles([template()[_mirror_name(n)] for n in NAMES], [px[n] for n in NAMES], [False] * len(NAMES)) is None
+    assert fit_handles([template()[n] for n in NAMES[:3]], [px[n] for n in NAMES[:3]], [False] * 3) is None
