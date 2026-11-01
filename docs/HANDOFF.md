@@ -517,6 +517,20 @@ someone standing still at the line, is a free throw at the middle of the line. `
 - **Next, in the order I recommend:** keep referees out of the shooter choice; read the Moon Valley scoreboard so it can be scored;
   Garrett places about 30 dots for a measurement in feet; then the six low-camera games, probably with him dragging.
 
+## 2026-11-01 (later): non-players set aside as shooters (branch shooter-not-referee, not merged)
+
+By eye, about 30 of 541 chosen shooters (6%) were not players: referees, coaches, staff, people seated on the sideline. Stripes
+alone miss the plain-clothes ones. `film/perceive/official.py`: ResNet18 features and a linear model on the person's crop,
+`film train official`, `models/official/v1`, trained on 536 crops **Claude labelled by eye** (`datasets/official/{official,player}`,
+files named `<game_id>--<event>.jpg`; 5 unsure crops left out). `shotspots.spot_of_a_player` checks the chosen shooter; at 0.5 or above
+the person is followed through the window, removed, and the rules choose again, up to 3 times. Scores are kept in shot_looks.json.gz.
+
+- **Held out by game:** caught 22 of 30, wrongly flagged 4 of 506 players. Misses are mostly seated people, suits and blur.
+- **On the 3 games it did not train on** (Cactus Shadows, Mesquite, St. Mary's at MDN): 7 shooters changed, 5 from a referee. One of the two on
+  Mesquite looks like a real player wrongly flagged. By eye 2-4 of 184 chosen shooters are still not players. The count is Claude's, from small crops.
+- **The scoreboard did not move:** 173/198 before, 172/198 after; threes 35/51 to 34/51. Non-players were not what makes threes wrong.
+- **Next:** threes. Look at where the wrong ones go: the wrong player near the flight's start, or the flight cut short.
+
 ## What Garrett has asked for (requirements gathered in conversation)
 
 1. **Full box score eventually**, as automated as possible; he accepts reviewing some of it.
