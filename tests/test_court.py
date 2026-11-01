@@ -5,18 +5,21 @@ import numpy as np
 from film.interpret.court import END_OF_POINT, FLIP_INDEX, POINT_NAMES, TEMPLATE, Mapping, fit_mapping, fold
 
 
-def test_eighteen_named_points_nine_per_end():
-    assert len(POINT_NAMES) == 18 and len(set(POINT_NAMES)) == 18
+def test_twenty_two_named_points_nine_per_end_and_four_at_midcourt():
+    assert len(POINT_NAMES) == 22 and len(set(POINT_NAMES)) == 22
     assert sum(END_OF_POINT[n] == "near" for n in POINT_NAMES) == 9
+    assert [n for n in POINT_NAMES if END_OF_POINT[n] == "mid"] == POINT_NAMES[18:]
+    assert TEMPLATE["mid-left"] == (0.0, 47.0) and TEMPLATE["mid-circle-right"] == (31.0, 47.0)
     assert all(n in TEMPLATE for n in POINT_NAMES)
 
 
 def test_template_is_the_tracker_court_with_the_high_school_arc():
     assert TEMPLATE["near-corner-left"] == (0.0, 0.0) and TEMPLATE["near-corner-right"] == (50.0, 0.0)
-    assert TEMPLATE["near-lane-left"] == (17.0, 0.0) and TEMPLATE["near-ft-right"] == (33.0, 19.0)
+    assert TEMPLATE["near-lane-left"] == (19.0, 0.0) and TEMPLATE["near-ft-right"] == (31.0, 19.0)     # a 12 ft lane
+    assert TEMPLATE["near-arc-left"] == (5.25, 0.0)
     assert TEMPLATE["near-ft-top"] == (25.0, 25.0)
     x, y = TEMPLATE["near-arc-left"]
-    assert y == 0.0 and math.isclose(math.hypot(x - 25.0, y - 5.25), 19.75, abs_tol=1e-6) and x < 25
+    assert y == 0.0 and math.isclose(25.0 - x, 19.75, abs_tol=1e-6)        # the straight piece, 19.75 ft from the basket
     fx, fy = TEMPLATE["far-corner-left"]
     assert (fx, fy) == (50.0, 94.0)                         # the far end is the near end rotated about centre court
 
@@ -124,7 +127,7 @@ def test_a_mirrored_labelling_is_refused():
     project, _ = _pinhole()
     pts = {n: project(*TEMPLATE[n]) for n in POINT_NAMES}
     m = fit_mapping(pts)
-    assert m is not None and m.points_used == 18
+    assert m is not None and m.points_used == 22
     x, y = m.to_court(*project(12.0, 30.0))
     assert abs(x - 12.0) < 0.1 and abs(y - 30.0) < 0.1
     swapped = {POINT_NAMES[FLIP_INDEX[i]]: pts[n] for i, n in enumerate(POINT_NAMES)}     # left and right names swapped
@@ -139,3 +142,69 @@ def test_a_point_above_the_horizon_has_no_court_position():
                          conf=1.0, end="near")
     assert w_negative.to_court(0.0, 200.0) is None and w_negative.to_court(0.0, 100.0) is None
     assert w_negative.to_court(0.0, 50.0) is not None
+
+
+def test_a_shorter_court_moves_only_the_far_end():
+    from film.interpret.court import template
+
+    short = template(84.0)
+    assert short["near-ft-left"] == TEMPLATE["near-ft-left"]
+    assert short["far-corner-left"] == (50.0, 84.0) and short["far-ft-left"] == (31.0, 65.0)
+
+
+def test_a_mapping_folds_about_the_middle_of_its_own_court():
+    from film.interpret.court import template
+
+    pts = {n: (x * 10 + 100, 900 - y * 10) for n, (x, y) in template(84.0).items()}
+    m = fit_mapping(pts, length=84.0)
+    assert m is not None and m.length == 84.0
+    x, y = m.to_half(*pts["far-ft-top"])                       # the far free-throw circle's top, 25 ft from its baseline
+    assert abs(x - 25.0) < 0.01 and abs(y - 25.0) < 0.01
+    assert m.contains(*pts["far-corner-right"]) and not m.contains(100, 900 - 92 * 10)
+
+
+def _true_handles(names):
+    """Marks for a court seen through a known, right-handed camera: feet -> pixels."""
+    from film.interpret.court import template
+
+    back = np.array([[0.0, 18.0, 100.0], [9.0, 0.0, 60.0], [0.0, 0.0002, 1.0]])
+    out = {}
+    for n in names:
+        v = back @ np.array([*template()[n], 1.0])
+        out[n] = (float(v[0] / v[2]), float(v[1] / v[2]))
+    return out
+
+
+NAMES = ["near-corner-left", "near-corner-right", "near-lane-left", "near-lane-right", "near-ft-left", "near-ft-right", "mid-left", "mid-right"]
+
+
+def test_fit_handles_recovers_a_true_labelling():
+    from film.interpret.court import fit_handles, template
+
+    px = _true_handles(NAMES)
+    m = fit_handles([template()[n] for n in NAMES], [px[n] for n in NAMES], [False] * len(NAMES))
+    assert m is not None and m.error_px < 0.01 and m.points_used == len(NAMES)
+    x, y = m.to_court(*px["near-ft-left"])
+    assert abs(x - 19) < 0.01 and abs(y - 19) < 0.01
+
+
+def test_a_pulled_spot_stays_where_it_was_put():
+    from film.interpret.court import fit_handles, template
+
+    px = _true_handles(NAMES)
+    rng = np.random.default_rng(3)
+    marks = [(x + rng.uniform(-12, 12), y + rng.uniform(-12, 12)) for x, y in (px[n] for n in NAMES)]
+    pulled = (px["near-ft-right"][0] + 40, px["near-ft-right"][1] - 30)
+    i = NAMES.index("near-ft-right")
+    marks[i] = pulled
+    m = fit_handles([template()[n] for n in NAMES], marks, [k == i for k in range(len(NAMES))])
+    back = np.linalg.inv(m.H) @ np.array([*template()["near-ft-right"], 1.0])
+    assert np.hypot(back[0] / back[2] - pulled[0], back[1] / back[2] - pulled[1]) < 3.0
+
+
+def test_fit_handles_refuses_a_mirror_and_too_few_marks():
+    from film.interpret.court import _mirror_name, fit_handles, template
+
+    px = _true_handles(NAMES)
+    assert fit_handles([template()[_mirror_name(n)] for n in NAMES], [px[n] for n in NAMES], [False] * len(NAMES)) is None
+    assert fit_handles([template()[n] for n in NAMES[:3]], [px[n] for n in NAMES[:3]], [False] * 3) is None

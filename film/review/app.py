@@ -15,6 +15,7 @@ from film.common.paths import game_dir, games_dir
 from film.export.clips import clip_path
 from film.interpret.events import load_events
 from film.interpret.quarters import apply_quarters, load_quarters, save_quarters
+from film.perceive import court_draft
 from film.perceive.rims import basket_sides
 from film.perceive.scoreboard import has_scoreboard
 from film.perceive.tracks import read_tracks
@@ -56,8 +57,29 @@ class PointsLabel(BaseModel):
     points: dict[str, tuple[float, float]]
 
 
+class CourtHandle(BaseModel):
+    name: str | None = None            # a named court point, or
+    ft: tuple[float, float] | None = None      # the feet read under the mouse when he grabbed the floor
+    px: tuple[float, float]
+    pinned: bool = False
+
+
+class CourtReview(BaseModel):
+    handles: list[CourtHandle]
+    length: float = 94.0
+    seconds: float | None = None
+
+
 class Quarters(BaseModel):
     quarters: list[tuple[float, float]]
+
+
+def _handles(body: CourtReview) -> list[dict]:
+    known = set(ds.KEYPOINT_NAMES["court"])
+    for h in body.handles:
+        if (h.name is None) == (h.ft is None) or (h.name is not None and h.name not in known):
+            raise HTTPException(400, f"a mark needs a court point or feet: {h}")
+    return [h.model_dump(exclude_none=True) for h in body.handles]
 
 
 def _gd(game_id: str) -> Path:
@@ -281,6 +303,20 @@ def create_app(films: Films | None = None) -> FastAPI:
             return {"split": ds.accept_points(dataset, image_id, {k: (float(x), float(y)) for k, (x, y) in body.points.items()})}
         except FileNotFoundError:
             raise HTTPException(404, f"no image {image_id} in {dataset}")
+
+    @app.post("/api/label/court/{image_id}/draw")
+    def court_draw(image_id: str, body: CourtReview):
+        return court_draft.draw(_handles(body), body.length)
+
+    @app.post("/api/label/court/{image_id}/approve")
+    def court_approve(image_id: str, body: CourtReview):
+        _known_image("court", image_id)
+        try:
+            return court_draft.approve(image_id, _handles(body), body.length, seconds=body.seconds)
+        except FileNotFoundError:
+            raise HTTPException(404, f"no image {image_id} in court")
+        except ValueError as err:
+            raise HTTPException(400, str(err))
 
     @app.post("/api/label/{dataset}/{image_id}/class")
     def label_class(dataset: str, image_id: str, body: ClassLabel):

@@ -421,6 +421,79 @@ release and automatic dots; plan C is teams, confidence and eval.
 - **Not done:** the first real labels, training and a `film court` run on a labelled game (needs Garrett;
   Step 3 of the plan's Task 13). The mapping has not been checked by eye on real film.
 
+## 2026-10-23: the court from reference pictures (no 40-frame labelling)
+
+Garrett did not want to mark 40 frames on each of two games. Plan:
+`docs/superpowers/plans/2026-10-23-court-from-reference-pictures.md`.
+
+- **Registration.** `film/perceive/register.py`: SIFT at 960 px wide, ratio test, RANSAC homography, a
+  plausibility guard. A camera that only turns (Hudl Focus pans and zooms inside a fixed sensor; an iPad on a
+  tripod) maps any frame to any other by one homography. Checked on film: a Hudl MDN frame lines up with one 50
+  minutes later (177 inliers); Prescott iPad frames 10 s apart, 846. Opposite ends share nothing (9 inliers).
+- **References.** `film/perceive/court_refs.py`. A reference is any marked court frame whose id is exactly
+  `<game_id>_<t*10:06d>` (machine-made labels end in `a`). `refs_pass` carries the references' points into each
+  frame, fits with `fit_mapping`, and carries the last placed frame forward up to 30 s when no reference lines up
+  (`source` = ref / chain in court.parquet). `choose_references` is a greedy cover over sampled frames;
+  `check_references` compares each reference with the others (median px, worst point); `measure_length` fits the
+  court length when a picture holds points of both ends (snaps to 74/84/94).
+- **The template was the NBA court.** Lane 16 ft and the three-point line meeting the baseline at 5.96 ft. Now
+  NFHS: lane 19-31 (12 ft), arc points at 5.25/44.75 (the straight piece), length a parameter
+  (`template(length)`, `Mapping.length`, `fold(x, y, length)`). On Garrett's one marked Prescott frame the NBA
+  template kept 5 of 7 points (60 px residuals on the corner and arc); NFHS fits all 7 within ~4 px. Zones keep
+  the tracker's 16 ft paint (`zones.PAINT_LEFT/RIGHT`) on purpose.
+- **Speed.** 0.06 s per sampled frame including decode on the laptop: a game is a few minutes, not a training run.
+- **Contact sheet.** `film/export/court_sheet.py`; `film court` writes `games/<id>/court_sheet.jpg` every run.
+- **22 points.** Four midcourt points were added after the first pick on Prescott chose a midcourt view with
+  nothing to mark: `mid-left`/`mid-right` (centre line at each sideline, left = near-corner-left's sideline) and
+  `mid-circle-left`/`-right` (centre circle on the centre line). Last in `POINT_NAMES`, so 18-point labels still read.
+- **At least three pictures.** One wide post-game Hudl shot lined up with 89 of 90 frames but cut off both baselines,
+  so `choose_references` adds the views turned furthest left and right (positions chained through neighbours, the
+  one further from the first picture first) up to `K_MIN = 3`.
+- **State (2026-10-23).** Queued for Garrett in Label court: Mesquite 49:03 (left basket), 55:44 (right basket),
+  2:14:26 (wide, empty court); Prescott 7:04 (right basket), 59:36 (midcourt), plus his marked 0:30 (left basket).
+  After he marks them: `film court <id>` on both, check the sheets, then `--refs-from` Mesquite on the other MDN games.
+
+## 2026-10-31: the coach reviews a drawn court instead of marking points
+
+Garrett still did not want to mark 22 named points on 3-5 pictures and asked for the machine to mark and for him to
+review. Spec: `docs/superpowers/specs/2026-10-31-court-review-design.md`. Plan: `docs/superpowers/plans/2026-10-31-court-review.md`.
+
+- **A session draws the drafts. This spends Claude usage, by his choice,** until a trained model can do it. For each
+  picture in `film court-draft list`:
+  1. `film court-draft view <id>` writes a picture with a numbered pixel grid (`--region x0 y0 x1 y1 --scale 2` to zoom). Read it.
+  2. `film court-draft set <id> --points '{"near-lane-left": [800, 425], ...}' --length 84` saves the marks. It names any
+     mark it throws out and prints a `.check.jpg` with the court drawn on it. Read that too and redo the marks if the
+     lines miss the paint.
+- **Names on a sideline camera:** near is the left end of the picture, and "left" is the top sideline, so
+  `near-corner-left` is the top-left corner. Far names are rotated: `far-corner-right` is the **top** right corner and
+  `far-corner-left` the bottom right, and the same goes for lane, ft and arc. A mirrored set is refused.
+- **What makes a draft good:** marks spread across the picture. Marks at one end line up that end and miss everything
+  else by 100 px or more. If the picture shows little, add midcourt marks, or carry a neighbour's court in through
+  `film/perceive/register.py` and keep the marks that fall outside the frame: they hold the fit and are not saved as labels.
+- **Length:** MDN is 94 ft and Arcadia 84 ft. Judge it by whether the centre line and circle land on the paint.
+- **The review.** A picture with 4 or more marks and a `draft` opens in review mode in Label court. `film/review/app.py`
+  has `/api/label/court/{id}/draw` and `/approve`; every fit is on the server (`film/perceive/court_draft.py`). A pulled
+  spot counts `PIN_WEIGHT = 100` times, because 10 left a spot pulled 50 px still 12 px short. A picture with no draft
+  still walks the 22 points.
+- **Approving** saves every template point in view through the fit as an ordinary reference, so `film court` and
+  `--refs-from` work unchanged, then redraws the game's other queued pictures from the references. A carried draft
+  replaces a Claude draft only with 6 or more marks.
+- **The log.** `labels/court/review_log.jsonl`: who drew it, how many spots he pulled, how far, seconds. Read it to see
+  how good the drafts are and whether a picture really takes seconds. Nothing has measured that on him yet.
+- **State (2026-10-31).** He approved all 5 in 74 seconds: 0 pulls on Prescott, 7 on Mesquite, the largest move about
+  24 px. Prescott's three references agree to a median of about 4 px at 84 ft; Mesquite's wide picture agrees with the
+  others to 2.6 px at 94 ft, and its 49:03 and 55:44 pictures do not line up with each other, so they are not checked.
+- **Run 2026-10-31.** `film court` on Prescott and Mesquite, then `--refs-from` Mesquite on Arcadia, Cactus Shadows,
+  Saguaro and St. Mary's at MDN (about 13 min each). All 12 frames of all 6 contact sheets checked by eye: the court
+  lands on the paint, so the MDN camera does reuse its pictures across games. Of 511 confirmed shots on these six games,
+  none is more than 2 s from a placed court. The longest gaps are 163-252 s on Mesquite, Saguaro and St. Mary's and fall
+  where no shot was confirmed. Accuracy in feet is still unmeasured: `median_dot_error_ft` needs plan B's machine dots.
+- **Next:** 10 games have no court: the 7 handheld ones other than Prescott, the 2 Arcadia Hudl games and Deer Valley. They
+  need `film prelabel court <id> --refs` (about 3 min), drafts, his review, then `film court`. Plan B (people, release,
+  automatic dots) can start on these six games.
+- **Later:** `film court --train-frames` and `film train court` on approved games give the model that replaces Claude's
+  drafts. Not started.
+
 ## What Garrett has asked for (requirements gathered in conversation)
 
 1. **Full box score eventually**, as automated as possible; he accepts reviewing some of it.

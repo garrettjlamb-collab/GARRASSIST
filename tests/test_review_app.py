@@ -218,3 +218,40 @@ def test_events_carry_which_side_of_the_picture_their_basket_is_on(synthetic_vid
              "conf": 0.9, "on_court": None, "court_x": None, "court_y": None, "team": None, "model_version": "t"} for f in range(5)]
     rows_to_frame(rows).to_parquet(tracks_path(gd))
     assert client.get(f"/api/games/{game_id}/events").json()[0]["basket_side"] == "right"
+
+
+def _court_handles():
+    # feet -> pixels on a 1000 x 500 picture: along the court runs right, across runs down
+    from film.interpret.court import template
+
+    names = ["near-corner-left", "near-corner-right", "near-lane-left", "near-lane-right", "near-ft-left", "near-ft-right"]
+    return [{"name": n, "px": [60 + 9 * template()[n][1], 40 + 8 * template()[n][0]], "pinned": False} for n in names]
+
+
+def test_a_drawn_court_is_reviewed_over_the_api(synthetic_video, tmp_path, monkeypatch):
+    _env(monkeypatch, tmp_path)
+    client = TestClient(create_app())
+    ds.write_pending("court", "c2", np.zeros((500, 1000, 3), np.uint8), [], extra={"t": 1.0, "points": {}, "draft": {"by": "claude"}})
+    drawn = client.post("/api/label/court/c2/draw", json={"handles": _court_handles(), "length": 94}).json()
+    assert drawn["ok"] is True and len(drawn["lines"]) > 10
+    r = client.post("/api/label/court/c2/approve", json={"handles": _court_handles(), "length": 94, "seconds": 3.0})
+    assert r.status_code == 200 and r.json()["points"] > 6
+    assert client.get("/api/label/court/next").json()["done"] is True
+
+
+def test_a_mirrored_approval_is_refused_over_the_api(synthetic_video, tmp_path, monkeypatch):
+    from film.interpret.court import _mirror_name
+
+    _env(monkeypatch, tmp_path)
+    client = TestClient(create_app())
+    ds.write_pending("court", "c3", np.zeros((500, 1000, 3), np.uint8), [], extra={"t": 1.0, "points": {}})
+    mirrored = [{**h, "name": _mirror_name(h["name"])} for h in _court_handles()]
+    assert client.post("/api/label/court/c3/draw", json={"handles": mirrored, "length": 94}).json()["ok"] is False
+    assert client.post("/api/label/court/c3/approve", json={"handles": mirrored, "length": 94}).status_code == 400
+    assert client.get("/api/label/court/next").json()["image_id"] == "c3"
+
+
+def test_reviewing_an_image_not_in_the_queue_is_a_404(synthetic_video, tmp_path, monkeypatch):
+    _env(monkeypatch, tmp_path)
+    client = TestClient(create_app())
+    assert client.post("/api/label/court/nope/approve", json={"handles": _court_handles(), "length": 94}).status_code == 404

@@ -237,5 +237,5 @@ def test_train_court_uses_pose_weights_and_the_keypoint_yaml(monkeypatch, tmp_pa
     version, folder = train_detector("court", device="cpu", epochs=1, yolo_cls=StubYOLO, log=lambda *a: None)
     assert version == "v1" and registry.latest("court") == ("v1", folder)
     assert StubYOLO.created[-1].endswith("yolo11n-pose.pt")
-    assert "kpt_shape: [18, 3]" in (root / "data.yaml").read_text()
+    assert "kpt_shape: [22, 3]" in (root / "data.yaml").read_text()
     assert registry.read_manifest(folder)["imgsz"] == 960

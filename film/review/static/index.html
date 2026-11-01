@@ -102,7 +102,8 @@ async function loadGames() {
 const ZONE_LABELS = {restricted:"Restricted Area", paint:"Paint", "mid-left":"Mid-Range Left", "mid-right":"Mid-Range Right", "mid-center":"Mid-Range Center", "corner-3-left":"Left Corner 3", "corner-3-right":"Right Corner 3", "wing-3-left":"Left Wing 3", "wing-3-right":"Right Wing 3", "top-3":"Top of Key 3"};
 
 // ---- The half court: feet on the tracker's half court, baseline at the bottom, basket near the bottom centre ----
-const HALF = { w: 50, h: 47, basketX: 25, basketY: 5.25, arc: 19.75, laneL: 17, laneR: 33, ftY: 19, ftR: 6, restricted: 4, cornerY: 10, floater: 9 };
+// laneL/laneR: the 12 ft high-school lane as painted. paintL/paintR: the tracker's 16 ft paint zone (film/interpret/zones.py).
+const HALF = { w: 50, h: 47, basketX: 25, basketY: 5.25, arc: 19.75, laneL: 19, laneR: 31, paintL: 17, paintR: 33, ftY: 19, ftR: 6, restricted: 4, cornerY: 10, floater: 9 };
 // The card draws the half court the way the camera sees it: across, with the basket on the side of the
 // picture it is on (the event's basket_side; when unknown, the side last chosen). Feet are the tracker's
 // half court whatever the drawing: x across the baseline, y away from it. All drawing, clicks and nudges
@@ -138,7 +139,7 @@ function zoneOf(x, y) {
     if (ang > 35) return "wing-3-right";
     return "top-3";
   }
-  if (HALF.laneL <= x && x <= HALF.laneR && y <= HALF.ftY) return "paint";
+  if (HALF.paintL <= x && x <= HALF.paintR && y <= HALF.ftY) return "paint";
   if (ang < -25) return "mid-left";
   if (ang > 25) return "mid-right";
   return "mid-center";
@@ -565,13 +566,12 @@ function drawBoxes() {
 }
 
 const COURT_POINTS = ["near-corner-left", "near-corner-right", "near-lane-left", "near-lane-right", "near-ft-left", "near-ft-right",
-  "near-ft-top", "near-arc-left", "near-arc-right", "far-corner-left", "far-corner-right", "far-lane-left", "far-lane-right",
+  "near-ft-top", "near-arc-left", "near-arc-right", "mid-left", "mid-circle-left", "mid-circle-right", "mid-right", "far-corner-left", "far-corner-right", "far-lane-left", "far-lane-right",
   "far-ft-left", "far-ft-right", "far-ft-top", "far-arc-left", "far-arc-right"];
 
-// The 18 points drawn where they are, near end at the bottom (feet, as in film/interpret/court.py).
-const COURT_NEAR = { "corner-left": [0, 0], "corner-right": [50, 0], "lane-left": [17, 0], "lane-right": [33, 0],
-  "ft-left": [17, 19], "ft-right": [33, 19], "ft-top": [25, 25], "arc-left": [25 - Math.sqrt(19.75 ** 2 - 5.25 ** 2), 0],
-  "arc-right": [25 + Math.sqrt(19.75 ** 2 - 5.25 ** 2), 0] };
+// The 22 points drawn where they are (feet, as in film/interpret/court.py): nine at each end, four at midcourt.
+const COURT_NEAR = { "corner-left": [0, 0], "corner-right": [50, 0], "lane-left": [19, 0], "lane-right": [31, 0],
+  "ft-left": [19, 19], "ft-right": [31, 19], "ft-top": [25, 25], "arc-left": [25 - 19.75, 0], "arc-right": [25 + 19.75, 0] };
 
 function courtLayout() {
   try { return localStorage.getItem("courtLayout") || "across"; } catch (e) { return "across"; }
@@ -597,7 +597,7 @@ function courtDiagram() {
   const circle = (cx, cy, rad) => poly(Array.from({ length: 49 }, (_, i) => [cx + rad * Math.cos(i / 48 * 2 * Math.PI), cy + rad * Math.sin(i / 48 * 2 * Math.PI)]));
   for (const far of [false, true]) {
     const f = ([x, y]) => far ? [50 - x, 94 - y] : [x, y];
-    out += poly([[17, 0], [17, 19], [33, 19], [33, 0]].map(f));
+    out += poly([[19, 0], [19, 19], [31, 19], [31, 0]].map(f));
     out += poly(Array.from({ length: 49 }, (_, i) => [25 + 19.75 * Math.cos(i / 48 * Math.PI), 5.25 + 19.75 * Math.sin(i / 48 * Math.PI)]).map(f));
     out += poly([[25 - 19.75, 0], [25 - 19.75, 5.25]].map(f)) + poly([[25 + 19.75, 0], [25 + 19.75, 5.25]].map(f));
     out += circle(...f([25, 19]), 6);
@@ -620,16 +620,177 @@ function courtDiagram() {
       out += `<circle cx="${px}" cy="${py}" r="3" fill="#3ddc84"/>${label}`;
     }
   }
+  out += circle(25, 47, 6);
+  for (const [name, x, dx] of [["mid-left", 0, 0], ["mid-circle-left", 19, -1], ["mid-circle-right", 31, 1], ["mid-right", 50, 0]]) {
+    const [px, py] = at(x, 47), top = x < 25;
+    const label = across
+      ? `<text x="${px + (x === 0 || x === 50 ? 0 : 0)}" y="${py + (top ? -6 : 12)}" text-anchor="middle" fill="#ccc">${name}</text>`
+      : `<text x="${px + (top ? -5 : 5)}" y="${py - 4}" text-anchor="${top ? "end" : "start"}" fill="#ccc">${name}</text>`;
+    out += `<circle cx="${px}" cy="${py}" r="3" fill="#3ddc84"/>${label}`;
+  }
   return out + "</svg>";
+}
+
+// A picture holding a draft: the whole court is drawn on it, and the coach approves it or pulls it into place.
+const COURT_LENGTHS = [74, 84, 94];
+
+function draftHandles(l) {
+  return Object.entries(l.points).map(([name, px]) => ({ name, px: [...px], pinned: false }));
+}
+
+function renderCourtReview() {
+  const l = state.label;
+  state.review = { handles: draftHandles(l), pulls: [], length: l.length || 94, lines: null, H: null, hidden: false, note: "",
+                   started: Date.now(), drag: null, inflight: false, again: false };
+  state.img = null;
+  const drawnBy = l.draft && l.draft.by === "carried" ? "Carried from the picture you approved" : "Drawn by Claude";
+  $("#label").innerHTML = `<div class="row"><b>${l.remaining} to check</b>
+      ${l.ref ? `<span>Picture ${l.ref_index} of ${l.ref_count}</span>` : ""}<span class="muted">${esc(drawnBy)}</span>
+      <span id="rv-length"></span><span id="rv-note" style="color:#ffc857"></span></div>
+    <div class="keys" style="margin-bottom:8px">Do the yellow lines sit on the court's painted lines? <kbd>Y</kbd> approves.
+      If not, grab the floor at a wrong spot and pull it to where it belongs; the court redraws as you pull.<br>
+      <kbd>L</kbd> court length (if midcourt is off) <kbd>H</kbd> hide the lines <kbd>Backspace</kbd> let go of the last pull
+      <kbd>R</kbd> back to the draft <kbd>Z</kbd> zoom <kbd>D</kbd> skip this picture</div>
+    <div class="card wide"><canvas id="cv" class="${state.zoom ? "zoom" : ""}" width="${l.width}" height="${l.height}" style="cursor:crosshair"></canvas></div>`;
+  const img = new Image();
+  img.onload = () => { if (state.label && state.label.image_id === l.image_id) { state.img = img; drawReview(); } };
+  img.src = l.image_url;
+  $("#cv").onmousedown = reviewGrab;
+  drawReview();
+  redrawCourt();
+}
+
+async function redrawCourt() {
+  const r = state.review;
+  if (!r) return;
+  if (r.inflight) { r.again = true; return; }
+  r.inflight = true;
+  try {
+    const got = await post(`/api/label/court/${state.label.image_id}/draw`, { handles: r.handles, length: r.length });
+    if (state.review !== r) return;
+    if (got.ok) { r.lines = got.lines; r.H = got.H; r.note = ""; }
+    else r.note = "That pull would flip the court over. Keep pulling, or press Backspace.";
+    drawReview();
+  } catch (err) { showError(err); } finally {
+    r.inflight = false;
+    if (r.again) { r.again = false; redrawCourt(); }
+  }
+}
+
+function drawReview() {
+  const r = state.review, cv = $("#cv");
+  if (!r || !cv || !state.img) return;
+  const ctx = cv.getContext("2d"), unit = cv.width / cv.getBoundingClientRect().width;
+  ctx.drawImage(state.img, 0, 0);
+  if (!r.hidden) {
+    ctx.strokeStyle = "#ffe600"; ctx.lineWidth = 1.5 * unit;
+    for (const line of r.lines || []) {
+      ctx.beginPath();
+      line.forEach(([x, y], i) => i ? ctx.lineTo(x, y) : ctx.moveTo(x, y));
+      ctx.stroke();
+    }
+    for (const h of r.handles) {
+      ctx.beginPath(); ctx.arc(h.px[0], h.px[1], (h.pinned ? 6 : 3) * unit, 0, 2 * Math.PI);
+      ctx.fillStyle = h.pinned ? "#ff3b6b" : "#3ddc84"; ctx.fill();
+    }
+  }
+  $("#rv-length").textContent = `Court ${r.length} ft`;
+  $("#rv-note").textContent = r.note;
+}
+
+function reviewGrab(ev) {
+  const r = state.review, cv = $("#cv");
+  if (!r || !r.H) return;
+  ev.preventDefault();
+  const p = canvasPos(ev), reach = 12 * cv.width / cv.getBoundingClientRect().width;
+  let best = null, gap = reach;
+  for (const h of r.handles) {
+    const d = Math.hypot(h.px[0] - p.x, h.px[1] - p.y);
+    if (d < gap || (h.pinned && d <= reach && !(best && best.pinned))) { best = h; gap = d; }
+  }
+  if (!best) {
+    const H = r.H, w = H[2][0] * p.x + H[2][1] * p.y + H[2][2];
+    if (w <= 0) return;
+    const x = (H[0][0] * p.x + H[0][1] * p.y + H[0][2]) / w, y = (H[1][0] * p.x + H[1][1] * p.y + H[1][2]) / w;
+    if (x < -6 || x > 56 || y < -6 || y > r.length + 6) { r.note = "That is off the floor. Grab a spot on the court."; drawReview(); return; }
+    best = { ft: [x, y], px: [p.x, p.y], pinned: false };
+    r.handles.push(best);
+  }
+  if (!best.pinned) { best.pinned = true; r.pulls.push(best); }
+  r.drag = best;
+  cv.style.cursor = "grabbing";
+  drawReview();
+}
+
+window.addEventListener("mousemove", (ev) => {
+  const r = state.review;
+  if (!r || !r.drag || state.tab !== "court" || !$("#cv")) return;
+  const p = canvasPos(ev);
+  r.drag.px = [p.x, p.y];
+  drawReview();
+  redrawCourt();
+});
+
+window.addEventListener("mouseup", () => {
+  const r = state.review;
+  if (!r || !r.drag) return;
+  r.drag = null;
+  if ($("#cv")) $("#cv").style.cursor = "crosshair";
+  redrawCourt();
+});
+
+window.addEventListener("resize", drawReview);      // the lines and marks are sized for the canvas as it shows
+
+function changeCourtLength() {
+  const r = state.review, next = COURT_LENGTHS[(COURT_LENGTHS.indexOf(r.length) + 1) % COURT_LENGTHS.length];
+  for (const h of r.handles) {                 // feet read from the far end stay that far from it
+    if (!h.ft) continue;
+    if (Math.abs(h.ft[1] - r.length / 2) <= 8) h.ft[1] += (next - r.length) / 2;
+    else if (h.ft[1] > r.length / 2) h.ft[1] += next - r.length;
+  }
+  r.length = next;
+  redrawCourt();
+}
+
+async function reviewKeys(ev) {
+  const r = state.review, l = state.label, k = ev.key.toLowerCase();
+  if (k === "y" || k === "s" || ev.key === "Enter") {
+    await guarded(async () => {
+      await post(`/api/label/court/${l.image_id}/approve`, { handles: r.handles, length: r.length, seconds: (Date.now() - r.started) / 1000 });
+      await loadLabel();
+    });
+  } else if (k === "l") {
+    changeCourtLength();
+  } else if (k === "h") {
+    r.hidden = !r.hidden; drawReview();
+  } else if (ev.key === "Backspace") {
+    const last = r.pulls.pop();
+    if (!last) return;
+    if (last.ft) r.handles.splice(r.handles.indexOf(last), 1);
+    else { last.pinned = false; last.px = [...l.points[last.name]]; }
+    redrawCourt();
+  } else if (k === "r") {
+    r.handles = draftHandles(l); r.pulls = []; redrawCourt();
+  } else if (k === "z") {
+    state.zoom = !state.zoom; $("#cv").classList.toggle("zoom", state.zoom); drawReview();
+  } else if (k === "d") {
+    await guarded(async () => { await post(`/api/label/court/${l.image_id}/skip`); await loadLabel(); });
+  } else return;
+  ev.preventDefault();
 }
 
 function renderCourtLabel() {
   const l = state.label;
+  state.review = null;
+  if (l.draft && Object.keys(l.points || {}).length >= 4) return renderCourtReview();
   state.points = { ...(l.points || {}) };
   state.skippedPoints = new Set();
   state.pointIndex = COURT_POINTS.findIndex(n => !(n in state.points));
   state.img = null;
-  $("#label").innerHTML = `<div class="row"><b>${l.remaining} pending</b><span class="muted">${esc(l.image_id)}</span></div>
+  const refNote = l.ref
+    ? `<div class="row"><b>Reference picture ${l.ref_index} of ${l.ref_count}</b><span>Mark every court point you can see, as
+       exactly as you can (<kbd>Z</kbd> zooms). These few pictures place the court in the whole game.</span></div>` : "";
+  $("#label").innerHTML = `<div class="row"><b>${l.remaining} pending</b><span class="muted">${esc(l.image_id)}</span></div>${refNote}
     <div class="card wide" style="display:flex;gap:12px;align-items:flex-start">
       <div><canvas id="cv" class="${state.zoom ? "zoom" : ""}" width="${l.width}" height="${l.height}"></canvas>
       <div class="keys">Click where the highlighted point is. <kbd>N</kbd> not in view <kbd>Backspace</kbd> undo
@@ -679,6 +840,7 @@ function drawPoints() {
 async function courtKeys(ev) {
   const l = state.label;
   if (!l || l.done) return;
+  if (state.review) return reviewKeys(ev);
   const k = ev.key.toLowerCase();
   if (k === "n") {
     if (!(state.pointIndex >= 0)) return;

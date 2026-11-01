@@ -12,11 +12,19 @@ def register(sub) -> None:
                         help="rim only: save the detector's own steady boxes as labels, for a gym nobody can label right now")
     parser.add_argument("--no-proposals", action="store_true",
                         help="ball only: queue bare crops, for a gym where the detector's guesses are mostly wrong")
+    parser.add_argument("--refs", action="store_true",
+                        help="court only: queue the 3-5 reference pictures the court is placed from, not 40 frames")
     parser.add_argument("--device", default=None)
     parser.set_defaults(func=run)
 
 
 def run(args) -> int:
+    if args.what == "court" and args.refs:
+        from film.train.prelabel import prelabel_court_refs
+
+        prelabel_court_refs(args.game_id)
+        print("next: have Claude draw them (film court-draft), then uv run film review and approve them in the Label court tab")
+        return 0
     if args.what == "court":
         from film.train.prelabel import prelabel_court
 

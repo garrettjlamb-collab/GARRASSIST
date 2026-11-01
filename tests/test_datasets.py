@@ -1,4 +1,5 @@
 import numpy as np
+import pytest
 
 from film.perceive.detectors import Box
 from film.train import datasets as ds
@@ -120,4 +121,15 @@ def test_court_data_yaml_describes_the_keypoints(monkeypatch, tmp_path):
     monkeypatch.setenv("FILM_DATASETS_DIR", str(tmp_path / "datasets"))
     from film.interpret.court import FLIP_INDEX
     text = ds.data_yaml("court").read_text()
-    assert "kpt_shape: [18, 3]" in text and f"flip_idx: {FLIP_INDEX}" in text and "0: court" in text
+    assert "kpt_shape: [22, 3]" in text and f"flip_idx: {FLIP_INDEX}" in text and "0: court" in text
+
+
+def test_read_points_gives_back_what_accept_points_stored(monkeypatch, tmp_path):
+    _env(monkeypatch, tmp_path)
+    ds.write_pending("court", "r1", np.zeros((100, 200, 3), np.uint8), [], extra={"t": 1.0, "points": {}})
+    ds.accept_points("court", "r1", {"near-corner-left": (20.0, 80.0), "far-ft-top": (150.5, 30.25)})
+    image, points, w, h = ds.read_points("court", "r1")
+    assert image.exists() and (w, h) == (200, 100)
+    assert points.keys() == {"near-corner-left", "far-ft-top"}
+    assert points["far-ft-top"] == pytest.approx((150.5, 30.25), abs=0.01)
+    assert ds.read_points("court", "never") is None

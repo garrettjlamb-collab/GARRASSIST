@@ -37,3 +37,11 @@ def test_profile_flag_accepts_known_names(cmd):
     from film.cli import build_parser
 
     assert build_parser().parse_args([cmd, "x.mp4", "--profile", "hudl-tactical"]).profile == "hudl-tactical"
+
+
+def test_court_flags_parse():
+    from film.cli import build_parser
+
+    a = build_parser().parse_args(["court", "g", "--refs-from", "other", "--train-frames", "60"])
+    assert (a.refs_from, a.train_frames, a.model, a.sheet) == ("other", 60, False, False)
+    assert build_parser().parse_args(["prelabel", "court", "g", "--refs"]).refs is True

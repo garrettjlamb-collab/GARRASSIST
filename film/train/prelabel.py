@@ -118,6 +118,35 @@ def prelabel_court(game_id: str, n: int = 40, margin_s: float = 30.0, log=print)
     return count
 
 
+@needs_film
+def prelabel_court_refs(game_id: str, n: int = 90, k_max: int = 5, margin_s: float = 30.0, log=print) -> int:
+    """The few reference pictures the court is placed from (film/perceive/court_refs.py), in place of the game's
+    evenly spaced court frames: every unmarked court frame of the game leaves the queue and the pictures are chosen
+    afresh (marked ones count as chosen)."""
+    from film.perceive import court_refs
+    from film.train.datasets import list_pending, read_pending, remove_pending
+
+    m = Manifest.load(game_dir(game_id))
+    removed = 0
+    for image_id in list_pending("court"):
+        found = court_refs.REF_ID.match(image_id)
+        if found and found.group("game") == game_id:                  # unmarked frames, references too: chosen afresh
+            remove_pending("court", image_id)
+            removed += 1
+    times, share = court_refs.choose_references(game_id, n=n, k_max=k_max, margin_s=margin_s, log=log)
+    count = 0
+    for i, t in enumerate(times):
+        frame = first_frame_at(Path(m.source), t, m.fps)
+        if frame is None:
+            continue
+        write_pending("court", f"{game_id}_{int(round(t * 10)):06d}", frame, [],
+                      extra={"t": t, "points": {}, "ref": True, "ref_index": i + 1, "ref_count": len(times)})
+        count += 1
+    log(f"prelabel court --refs: {count} reference pictures queued for {game_id}"
+        + (f" ({removed} evenly spaced frames taken out of the queue)" if removed else ""))
+    return count
+
+
 AUTOLABEL_RECHECK_S = 0.3
 AUTOLABEL_MIN_CONF = 0.2
 AUTOLABEL_MIN_IOU = 0.5

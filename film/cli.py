@@ -16,6 +16,7 @@ COMMANDS = [
     "film.commands.scoreboard",
     "film.commands.perceive",
     "film.commands.court",
+    "film.commands.court_draft",
     "film.commands.interpret",
     "film.commands.prelabel",
     "film.commands.train",

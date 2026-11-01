@@ -12,29 +12,42 @@ import numpy as np
 
 WIDTH, HALF_DEPTH, FULL_DEPTH = 50.0, 47.0, 94.0
 BASKET = (25.0, 5.25)
-THREE_RADIUS = 19.75                    # NFHS: the arc meets the baseline, no straight corner segment
-LANE_LEFT, LANE_RIGHT, FT_LINE_Y = 17.0, 33.0, 19.0
+THREE_RADIUS = 19.75                    # NFHS: the line runs straight off the baseline to the basket's depth, then arcs
+LANE_LEFT, LANE_RIGHT, FT_LINE_Y = 19.0, 31.0, 19.0     # NFHS: the lane is 12 ft wide (the NBA's is 16)
 FT_CIRCLE_RADIUS = 6.0
-
-_ARC_HALF_WIDTH = math.sqrt(THREE_RADIUS ** 2 - BASKET[1] ** 2)       # where the arc meets y = 0
+CENTRE_CIRCLE_RADIUS = 6.0
 
 _NEAR = {
     "corner-left": (0.0, 0.0), "corner-right": (WIDTH, 0.0),
     "lane-left": (LANE_LEFT, 0.0), "lane-right": (LANE_RIGHT, 0.0),
     "ft-left": (LANE_LEFT, FT_LINE_Y), "ft-right": (LANE_RIGHT, FT_LINE_Y),
     "ft-top": (BASKET[0], FT_LINE_Y + FT_CIRCLE_RADIUS),
-    "arc-left": (BASKET[0] - _ARC_HALF_WIDTH, 0.0), "arc-right": (BASKET[0] + _ARC_HALF_WIDTH, 0.0),
+    # Where the three-point line meets the baseline: its straight piece stands THREE_RADIUS either side of the basket.
+    "arc-left": (BASKET[0] - THREE_RADIUS, 0.0), "arc-right": (BASKET[0] + THREE_RADIUS, 0.0),
 }
 
 
-def _rotate(point: tuple[float, float]) -> tuple[float, float]:
+def _rotate(point: tuple[float, float], length: float = FULL_DEPTH) -> tuple[float, float]:
     x, y = point
-    return (WIDTH - x, FULL_DEPTH - y)
+    return (WIDTH - x, length - y)
 
 
-POINT_NAMES: list[str] = [f"near-{k}" for k in _NEAR] + [f"far-{k}" for k in _NEAR]
-TEMPLATE: dict[str, tuple[float, float]] = {**{f"near-{k}": v for k, v in _NEAR.items()},
-                                            **{f"far-{k}": _rotate(v) for k, v in _NEAR.items()}}
+# Midcourt: the centre line at each sideline and where the centre circle crosses it. "left" is the near end's left,
+# the sideline of near-corner-left. Last in the list, so labels written before they existed still read.
+MID_NAMES = ["mid-left", "mid-right", "mid-circle-left", "mid-circle-right"]
+POINT_NAMES: list[str] = [f"near-{k}" for k in _NEAR] + [f"far-{k}" for k in _NEAR] + MID_NAMES
+
+
+def template(length: float = FULL_DEPTH) -> dict[str, tuple[float, float]]:
+    """The 22 points on a court `length` feet long. Every court is 50 ft wide and marks its ends the same way;
+    the length is not standard (84 ft is the high-school court, 94 ft the college one, and both are in use)."""
+    mid = length / 2
+    return {**{f"near-{k}": v for k, v in _NEAR.items()}, **{f"far-{k}": _rotate(v, length) for k, v in _NEAR.items()},
+            "mid-left": (0.0, mid), "mid-right": (WIDTH, mid),
+            "mid-circle-left": (WIDTH / 2 - CENTRE_CIRCLE_RADIUS, mid), "mid-circle-right": (WIDTH / 2 + CENTRE_CIRCLE_RADIUS, mid)}
+
+
+TEMPLATE: dict[str, tuple[float, float]] = template()
 END_OF_POINT: dict[str, str] = {n: n.split("-", 1)[0] for n in POINT_NAMES}
 
 
@@ -49,10 +62,10 @@ def _mirror_name(name: str) -> str:
 FLIP_INDEX: list[int] = [POINT_NAMES.index(_mirror_name(n)) for n in POINT_NAMES]
 
 
-def fold(x: float, y: float) -> tuple[float, float]:
+def fold(x: float, y: float, length: float = FULL_DEPTH) -> tuple[float, float]:
     """A full-court point onto the half court of the end it is in: the far end rotates about centre."""
-    if y > HALF_DEPTH:
-        return (WIDTH - x, FULL_DEPTH - y)
+    if y > length / 2:
+        return (WIDTH - x, length - y)
     return (x, y)
 
 
@@ -70,6 +83,7 @@ class Mapping:
     # reliable (fliplr augmentation and per-frame labelling can swap near and far); x/y are unaffected because fold
     # cancels the choice. A shot's end comes from the rim, not from this.
     end: str                           # "near" or "far": the end most of the points belong to
+    length: float = FULL_DEPTH         # the court's length in feet, which the far end's points were fitted at
 
     def to_court(self, px: float, py: float) -> tuple[float, float] | None:
         """Full-court feet for a pixel, or None when the pixel is at or above the horizon (no floor point there)."""
@@ -80,19 +94,41 @@ class Mapping:
 
     def to_half(self, px: float, py: float) -> tuple[float, float] | None:
         p = self.to_court(px, py)
-        return None if p is None else fold(*p)
+        return None if p is None else fold(*p, self.length)
 
     def contains(self, px: float, py: float, margin: float = 2.0) -> bool:
         p = self.to_court(px, py)
         if p is None:
             return False
         x, y = p
-        return -margin <= x <= WIDTH + margin and -margin <= y <= FULL_DEPTH + margin
+        return -margin <= x <= WIDTH + margin and -margin <= y <= self.length + margin
 
 
-def fit_mapping(points: dict[str, tuple[float, float]], reproj_tol_px: float = 8.0) -> Mapping | None:
-    """A homography from the named pixel points to the court template, RANSAC against bad points.
-    None with fewer than four points, or fewer than four inliers."""
+def _oriented(back: np.ndarray, feet: list[tuple[float, float]]) -> tuple[np.ndarray, np.ndarray] | None:
+    """The fit (feet -> pixels) and its inverse, or None when it shows the court in a mirror.
+
+    For a camera above the floor, det of the Jacobian of feet -> pixels is det(back) / w^3 and has one sign over the
+    whole visible court. The template is right-handed (x right along the near baseline as seen from the near end, y away
+    from it) and image y grows downward, so a true labelling gives a negative determinant everywhere; a positive one is
+    the court seen in a mirror (left and right names swapped). Refuse both that and mixed signs (marks on both sides of
+    the horizon), rather than fit a mirrored court silently."""
+    ws = np.array([(back @ np.array([*f, 1.0]))[2] for f in feet])
+    jac = np.linalg.det(back) / ws ** 3
+    if not np.all(jac < 0):
+        return None
+    if ws[0] < 0:                      # scale so w > 0 on the court both ways: Mapping.to_court reads w <= 0 as sky
+        back = -back
+    try:
+        return back, np.linalg.inv(back)
+    except np.linalg.LinAlgError:
+        return None
+
+
+def fit_mapping(points: dict[str, tuple[float, float]], reproj_tol_px: float = 8.0,
+                length: float = FULL_DEPTH) -> Mapping | None:
+    """A homography from the named pixel points to the court template (`length` feet long), RANSAC against bad
+    points. None with fewer than four points, or fewer than four inliers."""
+    TEMPLATE = template(length)
     names = [n for n in points if n in TEMPLATE]
     if len(names) < MIN_POINTS:
         return None
@@ -109,21 +145,10 @@ def fit_mapping(points: dict[str, tuple[float, float]], reproj_tol_px: float = 8
         back, _ = cv2.findHomography(np.array([TEMPLATE[n] for n in inliers]), np.array([points[n] for n in inliers]), 0)
         if back is None:
             return None
-    # Orientation guard. For a camera above the floor, det of the Jacobian of feet -> pixels is det(back) / w^3 and has
-    # one sign over the whole visible court. The template is right-handed (x right along the near baseline as seen from
-    # the near end, y away from it) and image y grows downward, so a true labelling gives a negative determinant
-    # everywhere; a positive one is the court seen in a mirror (left and right names swapped). Refuse both that and
-    # mixed signs (inliers on both sides of the horizon), rather than fit a mirrored court silently.
-    ws = np.array([(back @ np.array([*TEMPLATE[n], 1.0]))[2] for n in inliers])
-    jac = np.linalg.det(back) / ws ** 3
-    if not np.all(jac < 0):
+    oriented = _oriented(back, [TEMPLATE[n] for n in inliers])
+    if oriented is None:
         return None
-    if ws[0] < 0:                      # scale so w > 0 on the court both ways: Mapping.to_court reads w <= 0 as sky
-        back = -back
-    try:
-        H = np.linalg.inv(back)
-    except np.linalg.LinAlgError:
-        return None
+    back, H = oriented
     errors = []
     for n in inliers:
         v = back @ np.array([*TEMPLATE[n], 1.0])
@@ -131,4 +156,33 @@ def fit_mapping(points: dict[str, tuple[float, float]], reproj_tol_px: float = 8
     error = float(np.mean(errors))
     conf = min(1.0, len(inliers) / 8.0 + 0.5) * min(1.0, GOOD_ERROR_PX / max(error, GOOD_ERROR_PX))
     end = "far" if sum(END_OF_POINT[n] == "far" for n in inliers) * 2 > len(inliers) else "near"
-    return Mapping(H=H, points_used=len(inliers), error_px=error, conf=round(conf, 3), end=end)
+    return Mapping(H=H, points_used=len(inliers), error_px=error, conf=round(conf, 3), end=end, length=length)
+
+
+PIN_WEIGHT = 100                        # how many marks one spot the coach pulled counts for
+
+
+def fit_handles(feet: list[tuple[float, float]], pixels: list[tuple[float, float]], pinned: list[bool],
+                length: float = FULL_DEPTH) -> Mapping | None:
+    """The court through every mark, with no marks thrown out: what the coach sees while he reviews a drawn court. A
+    spot he pulled counts PIN_WEIGHT times, so it stays under the mouse and a wrong mark loses without being deleted.
+    None with fewer than four marks or a mirrored court."""
+    if len(feet) < MIN_POINTS:
+        return None
+    repeats = [PIN_WEIGHT if p else 1 for p in pinned]
+    src = np.repeat(np.array(feet, dtype=np.float64), repeats, axis=0)
+    dst = np.repeat(np.array(pixels, dtype=np.float64), repeats, axis=0)
+    back, _ = cv2.findHomography(src, dst, 0)
+    if back is None:
+        return None
+    oriented = _oriented(back, feet)
+    if oriented is None:
+        return None
+    back, H = oriented
+    errors = []
+    for f, (px, py) in zip(feet, pixels):
+        v = back @ np.array([*f, 1.0])
+        errors.append(float(np.hypot(v[0] / v[2] - px, v[1] / v[2] - py)))
+    error = float(np.mean(errors))
+    conf = min(1.0, len(feet) / 8.0 + 0.5) * min(1.0, GOOD_ERROR_PX / max(error, GOOD_ERROR_PX))
+    return Mapping(H=H, points_used=len(feet), error_px=error, conf=round(conf, 3), end="near", length=length)
