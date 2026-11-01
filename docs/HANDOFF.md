@@ -551,6 +551,18 @@ a player within 3 ft of where it starts; with no one there the rule's choice sta
 - **iCloud:** a pull can sit for an hour and start when asked again, so `_pull` asks every 5 minutes.
 - **Next:** threes in Arcadia's gym; most fall back to the rule (held threes: flight 1/6, path 1/1). Then a confidence score that means something, or his 30 dots to measure live shots in feet.
 
+## 2026-11-01 (night): dot check (branch dot-check, not merged)
+
+Garrett's own dots on 30 live shots, placed with the machine's hidden: `film dotcheck pick` queues them (`labels/dotcheck/queue.json`: 3 from each of 10 games, 10 three / 10 mid / 10 close by the machine's dot, seed 7,
+no free throws), the **Dot check** tab takes them, `film dotcheck score` prints median feet, within 3 and 6 ft, arc side and zone, by camera, method and shot kind, and a mirrored figure that would show the two courts disagreeing on left and right.
+The API never sends the machine's dot. Answers go to `labels/dotcheck/answers.jsonl` beside the machine's dot as it stood, and his dot onto the shot's decision. `film dotcheck doubt --shots N ...` takes an answer out of the score and his dot off the shot.
+
+- **Measured 2026-11-01, his 30 blind dots, 28 counted** (he doubted shots 12 and 22, adjacent cards on JV vs Marcos): median 3.3 ft; 50% within 3 ft, 71% within 6, 25% over 10. Arc side 89%, zone 64%.
+  Hudl MDN 3.0 ft (n15), Hudl Arcadia 3.1 (n4), iPad/Moon Valley 6.4 (n6), NFHS 2.1 (n3). Path dots 2.7 (n8), flight dots 4.4 (n20). No tuning used his dots, but the sample leaves out free throws and shots with no dot, and his clicks carry their own error.
+- **The misses are the wrong person.** Of the 7 over 10 ft, by eye on one frame each, 6 box a different player from where he clicked; on Deer Valley's the box sits beside his click, so that one is his click or the court.
+- **Confidence does not catch them:** over 10 ft at 0.8 and up 23%, under 0.8 27%; two misses over 12 ft are at conf 1.0.
+- **Next:** the machine's dots are drafts for him to correct on the cards, not stats. Better shooter choice is the biggest gain.
+
 ## What Garrett has asked for (requirements gathered in conversation)
 
 1. **Full box score eventually**, as automated as possible; he accepts reviewing some of it.

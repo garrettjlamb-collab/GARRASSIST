@@ -255,3 +255,79 @@ def test_reviewing_an_image_not_in_the_queue_is_a_404(synthetic_video, tmp_path,
     _env(monkeypatch, tmp_path)
     client = TestClient(create_app())
     assert client.post("/api/label/court/nope/approve", json={"handles": _court_handles(), "length": 94}).status_code == 404
+
+
+def _dot_game(synthetic_video, monkeypatch, tmp_path):
+    from film.interpret.events import load_events
+
+    _env(monkeypatch, tmp_path)
+    game_id, gd = _game(synthetic_video)
+    events = load_events(gd)
+    events[0].x, events[0].y, events[0].signals = 30.0, 20.0, {"location": {"method": "flight"}, "phase": "live"}
+    events[1].x, events[1].y, events[1].signals = 25.0, 19.0, {"location": {"method": "free-throw"}, "phase": "live"}
+    save_events(gd, events)
+    cut_clip(synthetic_video, 0.5, 1.5, clip_path(gd, events[1].id))
+    from film.review.decisions import save_decision
+
+    for e in events:
+        save_decision(gd, e.id, {"status": "confirmed", "made": True, "team": "home"})
+    return game_id, gd, events
+
+
+def test_the_dot_check_never_shows_the_machines_dot(synthetic_video, tmp_path, monkeypatch):
+    from film.review import dotcheck
+
+    game_id, gd, events = _dot_game(synthetic_video, monkeypatch, tmp_path)
+    assert [q["event_id"] for q in dotcheck.pick(n=5, log=lambda m: None)] == [events[0].id]      # the free throw measures nothing
+    client = TestClient(create_app())
+    shot = client.get("/api/dotcheck/next").json()
+    assert shot["event_id"] == events[0].id and shot["remaining"] == 1
+    assert not {"x", "y", "zone", "shot_type", "location_conf", "signals", "flags"} & set(shot)
+
+
+def test_a_dot_check_answer_is_logged_beside_the_machines_and_kept_on_the_shot(synthetic_video, tmp_path, monkeypatch):
+    from film.review import dotcheck
+    from film.review.decisions import load_decisions
+
+    game_id, gd, events = _dot_game(synthetic_video, monkeypatch, tmp_path)
+    dotcheck.pick(n=5, log=lambda m: None)
+    client = TestClient(create_app())
+    done = client.post("/api/dotcheck/answer", json={"game_id": game_id, "event_id": events[0].id, "x": 33.0, "y": 24.0}).json()
+    assert done["done"] is True and done["answered"] == 1
+    kept = load_decisions(gd)[events[0].id]
+    assert (kept["x"], kept["y"], kept["status"], kept["made"], kept["team"]) == (33.0, 24.0, "confirmed", True, "home")
+    got = dotcheck.score()
+    assert got["answered"] == 1 and got["all"]["median_ft"] == 5.0
+
+
+def test_a_skipped_shot_leaves_the_queue_and_puts_nothing_on_the_shot(synthetic_video, tmp_path, monkeypatch):
+    from film.review import dotcheck
+    from film.review.decisions import load_decisions
+
+    game_id, gd, events = _dot_game(synthetic_video, monkeypatch, tmp_path)
+    dotcheck.pick(n=5, log=lambda m: None)
+    client = TestClient(create_app())
+    assert client.post("/api/dotcheck/skip", json={"game_id": game_id, "event_id": events[0].id}).json()["done"] is True
+    assert "x" not in load_decisions(gd)[events[0].id]
+    assert dotcheck.score()["skipped"] == 1
+
+
+def test_a_shot_not_in_the_dot_check_is_refused(synthetic_video, tmp_path, monkeypatch):
+    game_id, gd, events = _dot_game(synthetic_video, monkeypatch, tmp_path)
+    client = TestClient(create_app())
+    assert client.post("/api/dotcheck/answer", json={"game_id": game_id, "event_id": events[0].id, "x": 1.0, "y": 1.0}).status_code == 404
+
+
+def test_a_doubtful_answer_leaves_the_score_and_his_dot_comes_off_the_shot(synthetic_video, tmp_path, monkeypatch):
+    from film.review import dotcheck
+    from film.review.decisions import load_decisions
+
+    game_id, gd, events = _dot_game(synthetic_video, monkeypatch, tmp_path)
+    dotcheck.pick(n=5, log=lambda m: None)
+    dotcheck.answer(game_id, events[0].id, 33.0, 24.0)
+    assert dotcheck.mark_doubtful([1])[0]["event_id"] == events[0].id
+    kept = load_decisions(gd)[events[0].id]
+    assert kept["x"] is None and kept["status"] == "confirmed" and kept["made"] is True
+    got = dotcheck.score()
+    assert got["answered"] == 0 and got["doubtful"] == 1
+    assert dotcheck.read_answers()[0]["x"] == 33.0                 # the answer itself stays in the log
