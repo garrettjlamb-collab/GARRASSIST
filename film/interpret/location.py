@@ -4,7 +4,7 @@ ball then draws a parabola in time: the earliest sighting on it is the release, 
 shooter, and the shooter's feet through the court mapping are the spot."""
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 
 import numpy as np
 
@@ -26,6 +26,7 @@ BACK_S, BACK_STEP_S = 0.8, 0.1             # how far the flight is run back unse
 COURT_MARGIN_FT = 3.0
 REACH_WIDTHS = 1.5                         # further than this from anyone, the shooter is flagged as doubtful
 ARM_HEIGHTS, ARM_WIDTHS = 0.45, 0.25       # raised arms reach this far above and beside a person's box
+SAME_PERSON_IOU = 0.3
 NEIGHBOUR_FRAMES = 2                       # a shooter hidden behind someone at the release is looked for this many frames either side
 
 
@@ -238,6 +239,31 @@ def free_throw_setup(looks: list[Look], end_t: float) -> bool:
 
 FREE_THROW_SPOT = (WIDTH / 2, FT_LINE_Y)
 FULL_CONF_POINTS = 8                       # a flight seen this many times is as sure as a flight gets
+
+
+def _iou(a, b) -> float:
+    w = min(a[2], b[2]) - max(a[0], b[0])
+    h = min(a[3], b[3]) - max(a[1], b[1])
+    if w <= 0 or h <= 0:
+        return 0.0
+    inter = w * h
+    return inter / ((a[2] - a[0]) * (a[3] - a[1]) + (b[2] - b[0]) * (b[3] - b[1]) - inter)
+
+
+def set_aside(looks: list[Look], t: float, box, min_iou: float = SAME_PERSON_IOU) -> list[Look]:
+    """The looks without this person: followed by overlap from the frame at t, both ways, through the whole window."""
+    i = min(range(len(looks)), key=lambda j: abs(looks[j].t - t))
+    out = list(looks)
+    for order in (range(i, len(looks)), range(i - 1, -1, -1)):
+        last = tuple(box)
+        for j in order:
+            k = looks[j]
+            same = max(k.people, key=lambda b: _iou(b, last), default=None)
+            if same is None or _iou(same, last) < min_iou:
+                continue                       # hidden in this frame: keep looking from where they were last seen
+            out[j] = replace(k, people=[b for b in k.people if b is not same])
+            last = same
+    return out
 
 
 def shot_spot(looks: list[Look], rims_px: list[tuple[float, float]], arrival_t: float | None, t: float, points: int | None,
