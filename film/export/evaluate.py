@@ -61,7 +61,8 @@ def evaluate(game_id: str, reference_times: list[float] | None = None, tol_s: fl
         "made_compared": len(compared), "made_agreement": agree / len(compared) if compared else None,
     }
     located = [e for e in by_status["confirmed"] if (decisions[e.id]["x"] if "x" in decisions[e.id] else e.x) is not None]
-    placed = [e for e in by_status["confirmed"] if decisions[e.id].get("x") is not None]
+    # A dot he only kept is the machine's own, so it measures nothing against the machine.
+    placed = [e for e in by_status["confirmed"] if decisions[e.id].get("x") is not None and decisions[e.id].get("dot_source", "coach") == "coach"]
     pairs = [(e, decisions[e.id]) for e in placed if e.x is not None and e.y is not None]
     errors = [math.hypot(e.x - d["x"], e.y - d["y"]) for e, d in pairs]
     zones_ok = [zone_of(e.x, e.y) == zone_of(d["x"], d["y"]) for e, d in pairs]

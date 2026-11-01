@@ -16,6 +16,9 @@ STATUSES = ("confirmed", "rejected", "unsure")
 FOULS = ("on_shot", "before_shot")
 
 
+DOT_SOURCES = ("coach", "approved", "bulk")     # placed or moved by him; looked at and kept; kept unseen. Absent means coach.
+
+
 def decisions_path(game_dir: Path) -> Path:
     return Path(game_dir) / "review.json"
 
@@ -47,6 +50,10 @@ def save_decision(game_dir: Path, event_id: str, decision: dict) -> dict:
         if not (-2.0 <= x <= WIDTH + 2.0 and -2.0 <= y <= HALF_DEPTH + 2.0):
             raise ValueError(f"the dot ({x:.1f}, {y:.1f}) is off the court")
         entry["x"], entry["y"] = x, y
+        if decision.get("dot_source"):
+            if decision["dot_source"] not in DOT_SOURCES:
+                raise ValueError(f"dot_source must be one of {DOT_SOURCES}, got {decision['dot_source']!r}")
+            entry["dot_source"] = decision["dot_source"]
     elif "x" in decision:
         entry["x"] = entry["y"] = None
     Path(game_dir).mkdir(parents=True, exist_ok=True)
@@ -56,6 +63,8 @@ def save_decision(game_dir: Path, event_id: str, decision: dict) -> dict:
         previous = everything.get(event_id) or {}
         if "x" not in decision and "x" in previous:       # the card sends x/y only when the dot moved: keep the old dot
             entry["x"], entry["y"] = previous["x"], previous.get("y")
+            if "dot_source" in previous:
+                entry["dot_source"] = previous["dot_source"]
         everything[event_id] = entry
         tmp = path.with_name(path.name + ".tmp")
         tmp.write_text(json.dumps(everything, indent=1))
