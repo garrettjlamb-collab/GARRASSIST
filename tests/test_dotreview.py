@@ -37,6 +37,12 @@ def test_the_worst_dots_come_first_then_no_dot_then_the_sure_ones_and_never_a_fr
     assert (card["doubtful"], card["no_dot"], card["bulk"], card["checks"]) == (2, 1, 1, 0)
 
 
+def test_the_hidden_checks_of_the_sure_dots_come_before_everything(game, monkeypatch):
+    monkeypatch.setattr(dotreview, "is_blind", lambda g, e: e == "shot-sure")
+    assert [r["event_id"] for r in dotreview.queue()] == ["shot-sure", "shot-low", "shot-mid", "shot-none"]
+    assert dotreview.next_shot()["checks"] == 1
+
+
 def test_a_hidden_card_carries_nothing_about_the_machines_dot(game, monkeypatch):
     monkeypatch.setattr(dotreview, "is_blind", lambda g, e: True)
     card = dotreview.next_shot()

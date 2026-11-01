@@ -64,12 +64,13 @@ def _rows() -> list[dict]:
 
 
 def _band(r: dict) -> int:
-    """0 the machine's doubtful dots, 1 sure dots hidden to check them, 2 no dot at all, 3 sure dots that can be approved in one go."""
+    """0 sure dots hidden to check them, first: they say whether keeping the sure dots unseen is safe. 1 the machine's doubtful dots,
+    2 no dot at all, 3 sure dots that can be kept in one go."""
     if r["x"] is None:
         return 2
     if (r["conf"] or 0) < HIGH_CONF:
-        return 0
-    return 1 if r["blind"] else 3
+        return 1
+    return 0 if r["blind"] else 3
 
 
 def queue() -> list[dict]:
@@ -78,8 +79,8 @@ def queue() -> list[dict]:
 
 def next_shot() -> dict:
     rows = queue()
-    counts = {"remaining": len(rows), "doubtful": sum(_band(r) == 0 for r in rows), "no_dot": sum(_band(r) == 2 for r in rows), "bulk": sum(_band(r) == 3 for r in rows),
-              "checks": sum(_band(r) == 1 for r in rows), "done_so_far": sum(not a.get("skipped") for a in read_answers())}
+    counts = {"remaining": len(rows), "doubtful": sum(_band(r) == 1 for r in rows), "no_dot": sum(_band(r) == 2 for r in rows), "bulk": sum(_band(r) == 3 for r in rows),
+              "checks": sum(_band(r) == 0 for r in rows), "done_so_far": sum(not a.get("skipped") for a in read_answers())}
     if not rows:
         return {"done": True, **counts}
     r = rows[0]
