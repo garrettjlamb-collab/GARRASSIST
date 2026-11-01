@@ -62,6 +62,11 @@ def mask_regions(profile: str) -> list[tuple[int, int, int, int]]:
     return [HUDL_OVERLAY_REGION] if profile.startswith("hudl") else []
 
 
+def masks_for(manifest) -> list[tuple[int, int, int, int]]:
+    """A game's profile's burned-in boxes and any recorded on the game itself (a logo, a score bug the profile does not know)."""
+    return mask_regions(manifest.profile) + [tuple(r) for r in manifest.still_regions]
+
+
 def features(frame_bgr: np.ndarray, mask_regions: list | tuple = ()) -> Features:
     h, w = frame_bgr.shape[:2]
     s = WORK_WIDTH / w if w > WORK_WIDTH else 1.0

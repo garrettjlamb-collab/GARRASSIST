@@ -17,7 +17,7 @@ from film.common.paths import game_dir, labels_dir
 from film.export.court_sheet import court_polylines, draw_court
 from film.interpret.court import FULL_DEPTH, Mapping, fit_handles, fit_mapping, template
 from film.perceive.court_refs import DATASET, REF_ID, _fit, load_references, measure_length, place_points, points_in_view
-from film.perceive.register import features, mask_regions
+from film.perceive.register import features, masks_for
 
 DRAFT_TOL_PX = 12.0               # further than this from the others' fit, a mark is thrown out of a draft
 CARRY_MIN_POINTS = 6              # a carried fit from fewer can be worse than a draft that spans the picture
@@ -57,7 +57,7 @@ def _moved_px(handles: list[dict], draft_points: dict) -> float | None:
 
 
 def _masks(game_id: str) -> list:
-    return mask_regions(Manifest.load(game_dir(game_id)).profile)
+    return masks_for(Manifest.load(game_dir(game_id)))
 
 
 def approve(image_id: str, handles: list[dict], length: float, seconds: float | None = None, checked_by: str = "coach") -> dict:

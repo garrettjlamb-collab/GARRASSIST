@@ -26,7 +26,7 @@ from film.common.paths import datasets_dir, game_dir
 from film.common.video import iter_frames
 from film.interpret.court import END_OF_POINT, FULL_DEPTH, Mapping, fit_mapping, template
 from film.perceive.court_run import default_step, mapping_row, write_mappings
-from film.perceive.register import Features, features, mask_regions, match, project
+from film.perceive.register import Features, features, masks_for, match, project
 
 DATASET = "court"
 REF_ID = re.compile(r"^(?P<game>.+)_(?P<t10>\d{6})$")
@@ -163,7 +163,7 @@ def refs_pass(game_id: str, refs_from: str | None = None, step_s: float | None =
     also save that many evenly spaced reference-placed frames as court-finder training labels."""
     gd = game_dir(game_id)
     m = Manifest.load(gd)
-    masks = mask_regions(m.profile)
+    masks = masks_for(m)
     source_game = refs_from or game_id
     refs = load_references(source_game, masks)
     if not refs:
@@ -218,7 +218,7 @@ def check_references(game_id: str, masks: list | tuple | None = None) -> list[di
     A big error on one point is a slipped click; a reference that lines up with none of the others is fine (it sees
     a part of the gym they do not), it just cannot be checked."""
     if masks is None:
-        masks = mask_regions(Manifest.load(game_dir(game_id)).profile)
+        masks = masks_for(Manifest.load(game_dir(game_id)))
     refs = load_references(game_id, masks)
     out = []
     for r in refs:
@@ -284,7 +284,7 @@ def choose_references(game_id: str, n: int = 90, k_max: int = 5, coverage: float
     from film.train.prelabel import first_frame_at, sample_times
 
     m = Manifest.load(game_dir(game_id))
-    masks = mask_regions(m.profile)
+    masks = masks_for(m)
     if samples is None:
         samples = ((t, first_frame_at(Path(m.source), t, m.fps)) for t in sample_times(m.duration_s, n, margin_s))
     feats = [(t, features(frame, masks)) for t, frame in samples if frame is not None]

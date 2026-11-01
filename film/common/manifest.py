@@ -21,6 +21,7 @@ class Manifest:
     stages: dict = field(default_factory=dict)
     model_versions: dict = field(default_factory=dict)
     title: str = ""                       # a name for people; the game id until someone sets one
+    still_regions: list = field(default_factory=list)     # boxes burned into the film (x1, y1, x2, y2) on a profile that does not know them
 
     def __post_init__(self) -> None:
         if not self.title:
