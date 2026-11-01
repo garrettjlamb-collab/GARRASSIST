@@ -47,7 +47,7 @@ def test_a_hidden_card_carries_nothing_about_the_machines_dot(game, monkeypatch)
     monkeypatch.setattr(dotreview, "is_blind", lambda g, e: True)
     card = dotreview.next_shot()
     assert card["blind"] is True and not {"x", "y", "conf", "zone", "method"} & set(card)
-    assert card["event_id"] == "shot-low"
+    assert card["event_id"] == "shot-sure"
 
 
 def test_keeping_a_dot_saves_it_as_approved_and_keeps_his_other_answers(game):
