@@ -151,7 +151,8 @@ def carry_drafts(game_id: str) -> int:
         data = ds.read_pending(DATASET, image_id)
         points, _ = place_points(features(cv2.imread(data["image"]), masks), refs)
         w, h = data["width"], data["height"]
-        points = {n: p for n, p in points.items() if 0 <= p[0] < w and 0 <= p[1] < h}
+        # Marks just outside the frame are kept: they cannot be saved as labels, but they hold the fit across the court.
+        points = {n: p for n, p in points.items() if -w <= p[0] < 2 * w and -h <= p[1] < 2 * h}
         length = float(measured or data.get("length") or FULL_DEPTH)
         if len(points) < (CARRY_MIN_POINTS if data.get("points") else 4) or _fit(points, w, h, length) is None:
             continue

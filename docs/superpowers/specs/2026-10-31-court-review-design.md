@@ -34,6 +34,8 @@ A picture with no draft keeps the old point-by-point walk, so nothing that exist
   format changes. Saved labels stay the 22 named points.
 - **A mirrored fit is refused while dragging.** The last good court stays drawn and a note says so. Approve is refused
   too. The orientation guard is the one `fit_mapping` already uses.
+- **Carried marks just outside the frame stay in the draft.** They cannot be saved as labels, but they hold the fit
+  across the court; a Prescott picture with 4 carried marks in frame gave no court until the other 7 were kept.
 - **A carried draft replaces a Claude draft only when it holds 6 or more points.** A carried fit from a few clustered
   points can be worse than a draft that spans the picture. A picture with no draft takes any carried fit.
 - **Every approval is logged** to `labels/court/review_log.jsonl`: who drew the draft, how many spots he pulled, how far

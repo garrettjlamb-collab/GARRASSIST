@@ -100,9 +100,8 @@ made-or-missed clips.
    tab, about 150 frames, `uv run film train rim`. A trained rim model outranks the templates once it
    exists; set `FILM_RIM_DETECTOR=template` to keep the templates on Hudl film.
 5. **Court.** `uv run film prelabel court <game_id> --refs` picks the 3-5 **reference pictures** that between
-   them line up with the whole game (about 3 minutes). In **Label court** click every listed point you can see
-   (N when it is not in view, Z to zoom), S to save. "Near" is the left end of the picture; "left" is your left
-   standing on that baseline facing up the court (the diagram shows it). Then `uv run film court <game_id>` lines
+   them line up with the whole game (about 3 minutes). Have Claude draw them in a session (`film court-draft`), then in **Label court** check the court drawn on each
+   picture: `Y` approves, and if it is off, grab the floor at a wrong spot and pull it into place. Then `uv run film court <game_id>` lines
    every second of film up with the references, fits the court, measures its length when a picture shows both
    ends, prints how well the references agree, and draws `games/<id>/court_sheet.jpg` to check by eye. A fixed
    Hudl camera needs references once: `uv run film court <other_game> --refs-from <game_id>`. The older route

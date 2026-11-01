@@ -739,6 +739,8 @@ window.addEventListener("mouseup", () => {
   redrawCourt();
 });
 
+window.addEventListener("resize", drawReview);      // the lines and marks are sized for the canvas as it shows
+
 function changeCourtLength() {
   const r = state.review, next = COURT_LENGTHS[(COURT_LENGTHS.indexOf(r.length) + 1) % COURT_LENGTHS.length];
   for (const h of r.handles) {                 // feet read from the far end stay that far from it

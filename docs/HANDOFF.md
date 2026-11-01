@@ -453,6 +453,41 @@ Garrett did not want to mark 40 frames on each of two games. Plan:
   2:14:26 (wide, empty court); Prescott 7:04 (right basket), 59:36 (midcourt), plus his marked 0:30 (left basket).
   After he marks them: `film court <id>` on both, check the sheets, then `--refs-from` Mesquite on the other MDN games.
 
+## 2026-10-31: the coach reviews a drawn court instead of marking points
+
+Garrett still did not want to mark 22 named points on 3-5 pictures and asked for the machine to mark and for him to
+review. Spec: `docs/superpowers/specs/2026-10-31-court-review-design.md`. Plan: `docs/superpowers/plans/2026-10-31-court-review.md`.
+
+- **A session draws the drafts. This spends Claude usage, by his choice,** until a trained model can do it. For each
+  picture in `film court-draft list`:
+  1. `film court-draft view <id>` writes a picture with a numbered pixel grid (`--region x0 y0 x1 y1 --scale 2` to zoom). Read it.
+  2. `film court-draft set <id> --points '{"near-lane-left": [800, 425], ...}' --length 84` saves the marks. It names any
+     mark it throws out and prints a `.check.jpg` with the court drawn on it. Read that too and redo the marks if the
+     lines miss the paint.
+- **Names on a sideline camera:** near is the left end of the picture, and "left" is the top sideline, so
+  `near-corner-left` is the top-left corner. Far names are rotated: `far-corner-right` is the **top** right corner and
+  `far-corner-left` the bottom right, and the same goes for lane, ft and arc. A mirrored set is refused.
+- **What makes a draft good:** marks spread across the picture. Marks at one end line up that end and miss everything
+  else by 100 px or more. If the picture shows little, add midcourt marks, or carry a neighbour's court in through
+  `film/perceive/register.py` and keep the marks that fall outside the frame: they hold the fit and are not saved as labels.
+- **Length:** MDN is 94 ft and Arcadia 84 ft. Judge it by whether the centre line and circle land on the paint.
+- **The review.** A picture with 4 or more marks and a `draft` opens in review mode in Label court. `film/review/app.py`
+  has `/api/label/court/{id}/draw` and `/approve`; every fit is on the server (`film/perceive/court_draft.py`). A pulled
+  spot counts `PIN_WEIGHT = 100` times, because 10 left a spot pulled 50 px still 12 px short. A picture with no draft
+  still walks the 22 points.
+- **Approving** saves every template point in view through the fit as an ordinary reference, so `film court` and
+  `--refs-from` work unchanged, then redraws the game's other queued pictures from the references. A carried draft
+  replaces a Claude draft only with 6 or more marks.
+- **The log.** `labels/court/review_log.jsonl`: who drew it, how many spots he pulled, how far, seconds. Read it to see
+  how good the drafts are and whether a picture really takes seconds. Nothing has measured that on him yet.
+- **State (2026-10-31).** All 5 queued pictures are drawn (Mesquite 3, Prescott 2) and waiting for him. His earlier
+  Prescott frame at 0:30 stays a reference. The drafts' weakest spots: Mesquite 29:43 has midcourt about 25 px off, and
+  Prescott 7:04 is carried from my own unapproved midcourt draft, so it is labelled as Claude's.
+- **After he approves them:** `film court` on Prescott and Mesquite (a few minutes each, ask first), check each
+  `court_sheet.jpg`, then `film court <other_mdn_game> --refs-from <mesquite_id>`.
+- **Later:** `film court --train-frames` and `film train court` on approved games give the model that replaces Claude's
+  drafts. Not started.
+
 ## What Garrett has asked for (requirements gathered in conversation)
 
 1. **Full box score eventually**, as automated as possible; he accepts reviewing some of it.
