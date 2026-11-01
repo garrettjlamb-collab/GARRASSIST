@@ -14,11 +14,11 @@ from film.common.paths import game_dir
 from film.common.registry import base_weights_path, latest
 from film.common.video import iter_frames
 from film.interpret.events import load_events, save_events
-from film.interpret import location
+from film.interpret import location, shooter_pose
 from film.interpret.camera import from_homography
 from film.interpret.court import HALF_DEPTH, WIDTH, fold
 from film.interpret.flight3d import fit_path, rims_of
-from film.interpret.location import Look, ball_sightings, shot_spot
+from film.interpret.location import Look, ball_sightings, find_flight, shot_spot
 from film.interpret.zones import is_three, shot_type_of, zone_of
 from film.perceive.court_run import load_mappings, mapping_at, mapping_between
 from film.perceive.detectors import YoloDetector
@@ -26,11 +26,14 @@ from film.perceive.tracks import read_tracks
 from film.review.decisions import load_decisions
 
 LOOKS = "shot_looks.json.gz"
+POSES = "shot_poses.json.gz"
+POSE_WEIGHTS = "yolo11n-pose.pt"
 BEFORE_S, AFTER_S, FPS = 3.0, 0.3, 10.0
 PERSON_IMGSZ, PERSON_CONF, BALL_CONF = 960, 0.2, 0.1
 MAX_SET_ASIDE = 3
 OFFICIAL_THRESHOLD = 0.5
 SET_ASIDE_CONF = 0.8                        # the first choice looked wrong, so the second is a little less sure
+POSE_MIN_SCORE, POSE_FULL_SCORE = 0.2, 0.6
 PATH_RELEASE_Z = 7.0                       # held out and tuned games both did better at 7 ft than 8 or 9
 PATH_RADIUS_FT = 3.0
 PATH_AGREE_FT = 5.0
@@ -75,10 +78,47 @@ def collect(game_id: str, people=None, ball=None, device: str = "mps", log=print
     return path
 
 
-def _write(path: Path, rows: dict) -> None:
+def read_poses(gd: Path) -> dict:
+    path = Path(gd) / POSES
+    if not path.exists():
+        return {}
+    with gzip.open(path, "rt") as f:
+        return json.load(f)
+
+
+def collect_poses(game_id: str, model=None, device: str = "mps", log=print) -> Path:
+    """Body poses over the same seconds before each confirmed shot. A shot already in the file is not run again."""
+    gd = game_dir(game_id)
+    m = Manifest.load(gd)
+    if model is None:
+        from ultralytics import YOLO
+
+        model = YOLO(str(base_weights_path(POSE_WEIGHTS)))
+    path = gd / POSES
+    done = read_poses(gd)
+    shots = [e for e in confirmed_shots(gd) if e.id not in done]
+    start = time.time()
+    for i, e in enumerate(shots):
+        frames = []
+        for t, frame in iter_frames(Path(m.source), FPS, start=max(0.0, e.t - BEFORE_S), end=e.t + AFTER_S):
+            r = model.predict(frame, imgsz=m.width, conf=PERSON_CONF, device=device, verbose=False)[0]
+            people = []
+            if r.keypoints is not None and len(r.boxes):
+                for box, conf, kp in zip(r.boxes.xyxy.tolist(), r.boxes.conf.tolist(), r.keypoints.data.tolist()):
+                    people.append({"box": [round(v, 1) for v in box], "conf": round(conf, 2), "kp": [[round(a, 1), round(b, 1), round(c, 2)] for a, b, c in kp]})
+            frames.append({"t": round(t, 3), "people": people})
+        done[e.id] = frames
+        if i % 25 == 24:
+            _write(path, done, as_list=False)
+            log(f"  {game_id}: poses on {i + 1} of {len(shots)} shots, {time.time() - start:.0f} s")
+    _write(path, done, as_list=False)
+    return path
+
+
+def _write(path: Path, rows: dict, as_list: bool = True) -> None:
     tmp = path.with_suffix(".tmp")
     with gzip.open(tmp, "wt") as f:
-        json.dump(list(rows.values()), f)
+        json.dump(list(rows.values()) if as_list else rows, f)
     tmp.replace(path)
 
 
@@ -134,6 +174,31 @@ def official_score(row: dict, t: float, box, source: Path | None, classifier) ->
     return kept[key]
 
 
+def _from_pose(spot: dict, looks: list[Look], row: dict, poses: list[dict], maps, arrival_t, scale: float, size: tuple[int, int], source, classifier) -> dict | None:
+    """The player with their arms up and the ball at their hands around the start of the flight, if anyone. Feet come from the floor
+    (film/interpret/shooter_pose.py). Someone who looks like a non-player is passed over, the way the rules pass them over."""
+    anchor = next((k.mapping for k in reversed(looks) if k.mapping is not None), None)
+    if anchor is None:
+        return None
+    flight = find_flight(ball_sightings(looks, scale), _rims_in_anchor(row, looks), end_t=arrival_t, scale=scale)
+    if len(flight) < location.FLIGHT_MIN_POINTS:
+        return None
+    cam = from_homography(anchor.H, *size)
+    camera_xy = tuple(cam.centre[:2]) if cam is not None else None
+    found = shooter_pose.picks(poses, flight, anchor, lambda t: mapping_between(maps, t), POSE_MIN_SCORE, scale=scale, camera_xy=camera_xy)
+    for pick in found:
+        score = official_score(row, pick.t, (*pick.box, 1.0), source, classifier)
+        if score is not None and score >= OFFICIAL_THRESHOLD:
+            continue
+        x, y = fold(*pick.feet, pick.length)
+        apart = None if spot["x"] is None else float(np.hypot(spot["x"] - x, spot["y"] - y))
+        conf = min(1.0, pick.score / POSE_FULL_SCORE) * pick.mapping_conf
+        return {**spot, "x": round(float(min(max(x, 0.0), WIDTH)), 1), "y": round(float(min(max(y, 0.0), HALF_DEPTH)), 1), "conf": round(float(conf), 2), "method": "pose",
+                "flags": ["rule-differs"] if apart is not None and apart > PATH_AGREE_FT else [], "release_t": round(float(pick.t), 2), "flight_points": len(flight), "reach_px": None,
+                "box": tuple(round(float(v), 1) for v in pick.box), "pose_score": pick.score}
+    return None
+
+
 def _from_path(spot: dict, looks: list[Look], row: dict, arrival_t, t: float, scale: float, size: tuple[int, int], source, classifier) -> dict:
     """The ball's path in 3D (film/interpret/flight3d.py), used to check the rules' choice. A player within PATH_RADIUS_FT of where
     the path starts takes the dot; with no one there the rules' choice stands, marked when it is far from the path."""
@@ -172,9 +237,9 @@ def _from_path(spot: dict, looks: list[Look], row: dict, arrival_t, t: float, sc
 
 
 def spot_of_a_player(looks: list[Look], row: dict, arrival_t, t: float, points, scale: float, source: Path | None, classifier,
-                     size: tuple[int, int] | None = None) -> dict:
+                     size: tuple[int, int] | None = None, poses: list[dict] | None = None, maps=None) -> dict:
     """The rules' spot, setting aside anyone chosen as shooter who looks like a non-player and choosing again, then checked
-    against the ball's path when the picture's size is given."""
+    against the ball's path when the picture's size is given. Where the poses say who is releasing the ball, that person takes the dot."""
     rims = _rims_in_anchor(row, looks)
     original = looks
     aside = 0
@@ -196,7 +261,8 @@ def spot_of_a_player(looks: list[Look], row: dict, arrival_t, t: float, points, 
         spot["conf"] = round(spot["conf"] * SET_ASIDE_CONF, 2)
     spot["set_aside"] = aside
     if size is not None and spot["method"] != "free-throw":
-        spot = _from_path(spot, original, row, arrival_t, t, scale, size, source, classifier)
+        by_pose = _from_pose(spot, original, row, poses, maps, arrival_t, scale, size, source, classifier) if poses else None
+        spot = by_pose or _from_path(spot, original, row, arrival_t, t, scale, size, source, classifier)
     return spot
 
 
@@ -208,6 +274,7 @@ def place(game_id: str, source: Path | None = None, classifier=None, log=print) 
     scale = m.width / location.REFERENCE_WIDTH
     maps = load_mappings(gd)
     rows = {r["id"]: r for r in read_looks(gd)}
+    poses = read_poses(gd)
     events = load_events(gd)
     placed, set_aside, methods, truth = 0, 0, {}, {"sides": 0, "right": 0}
     for e in events:
@@ -216,7 +283,8 @@ def place(game_id: str, source: Path | None = None, classifier=None, log=print) 
             continue
         looks = [Look(f["t"], mapping_between(maps, f["t"]), [tuple(b) for b in f["people"]], [tuple(b) for b in f["ball"]]) for f in row["frames"]]
         points = e.signals.get("points") if e.made else None
-        spot = spot_of_a_player(looks, row, e.t if row["rim_id"] >= NO_RIM else None, e.t, points, scale, source, classifier, size=(m.width, m.height))
+        spot = spot_of_a_player(looks, row, e.t if row["rim_id"] >= NO_RIM else None, e.t, points, scale, source, classifier, size=(m.width, m.height),
+                                poses=poses.get(e.id), maps=maps)
         set_aside += spot["set_aside"]
         methods[spot["method"]] = methods.get(spot["method"], 0) + 1
         e.signals["location"] = {k: spot[k] for k in ("method", "release_t", "flight_points", "reach_px", "box")}
@@ -230,7 +298,7 @@ def place(game_id: str, source: Path | None = None, classifier=None, log=print) 
         e.zone = zone_of(e.x, e.y)
         e.shot_type = spot["shot_type"] or shot_type_of(e.x, e.y)
         e.needs_location = False
-        if spot["method"] in ("flight", "path") and points in (2, 3):
+        if spot["method"] in ("flight", "path", "pose") and points in (2, 3):
             truth["sides"] += 1
             truth["right"] += is_three(e.x, e.y) == (points == 3)
     save_events(gd, events)

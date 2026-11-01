@@ -83,3 +83,53 @@ def test_when_everyone_looks_like_a_non_player_there_is_no_dot():
     _verdict(row, lambda b: 0.9)
     spot = shotspots.spot_of_a_player(_looks(row), row, 11.0, 11.0, None, 1.0, None, None)
     assert spot["x"] is None and spot["box"] is None
+
+
+def _posed(row, arms_of):
+    """Poses for _flight_row's two people: COCO keypoints with arms as `arms_of(box)` says."""
+    out = []
+    for f in row["frames"]:
+        people = []
+        for b in f["people"]:
+            x, top, bottom = (b[0] + b[2]) / 2, b[1], b[3]
+            kp = [[x, top + 5, 0.9] for _ in range(17)]
+            kp[5], kp[6] = [x - 8, top + 15, 0.9], [x + 8, top + 15, 0.9]
+            kp[11], kp[12] = [x - 6, top + 40, 0.9], [x + 6, top + 40, 0.9]
+            wy = top - 5 if arms_of(b) else top + 45
+            kp[9], kp[10] = [x - 5, wy, 0.9], [x + 5, wy, 0.9]
+            kp[15], kp[16] = [x - 5, bottom, 0.9], [x + 5, bottom, 0.9]
+            people.append({"box": list(b[:4]), "conf": 0.9, "kp": kp})
+        out.append({"t": f["t"], "people": people})
+    return out
+
+
+def _maps():
+    return [(i * 1.0, MAP) for i in range(30)]
+
+
+def test_the_player_with_arms_up_takes_the_dot_from_the_rules():
+    row, ref, player = _flight_row()
+    poses = _posed(row, lambda b: b[1] == player[1])
+    spot = shotspots.spot_of_a_player(_looks(row), row, 11.0, 11.0, None, 1.0, None, None, size=(1920, 1080), poses=poses, maps=_maps())
+    assert spot["method"] == "pose" and spot["box"][1] == player[1] and spot["pose_score"] >= shotspots.POSE_MIN_SCORE
+
+
+def test_no_arms_up_leaves_the_rules_choice():
+    row, ref, _ = _flight_row()
+    poses = _posed(row, lambda b: False)
+    spot = shotspots.spot_of_a_player(_looks(row), row, 11.0, 11.0, None, 1.0, None, None, size=(1920, 1080), poses=poses, maps=_maps())
+    assert spot["method"] != "pose"
+
+
+def test_a_non_player_with_arms_up_is_passed_over():
+    row, ref, player = _flight_row()
+    moved = [player[0] - 45.0, player[1], player[2] - 45.0, player[3], player[4]]     # beside the referee, not on top of him
+    for f in row["frames"]:
+        f["people"][1] = moved
+    poses = _posed(row, lambda b: True)
+    row["officials"] = {}
+    for f in poses:
+        for p in f["people"]:
+            row["officials"][shotspots._person_key(f["t"], (*p["box"], 1.0))] = 0.9 if p["box"][1] == ref[1] else 0.1
+    spot = shotspots.spot_of_a_player(_looks(row), row, 11.0, 11.0, None, 1.0, None, None, size=(1920, 1080), poses=poses, maps=_maps())
+    assert spot["method"] == "pose" and spot["box"][1] == player[1]

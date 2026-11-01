@@ -51,7 +51,7 @@ def _candidates(gd: Path) -> list:
         d = decisions.get(e.id) or {}
         if d.get("status") != "confirmed" or d.get("x") is not None or e.signals.get("phase") == "warmup" or e.x is None:
             continue
-        if (e.signals.get("location") or {}).get("method") not in ("flight", "path") or not clip_path(gd, e.id).exists():
+        if (e.signals.get("location") or {}).get("method") not in ("flight", "path", "pose") or not clip_path(gd, e.id).exists():
             continue
         out.append(e)
     return out
