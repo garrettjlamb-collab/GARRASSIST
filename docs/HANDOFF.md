@@ -449,7 +449,7 @@ Garrett did not want to mark 40 frames on each of two games. Plan:
 - **At least three pictures.** One wide post-game Hudl shot lined up with 89 of 90 frames but cut off both baselines,
   so `choose_references` adds the views turned furthest left and right (positions chained through neighbours, the
   one further from the first picture first) up to `K_MIN = 3`.
-- **State (2026-10-23).** Queued for Garrett in Label court: Mesquite 29:43 (left basket), 33:26 (right basket),
+- **State (2026-10-23).** Queued for Garrett in Label court: Mesquite 49:03 (left basket), 55:44 (right basket),
   2:14:26 (wide, empty court); Prescott 7:04 (right basket), 59:36 (midcourt), plus his marked 0:30 (left basket).
   After he marks them: `film court <id>` on both, check the sheets, then `--refs-from` Mesquite on the other MDN games.
 
@@ -480,10 +480,10 @@ review. Spec: `docs/superpowers/specs/2026-10-31-court-review-design.md`. Plan: 
   replaces a Claude draft only with 6 or more marks.
 - **The log.** `labels/court/review_log.jsonl`: who drew it, how many spots he pulled, how far, seconds. Read it to see
   how good the drafts are and whether a picture really takes seconds. Nothing has measured that on him yet.
-- **State (2026-10-31).** All 5 queued pictures are drawn (Mesquite 3, Prescott 2) and waiting for him. His earlier
-  Prescott frame at 0:30 stays a reference. The drafts' weakest spots: Mesquite 29:43 has midcourt about 25 px off, and
-  Prescott 7:04 is carried from my own unapproved midcourt draft, so it is labelled as Claude's.
-- **After he approves them:** `film court` on Prescott and Mesquite (a few minutes each, ask first), check each
+- **State (2026-10-31).** He approved all 5 in 74 seconds: 0 pulls on Prescott, 7 on Mesquite, the largest move about
+  24 px. Prescott's three references agree to a median of about 4 px at 84 ft; Mesquite's wide picture agrees with the
+  others to 2.6 px at 94 ft, and its 49:03 and 55:44 pictures do not line up with each other, so they are not checked.
+- **Next:** `film court` on Prescott and Mesquite (a few minutes each, ask first), check each
   `court_sheet.jpg`, then `film court <other_mdn_game> --refs-from <mesquite_id>`.
 - **Later:** `film court --train-frames` and `film train court` on approved games give the model that replaces Claude's
   drafts. Not started.
