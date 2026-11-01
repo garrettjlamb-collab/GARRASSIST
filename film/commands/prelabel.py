@@ -23,7 +23,7 @@ def run(args) -> int:
         from film.train.prelabel import prelabel_court_refs
 
         prelabel_court_refs(args.game_id)
-        print("next: uv run film review, then open the Label court tab and mark every point you can see")
+        print("next: have Claude draw them (film court-draft), then uv run film review and approve them in the Label court tab")
         return 0
     if args.what == "court":
         from film.train.prelabel import prelabel_court
