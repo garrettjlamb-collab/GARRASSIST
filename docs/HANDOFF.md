@@ -579,6 +579,16 @@ The best person at 0.2 or above takes the dot unless they look like a non-player
 The **Dot review** tab (`film/review/dotreview.py`) puts the machine's dots to him across all games: hidden checks of the sure dots first, then under 0.8 worst first, then shots with no dot, then the sure ones. One shot in ten (fixed by a hash of its id) hides the machine's dot, so `film dotreview score` keeps an independent measure: hidden cards measure, shown cards only count how often he changed a dot, with `shown_not_independent` saying why.
 Saved dots carry `dot_source`: coach, approved, bulk. `film eval` counts only coach dots as measuring the machine. Free throws stay out. A button keeps the sure dots unseen after a confirm. Queue on 2026-11-01: 776 (363 doubtful, 26 hidden checks of sure dots, 79 no dot, 308 sure). Waiting for him; nothing answered.
 
+## 2026-11-01 (night): what his 460 review dots said, and the trust model (branch shooter-model, not merged)
+
+He reviewed everything but the 308 sure dots. He says he was picky on layups, nudging slightly, and that the paint has room, so **a nudge is not a wrong dot.** `shooter_trust.good_enough`: in the paint within 6 ft; elsewhere within 4 ft and the same side of the arc. Do not quote the raw "moved 74%": it holds those nudges. 73 no-dot shots placed by him, 8 skipped. Some free throws reached the queue because the rule missed them; he did not note which.
+
+- **Hidden cards (58, review):** median 5.1 ft, 19% over 10. Sure dots (0.8+) 3.4 ft, 15% over 10: the 0/12 from the first batch was luck. Do not keep the old 0.8 dots unseen.
+- **Measured against all 415 of his dots with a machine dot:** good enough 56%; his dot in the paint 63%, outside 45% with arc side 72%. The best candidate, chosen perfectly, is good enough 76% with 3% over 10: so choosing the person is most of the big misses, but about a quarter of shots are not good enough whoever is chosen. Where the feet are read needs work (moving players, the moment of the release).
+- **`shooter@v1` (`film/perceive/shooter_trust.py`):** a linear choice model over candidates, trained on 488 dots. Left out by game it picks no better than the rules (54% to 56%), and gave 30% on no-dot shots, so **it moves no dots.** Its certainty does help: agree within 3 ft and probability 0.6+ is "trusted". Held out, trusted n123 good enough 80%, 2% over 10; not trusted n292 45%, 28%. Hidden only: n32 78%, 3%; n54 46%, 26%. The 0.6 line was chosen seeing those.
+- **Queue:** `film dotreview trust` writes `signals.trust` (no dots moved, checked). Of the 308: 30 hidden checks (1 in 5 trusted dots, new claim, `hidden_since_trust` in the score), 159 doubtful, 119 trusted to keep.
+- **Next:** where feet are read; threes outside the paint; free throws the rule misses.
+
 ## What Garrett has asked for (requirements gathered in conversation)
 
 1. **Full box score eventually**, as automated as possible; he accepts reviewing some of it.
