@@ -590,6 +590,11 @@ He reviewed everything but the 308 sure dots. He says he was picky on layups, nu
 - **Fresh test, 30 hidden trusted dots, answered after the claim was fixed:** good enough 77%, median 3.0 ft, 0 over 10, arc 97%. With 0 of 30 the true rate of big misses could still be near 10%. He answered the 159 doubtful too (shown, so not independent): 23 kept, 136 moved. 119 trusted dots wait on the button.
 - **Next:** where feet are read; threes outside the paint; free throws the rule misses; the six low-camera courts.
 
+## 2026-11-01 (night): the six low-camera courts (branch low-camera-courts, not merged)
+
+The 119 trusted dots are kept (`dot_source: bulk`). 19 pictures on Combs, RKDA at MDN, Cortez, Tempe, MDN vs Cactus Shadows and the Cactus Shadows gym hold rough drafts by Claude (`experiments/rough_drafts.py`: marks by eye on one wide picture, carried into the rest through registration; 18 of 19 lined up; lengths guessed: RKDA 94 because it is the MDN floor, the others 84, so `L` may be needed). JV vs Marcos's 3 leftover queued pictures were removed: it has its court from Arcadia's references. `experiments/court_snap.py` tried snapping a rough court onto painted lines and failed (3 of 7 better, one flew off the picture).
+**After he approves them:** `film court <id>` on the six, contact sheets by eye, `film locate <id>` (detectors and poses, about 4 s a shot, two films in iCloud), `film dotreview trust`, then the Dot review tab.
+
 ## What Garrett has asked for (requirements gathered in conversation)
 
 1. **Full box score eventually**, as automated as possible; he accepts reviewing some of it.
