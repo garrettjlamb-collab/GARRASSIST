@@ -104,7 +104,7 @@ const ZONE_LABELS = {restricted:"Restricted Area", paint:"Paint", "mid-left":"Mi
 
 // ---- The half court: feet on the tracker's half court, baseline at the bottom, basket near the bottom centre ----
 // laneL/laneR: the 12 ft high-school lane as painted. paintL/paintR: the tracker's 16 ft paint zone (film/interpret/zones.py).
-const HALF = { w: 50, h: 47, basketX: 25, basketY: 5.25, arc: 19.75, laneL: 19, laneR: 31, paintL: 17, paintR: 33, ftY: 19, ftR: 6, restricted: 4, cornerY: 10, floater: 9 };
+const HALF = { w: 50, h: 47, basketX: 25, basketY: 5.25, boardY: 4, rimR: 0.75, arc: 19.75, laneL: 19, laneR: 31, paintL: 17, paintR: 33, ftY: 19, ftR: 6, restricted: 4, cornerY: 10, floater: 9 };
 // The card draws the half court the way the camera sees it: across, with the basket on the side of the
 // picture it is on (the event's basket_side; when unknown, the side last chosen). Feet are the tracker's
 // half court whatever the drawing: x across the baseline, y away from it. All drawing, clicks and nudges
@@ -172,7 +172,11 @@ function drawHalfCourt(cv, e) {
   ctx.beginPath(); ctx.moveTo(HALF.basketX - HALF.arc, 0); ctx.lineTo(HALF.basketX - HALF.arc, HALF.basketY);
   ctx.moveTo(HALF.basketX + HALF.arc, 0); ctx.lineTo(HALF.basketX + HALF.arc, HALF.basketY); ctx.stroke();
   ctx.beginPath(); ctx.arc(HALF.basketX, HALF.ftY, HALF.ftR, 0, 2 * Math.PI); ctx.stroke();
-  ctx.strokeStyle = "#ff8c42"; ctx.beginPath(); ctx.arc(HALF.basketX, HALF.basketY, 0.75, 0, 2 * Math.PI); ctx.stroke();
+  // The hoop, as an anchor to click from: the backboard 4 ft off the baseline, 6 ft wide, and the rim out in front of it.
+  ctx.strokeStyle = "#ff8c42"; ctx.lineWidth = 2.5 / SCALE;
+  ctx.beginPath(); ctx.moveTo(HALF.basketX - 3, HALF.boardY); ctx.lineTo(HALF.basketX + 3, HALF.boardY);
+  ctx.moveTo(HALF.basketX, HALF.boardY); ctx.lineTo(HALF.basketX, HALF.basketY - HALF.rimR); ctx.stroke();
+  ctx.beginPath(); ctx.arc(HALF.basketX, HALF.basketY, HALF.rimR, 0, 2 * Math.PI); ctx.stroke();
   if (e.x != null && e.y != null) {
     ctx.fillStyle = e.made ? "#3ddc84" : "#ff5c5c";
     ctx.beginPath(); ctx.arc(e.x, e.y, 6 / SCALE, 0, 2 * Math.PI); ctx.fill();
