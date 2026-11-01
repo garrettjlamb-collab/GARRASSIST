@@ -574,6 +574,11 @@ The best person at 0.2 or above takes the dot unless they look like a non-player
 - **Confidence separates for the first time:** 0.8 and up n12 median 1.9 ft, none over 10; under 0.8 n16 median 5.5, 4 over 10. Small; recheck on a fresh batch.
 - **These 28 dots are now used up** for anything tuned after this. `experiments/dotcheck_rescore.py` prints them.
 
+## 2026-11-01 (night): dot review (branch dot-review, not merged)
+
+The **Dot review** tab (`film/review/dotreview.py`) puts the machine's dots to him across all games: under 0.8 worst first, then hidden checks of the sure ones, then shots with no dot, then the sure ones. One shot in ten (fixed by a hash of its id) hides the machine's dot, so `film dotreview score` keeps an independent measure: hidden cards measure, shown cards only count how often he changed a dot, with `shown_not_independent` saying why.
+Saved dots carry `dot_source`: coach, approved, bulk. `film eval` counts only coach dots as measuring the machine. Free throws stay out. A button keeps the sure dots unseen after a confirm. Queue on 2026-11-01: 776 (363 doubtful, 26 hidden checks of sure dots, 79 no dot, 308 sure). Waiting for him; nothing answered.
+
 ## What Garrett has asked for (requirements gathered in conversation)
 
 1. **Full box score eventually**, as automated as possible; he accepts reviewing some of it.
