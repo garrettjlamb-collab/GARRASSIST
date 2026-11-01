@@ -157,6 +157,20 @@ def test_an_approved_picture_redraws_a_queued_one_that_lines_up(pano, monkeypatc
     assert far["points"] == {} and "draft" not in far
 
 
+def test_a_carried_mark_the_fit_disagrees_with_stays_out_of_the_draft(pano, monkeypatch):
+    monkeypatch.setattr(court_draft, "_masks", lambda game_id: [])
+    good = _pano_marks(A2, NEAR)
+    carried = {**{n: tuple(p) for n, p in good.items()}, "mid-left": (-4000.0, 900.0)}
+    monkeypatch.setattr(court_draft, "place_points", lambda f, refs: (carried, 100))
+    ds.write_pending("court", "g1_000100", frame(pano, A), [], extra={"t": 10.0, "points": {}, "ref": True})
+    ds.write_pending("court", "g1_000200", frame(pano, A2), [], extra={"t": 20.0, "points": {}, "ref": True})
+    ds.accept_points("court", "g1_000100", _pano_marks(A, NEAR))
+    assert court_draft.carry_drafts("g1") == 1
+    data = ds.read_pending("court", "g1_000200")
+    assert sorted(data["points"]) == sorted(NEAR)
+    assert court_draft.approve("g1_000200", [{"name": n, "px": p, "pinned": False} for n, p in data["points"].items()], data["length"])["points"] > 0
+
+
 def test_a_thin_carried_fit_does_not_replace_a_claude_draft(pano, monkeypatch):
     monkeypatch.setattr(court_draft, "_masks", lambda game_id: [])
     four = NEAR[:4]

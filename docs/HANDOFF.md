@@ -494,6 +494,29 @@ review. Spec: `docs/superpowers/specs/2026-10-31-court-review-design.md`. Plan: 
 - **Later:** `film court --train-frames` and `film train court` on approved games give the model that replaces Claude's
   drafts. Not started.
 
+## 2026-11-01: shot locations, first version (branch shot-locations-b, not merged)
+
+Run unattended on Garrett's word. Stage: `film locate <id>` (`--again` reruns the rules without the models).
+`film/perceive/shotspots.py` runs people (yolo11n at 960) and ball (latest ball model at full width) over the 3 s before
+each **confirmed** shot and keeps them in `games/<id>/shot_looks.json.gz`. `film/interpret/location.py` traces the flight
+back from the rim, takes the person within reach at its start and puts their feet through the court. +1 on the board, or
+someone standing still at the line, is a free throw at the middle of the line. `games/<id>/location_sheet.jpg` draws 12.
+
+- **Measured against the scoreboard, 7 games, 198 made shots:** arc side right on 173 (87%): twos 138/147, threes 35/51.
+  In-sample: the rules were tuned on five of those games. It says which side of the arc, not how many feet off.
+- **Coverage:** 864 of 950 confirmed shots on 10 games have a dot, 139 of them free throws by rule. Worst: Deer Valley 26 of 90 without one.
+- **Known wrong:** nothing keeps out referees or coaches; at least 4 of the 120 sheet tiles box one, some at conf 1.0
+  (Prescott 5:31, 45:36, 54:26; Moon Valley 58:33). Confidence barely separates right from wrong: arc side right 9/13 under 0.5,
+  26/31 at 0.5-0.8, 138/154 at 0.8+. Dots are only on confirmed shots. `film interpret` rebuilds events, so run `film locate --again` after it.
+- **Tried and dropped:** taking the release from the flight's symmetry (116/146, worse than 127/146).
+- **Courts.** 10 of 16 games. New since 2026-10-31, checked only by Claude (`checked_by` in review_log.jsonl): Arcadia JV
+  (with JV vs Marcos through `--refs-from`), Deer Valley, Moon Valley. Moon Valley is not the MDN camera and its score bug is not
+  on a Hudl profile, so its manifest has `still_regions`; without that mask it lines up wrongly.
+- **Left out, 6 games:** Combs, RKDA at MDN, Cortez, Tempe, MDN vs Cactus Shadows, Cactus Shadows gym. 19 pictures are queued
+  undrawn. Low cameras: Claude's marks gave courts that missed the paint (Combs by about 55 px), so they were withdrawn rather than approved.
+- **Next, in the order I recommend:** keep referees out of the shooter choice; read the Moon Valley scoreboard so it can be scored;
+  Garrett places about 30 dots for a measurement in feet; then the six low-camera games, probably with him dragging.
+
 ## What Garrett has asked for (requirements gathered in conversation)
 
 1. **Full box score eventually**, as automated as possible; he accepts reviewing some of it.
@@ -565,6 +588,8 @@ Smaller debts are listed in `docs/superpowers/plans/2026-09-30-rung-1-execution-
 `minor (deferred)` and `Parked`).
 
 ## Gotchas that cost time
+
+- A wait loop on `pgrep -f "film court"` matches its own shell and never ends: it idled the laptop 7 hours on 2026-11-01. Wait on the background job's notification instead.
 
 - `uv` lives in `~/.local/bin`; run `export PATH="$HOME/.local/bin:$PATH"` first. There is no Homebrew.
 - Python's default certificate store fails on this Mac; `film` sets `SSL_CERT_FILE` to certifi's bundle.

@@ -17,7 +17,7 @@ from film.common.paths import game_dir, labels_dir
 from film.export.court_sheet import court_polylines, draw_court
 from film.interpret.court import FULL_DEPTH, Mapping, fit_handles, fit_mapping, template
 from film.perceive.court_refs import DATASET, REF_ID, _fit, load_references, measure_length, place_points, points_in_view
-from film.perceive.register import features, mask_regions
+from film.perceive.register import features, masks_for
 
 DRAFT_TOL_PX = 12.0               # further than this from the others' fit, a mark is thrown out of a draft
 CARRY_MIN_POINTS = 6              # a carried fit from fewer can be worse than a draft that spans the picture
@@ -57,10 +57,10 @@ def _moved_px(handles: list[dict], draft_points: dict) -> float | None:
 
 
 def _masks(game_id: str) -> list:
-    return mask_regions(Manifest.load(game_dir(game_id)).profile)
+    return masks_for(Manifest.load(game_dir(game_id)))
 
 
-def approve(image_id: str, handles: list[dict], length: float, seconds: float | None = None) -> dict:
+def approve(image_id: str, handles: list[dict], length: float, seconds: float | None = None, checked_by: str = "coach") -> dict:
     """The court he approved becomes a reference: every template point in view through the fit, so a picture that shows
     both ends or midcourt carries the length he approved. Then the game's other queued pictures are redrawn from it."""
     data = ds.read_pending(DATASET, image_id)
@@ -69,7 +69,7 @@ def approve(image_id: str, handles: list[dict], length: float, seconds: float | 
         raise ValueError("that court is mirrored or has too few marks")
     points = points_in_view(mapping, data["width"], data["height"])
     split = ds.accept_points(DATASET, image_id, points)
-    _log({"image_id": image_id, "at": time.time(), "by": (data.get("draft") or {}).get("by"), "length": length,
+    _log({"image_id": image_id, "at": time.time(), "checked_by": checked_by, "by": (data.get("draft") or {}).get("by"), "length": length,
           "pulled": sum(bool(h.get("pinned")) for h in handles), "moved_px": _moved_px(handles, data.get("points") or {}),
           "seconds": seconds, "points": len(points)})
     found = REF_ID.match(image_id)
@@ -154,12 +154,28 @@ def carry_drafts(game_id: str) -> int:
         # Marks just outside the frame are kept: they cannot be saved as labels, but they hold the fit across the court.
         points = {n: p for n, p in points.items() if -w <= p[0] < 2 * w and -h <= p[1] < 2 * h}
         length = float(measured or data.get("length") or FULL_DEPTH)
-        if len(points) < (CARRY_MIN_POINTS if data.get("points") else 4) or _fit(points, w, h, length) is None:
+        mapping = _fit(points, w, h, length)
+        if mapping is None:
+            continue
+        points = _agreeing(points, mapping, length)      # a mark the fit threw out would flip the review's fit, which keeps every mark
+        if len(points) < (CARRY_MIN_POINTS if data.get("points") else 4) or fit_handles(
+                [template(length)[n] for n in points], list(points.values()), [False] * len(points), length=length) is None:
             continue
         data.update(points={n: list(p) for n, p in points.items()}, length=length, draft={"by": "carried"})
         (ds.pending_dir(DATASET) / f"{image_id}.json").write_text(json.dumps(data, indent=1))
         count += 1
     return count
+
+
+def _agreeing(points: dict, mapping: Mapping, length: float) -> dict:
+    """The marks the fit agrees with: in front of the camera and close to where it puts them."""
+    back = np.linalg.inv(mapping.H)
+    out = {}
+    for name, (x, y) in points.items():
+        v = back @ np.array([*template(length)[name], 1.0])
+        if v[2] > 0 and np.hypot(v[0] / v[2] - x, v[1] / v[2] - y) <= DRAFT_TOL_PX:
+            out[name] = (x, y)
+    return out
 
 
 def pending_pictures() -> list[dict]:

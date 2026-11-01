@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from film.perceive.register import features, mask_regions, match, plausible, project
+from film.perceive.register import features, mask_regions, masks_for, match, plausible, project
 from synth_court import apply, crop, frame, panorama
 
 
@@ -60,3 +60,10 @@ def test_project_carries_named_points():
 def test_hudl_profiles_mask_the_burned_in_scoreboard():
     assert mask_regions("hudl-mdn") and mask_regions("hudl-tactical")
     assert mask_regions("handheld") == []
+
+
+def test_a_game_can_record_a_burned_in_box_its_profile_does_not_know():
+    from types import SimpleNamespace
+
+    assert masks_for(SimpleNamespace(profile="handheld", still_regions=[[1, 2, 3, 4]])) == [(1, 2, 3, 4)]
+    assert masks_for(SimpleNamespace(profile="hudl-mdn", still_regions=[])) == mask_regions("hudl-mdn")

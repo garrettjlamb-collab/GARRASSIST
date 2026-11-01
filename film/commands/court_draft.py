@@ -17,6 +17,8 @@ def register(sub) -> None:
     put.add_argument("--points", required=True, help='JSON: {"near-lane-left": [800, 425], ...}')
     put.add_argument("--length", type=float, default=None, help="the court's length in feet (74, 84, 94)")
     put.add_argument("--by", default="claude")
+    ok = what.add_parser("approve", help="Claude's own check: save the picture's draft as a reference, logged as checked by Claude, not the coach")
+    ok.add_argument("image_id")
     parser.set_defaults(func=run)
 
 
@@ -27,6 +29,13 @@ def run(args) -> int:
         for p in court_draft.pending_pictures():
             drawn = f"{p['points']} marks by {p['by']}, {p['length']:g} ft" if p["by"] else "not drawn"
             print(f"{p['image_id']}  {drawn}")
+    elif args.action == "approve":
+        import film.train.datasets as ds
+
+        data = ds.read_pending("court", args.image_id)
+        handles = [{"name": n, "px": p, "pinned": False} for n, p in (data.get("points") or {}).items()]
+        got = court_draft.approve(args.image_id, handles, data.get("length") or 94.0, checked_by="claude")
+        print(f"saved {got['points']} points; {got['carried']} other pictures redrawn from it")
     elif args.action == "view":
         print(court_draft.view(args.image_id, region=args.region, scale=args.scale))
     else:
