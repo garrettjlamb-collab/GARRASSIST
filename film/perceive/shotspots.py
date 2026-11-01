@@ -15,9 +15,12 @@ from film.common.registry import base_weights_path, latest
 from film.common.video import iter_frames
 from film.interpret.events import load_events, save_events
 from film.interpret import location
-from film.interpret.location import Look, shot_spot
+from film.interpret.camera import from_homography
+from film.interpret.court import HALF_DEPTH, WIDTH, fold
+from film.interpret.flight3d import fit_path, rims_of
+from film.interpret.location import Look, ball_sightings, shot_spot
 from film.interpret.zones import is_three, shot_type_of, zone_of
-from film.perceive.court_run import load_mappings, mapping_at
+from film.perceive.court_run import load_mappings, mapping_at, mapping_between
 from film.perceive.detectors import YoloDetector
 from film.perceive.tracks import read_tracks
 from film.review.decisions import load_decisions
@@ -28,6 +31,11 @@ PERSON_IMGSZ, PERSON_CONF, BALL_CONF = 960, 0.2, 0.1
 MAX_SET_ASIDE = 3
 OFFICIAL_THRESHOLD = 0.5
 SET_ASIDE_CONF = 0.8                        # the first choice looked wrong, so the second is a little less sure
+PATH_RELEASE_Z = 7.0                       # held out and tuned games both did better at 7 ft than 8 or 9
+PATH_RADIUS_FT = 3.0
+PATH_AGREE_FT = 5.0
+PATH_DIFFERS_CONF, PATH_DISAGREES_CONF = 0.8, 0.6
+PATH_BEFORE_S, PATH_AFTER_S = 0.6, 0.4
 NO_RIM = 0                                  # a scoreboard-only card has no rim of its own: any rim will do
 
 
@@ -126,9 +134,49 @@ def official_score(row: dict, t: float, box, source: Path | None, classifier) ->
     return kept[key]
 
 
-def spot_of_a_player(looks: list[Look], row: dict, arrival_t, t: float, points, scale: float, source: Path | None, classifier) -> dict:
-    """The rules' spot, setting aside anyone chosen as shooter who looks like a non-player and choosing again."""
+def _from_path(spot: dict, looks: list[Look], row: dict, arrival_t, t: float, scale: float, size: tuple[int, int], source, classifier) -> dict:
+    """The ball's path in 3D (film/interpret/flight3d.py), used to check the rules' choice. A player within PATH_RADIUS_FT of where
+    the path starts takes the dot; with no one there the rules' choice stands, marked when it is far from the path."""
+    anchor = next((k.mapping for k in reversed(looks) if k.mapping is not None), None)
+    cam = from_homography(anchor.H, *size) if anchor is not None else None
+    if cam is None:
+        return spot
+    lo, hi = (t - PATH_BEFORE_S, t + PATH_AFTER_S) if arrival_t is not None else (looks[0].t + PATH_AFTER_S, looks[-1].t)
+    path = fit_path(cam, ball_sightings(looks, scale), rims_of(anchor.length), lo, hi, anchor.length, scale, release_z=PATH_RELEASE_Z)
+    if path is None:
+        return spot
+    at = min(looks, key=lambda k: abs(k.t - path.release_t))
+    near = []
+    if at.mapping is not None:
+        for b in at.people:
+            feet = at.mapping.to_court((b[0] + b[2]) / 2, b[3])
+            if feet is not None and at.mapping.contains((b[0] + b[2]) / 2, b[3], margin=location.COURT_MARGIN_FT):
+                near.append((float(np.hypot(feet[0] - path.spot[0], feet[1] - path.spot[1])), b, feet))
+    x, y = fold(*path.spot, anchor.length)
+    apart = None if spot["x"] is None else float(np.hypot(spot["x"] - x, spot["y"] - y))
+    for gap, box, feet in sorted(near, key=lambda n: n[0]):
+        if gap > PATH_RADIUS_FT:
+            break
+        score = official_score(row, at.t, box, source, classifier)
+        if score is not None and score >= OFFICIAL_THRESHOLD:
+            continue
+        fx, fy = fold(*feet, at.mapping.length)
+        differs = apart is not None and apart > PATH_AGREE_FT
+        conf = min(1.0, path.points / location.FULL_CONF_POINTS) * at.mapping.conf * (PATH_DIFFERS_CONF if differs else 1.0)
+        return {**spot, "x": round(float(min(max(fx, 0.0), WIDTH)), 1), "y": round(float(min(max(fy, 0.0), HALF_DEPTH)), 1), "conf": round(float(conf), 2), "method": "path",
+                "flags": ["rule-differs"] if differs else [], "release_t": round(float(at.t), 2), "flight_points": path.points, "reach_px": None,
+                "box": tuple(round(float(v), 1) for v in box[:4]), "path_gap_ft": round(gap, 1)}
+    if apart is not None and apart > PATH_AGREE_FT:
+        return {**spot, "conf": round(spot["conf"] * PATH_DISAGREES_CONF, 2), "flags": [*spot["flags"], "path-disagrees"]}
+    return spot
+
+
+def spot_of_a_player(looks: list[Look], row: dict, arrival_t, t: float, points, scale: float, source: Path | None, classifier,
+                     size: tuple[int, int] | None = None) -> dict:
+    """The rules' spot, setting aside anyone chosen as shooter who looks like a non-player and choosing again, then checked
+    against the ball's path when the picture's size is given."""
     rims = _rims_in_anchor(row, looks)
+    original = looks
     aside = 0
     for _ in range(MAX_SET_ASIDE + 1):
         spot = shot_spot(looks, rims, arrival_t, t, points, scale=scale)
@@ -147,6 +195,8 @@ def spot_of_a_player(looks: list[Look], row: dict, arrival_t, t: float, points, 
         spot["flags"] = [*spot["flags"], "official-set-aside"]
         spot["conf"] = round(spot["conf"] * SET_ASIDE_CONF, 2)
     spot["set_aside"] = aside
+    if size is not None and spot["method"] != "free-throw":
+        spot = _from_path(spot, original, row, arrival_t, t, scale, size, source, classifier)
     return spot
 
 
@@ -154,7 +204,8 @@ def place(game_id: str, source: Path | None = None, classifier=None, log=print) 
     """Run the location rules over the kept looks and write the spots onto the game's events. With the film and a model,
     people chosen as shooter are checked and non-players set aside; what was read is kept in the looks file."""
     gd = game_dir(game_id)
-    scale = Manifest.load(gd).width / location.REFERENCE_WIDTH
+    m = Manifest.load(gd)
+    scale = m.width / location.REFERENCE_WIDTH
     maps = load_mappings(gd)
     rows = {r["id"]: r for r in read_looks(gd)}
     events = load_events(gd)
@@ -163,13 +214,13 @@ def place(game_id: str, source: Path | None = None, classifier=None, log=print) 
         row = rows.get(e.id)
         if row is None:
             continue
-        looks = [Look(f["t"], mapping_at(maps, f["t"]), [tuple(b) for b in f["people"]], [tuple(b) for b in f["ball"]]) for f in row["frames"]]
+        looks = [Look(f["t"], mapping_between(maps, f["t"]), [tuple(b) for b in f["people"]], [tuple(b) for b in f["ball"]]) for f in row["frames"]]
         points = e.signals.get("points") if e.made else None
-        spot = spot_of_a_player(looks, row, e.t if row["rim_id"] >= NO_RIM else None, e.t, points, scale, source, classifier)
+        spot = spot_of_a_player(looks, row, e.t if row["rim_id"] >= NO_RIM else None, e.t, points, scale, source, classifier, size=(m.width, m.height))
         set_aside += spot["set_aside"]
         methods[spot["method"]] = methods.get(spot["method"], 0) + 1
         e.signals["location"] = {k: spot[k] for k in ("method", "release_t", "flight_points", "reach_px", "box")}
-        e.flags = [f for f in e.flags if f not in ("no-flight", "no-shooter", "shooter-far-from-ball", "official-set-aside", "no-player-found")] + spot["flags"]
+        e.flags = [f for f in e.flags if f not in ("no-flight", "no-shooter", "shooter-far-from-ball", "official-set-aside", "no-player-found", "rule-differs", "path-disagrees")] + spot["flags"]
         if spot["x"] is None:
             e.x = e.y = e.zone = e.shot_type = e.location_conf = None
             e.needs_location = True
@@ -179,7 +230,7 @@ def place(game_id: str, source: Path | None = None, classifier=None, log=print) 
         e.zone = zone_of(e.x, e.y)
         e.shot_type = spot["shot_type"] or shot_type_of(e.x, e.y)
         e.needs_location = False
-        if spot["method"] == "flight" and points in (2, 3):
+        if spot["method"] in ("flight", "path") and points in (2, 3):
             truth["sides"] += 1
             truth["right"] += is_three(e.x, e.y) == (points == 3)
     save_events(gd, events)
