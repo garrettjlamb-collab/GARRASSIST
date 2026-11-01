@@ -13,17 +13,20 @@ from film.interpret.court import FT_LINE_Y, WIDTH, Mapping, fold
 REFERENCE_WIDTH = 1920                     # the pixel distances below are for film this wide
 STATIC_PX, STATIC_MIN_FRAMES = 12.0, 6     # a "ball" that stays put in the gym for this many frames is not the ball
 RIM_REACH_PX = 130.0                       # a flight ends this close to a rim
-SEED_BEFORE_S, SEED_AFTER_S = 0.8, 0.3     # and this close to the moment the ball reached it
+SEED_BEFORE_S, SEED_AFTER_S = 1.8, 0.3     # and this close to the moment the ball reached it
 MAX_GAP_S = 0.4                            # the ball may go unseen this long in flight
 MAX_BALL_PX_PER_S = 2200.0
 GRAVITY_PX = 900.0                         # about 32 ft/s^2 at about 28 px/ft
 FLIGHT_TOL_PX, FLIGHT_TOL_PX_PER_S = 25.0, 150.0
 BEAM = 24
+RISE_PX = 40.0
 SAME_FRAME_S = 0.02
 FLIGHT_MIN_POINTS = 3
 BACK_S, BACK_STEP_S = 0.8, 0.1             # how far the flight is run back unseen to reach the shooter's hands
 COURT_MARGIN_FT = 3.0
-REACH_WIDTHS = 1.5                         # how far from a person's box the ball can be and still be in their hands
+REACH_WIDTHS = 1.5                         # further than this from anyone, the shooter is flagged as doubtful
+ARM_HEIGHTS, ARM_WIDTHS = 0.45, 0.25       # raised arms reach this far above and beside a person's box
+NEIGHBOUR_FRAMES = 2                       # a shooter hidden behind someone at the release is looked for this many frames either side
 
 
 @dataclass(frozen=True)
@@ -80,6 +83,12 @@ def ball_sightings(looks: list[Look], scale: float = 1.0) -> list[tuple[float, f
     return keep
 
 
+def _flight_rank(chain: list, scale: float) -> tuple[bool, float, int]:
+    """A shot goes up before it comes down: a ball that only falls is the ball through the net or off the rim."""
+    peak = min(p[2] for p in chain)
+    return (len(chain) >= FLIGHT_MIN_POINTS and chain[0][2] - peak >= RISE_PX * scale, chain[-1][0] - chain[0][0], len(chain))
+
+
 def find_flight(sightings: list[tuple[float, float, float, float]], rims_px: list[tuple[float, float]],
                 end_t: float | None = None, scale: float = 1.0) -> list[tuple[float, float, float, float]]:
     """The ball's flight traced backward from a rim: starting from a sighting close to a rim, each earlier sighting must
@@ -88,6 +97,7 @@ def find_flight(sightings: list[tuple[float, float, float, float]], rims_px: lis
     seeds = [p for p in pts if any(np.hypot(p[1] - rx, p[2] - ry) <= RIM_REACH_PX * scale for rx, ry in rims_px)
              and (end_t is None or end_t - SEED_BEFORE_S <= p[0] <= end_t + SEED_AFTER_S)]
     best: list = []
+    best_rank = (False, -1.0, 0)
     beam = [[s] for s in seeds]
     while beam:
         grown = []
@@ -116,8 +126,8 @@ def find_flight(sightings: list[tuple[float, float, float, float]], rims_px: lis
                 if dt <= nearest + SAME_FRAME_S:
                     grown.append([p, *chain])
             found = bool(fits)
-            if not found and (chain[-1][0] - chain[0][0], len(chain)) > (best[-1][0] - best[0][0] if best else -1, len(best)):
-                best = chain
+            if not found and _flight_rank(chain, scale) > best_rank:
+                best, best_rank = chain, _flight_rank(chain, scale)
         grown.sort(key=lambda c: (-(c[-1][0] - c[0][0]), -len(c)))
         beam = grown[:BEAM]
     return best
@@ -129,10 +139,12 @@ def _on_court(box, mapping: Mapping) -> bool:
 
 
 def _reach(box, x: float, y: float) -> float:
-    """How far a point is from a person's box, in pixels; 0 inside it."""
+    """How far a point is from where a person's hands can be, in pixels: 0 inside their box or in the space above it
+    that raised arms reach."""
     x1, y1, x2, y2, _ = box
-    dx = max(x1 - x, 0.0, x - x2)
-    dy = max(y1 - y, 0.0, y - y2)
+    w, h = x2 - x1, y2 - y1
+    dx = max(x1 - ARM_WIDTHS * w - x, 0.0, x - x2 - ARM_WIDTHS * w)
+    dy = max(y1 - ARM_HEIGHTS * h - y, 0.0, y - y2)
     return float(np.hypot(dx, dy))
 
 
@@ -160,20 +172,27 @@ def locate(looks: list[Look], rims_px: list[tuple[float, float]], arrival_t: flo
     dt = second[0] - first[0]
     vx, vy = (second[1] - first[1]) / dt, (second[2] - first[2]) / dt
     done: tuple | None = None
+    order = {id(k): i for i, k in enumerate(looks)}
     for back in np.arange(0.0, BACK_S + 1e-6, BACK_STEP_S):
         t = first[0] - back
-        look = min(looks, key=lambda k: abs(k.t - t))
-        if look.mapping is None or abs(look.t - t) > BACK_STEP_S:
+        centre = min(looks, key=lambda k: abs(k.t - t))
+        if abs(centre.t - t) > BACK_STEP_S:
             continue
         here = (first[1] - vx * back, first[2] - vy * back + 0.5 * GRAVITY_PX * scale * back * back)
-        ball = _carry(anchor.H, np.linalg.inv(look.mapping.H), *here)
-        hit = shooter_at(look, ball) if ball else None
-        if hit is None:
-            continue
-        box, reach = hit
-        if done is None or reach < done[1]:
-            done = (box, reach, look, t)
-        if reach <= REACH_WIDTHS * (box[2] - box[0]) / 2:
+        i = order[id(centre)]
+        for look in sorted(looks[max(0, i - NEIGHBOUR_FRAMES): i + NEIGHBOUR_FRAMES + 1], key=lambda k: abs(k.t - t)):
+            if look.mapping is None:
+                continue
+            ball = _carry(anchor.H, np.linalg.inv(look.mapping.H), *here)
+            hit = shooter_at(look, ball) if ball else None
+            if hit is None:
+                continue
+            box, reach = hit
+            if done is None or reach < done[1]:
+                done = (box, reach, look, look.t)
+            if reach == 0.0:
+                break
+        if done is not None and done[1] == 0.0:
             break
     if done is None:
         return Spot(flags=["no-shooter"], arc_points=len(flight))

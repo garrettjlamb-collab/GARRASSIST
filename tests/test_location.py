@@ -110,3 +110,18 @@ def test_lengths_and_widths_scale_the_rule():
     path = [(t, x * 2 / 3, y * 2 / 3) for t, x, y in flight()]
     got = find_flight([(t, x, y, 0.6) for t, x, y in path], [(80.0, 400 / 3)], end_t=11.0, scale=2 / 3)
     assert len(got) == len(path)
+
+
+def test_a_ball_that_only_falls_loses_to_one_that_rose_first():
+    up = [(t, x, y, 0.6) for t, x, y in flight(t0=9.2, dur=1.0)]
+    falling = [(10.6 + i * 0.1, 120.0, 210.0 + 40 * i, 0.6) for i in range(9)]        # through the net, seen for longer
+    got = find_flight(up + falling, [(120.0, 200.0)], end_t=10.6)
+    assert got[0][0] == up[0][0]
+
+
+def test_raised_arms_are_within_reach():
+    from film.interpret.location import _reach
+
+    box = (100.0, 200.0, 140.0, 300.0, 0.9)
+    assert _reach(box, 120.0, 165.0) == 0.0
+    assert _reach(box, 120.0, 100.0) > 0.0
