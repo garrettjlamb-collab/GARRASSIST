@@ -17,7 +17,7 @@ for f in sorted(glob.glob("games/*/shot_looks.json.gz")):
     shots = confirmed_shots(gd)
     key = "HELD" if gd.name.startswith(HELD) else "tuned"
     methods = Counter((e.signals.get("location") or {}).get("method") for e in shots)
-    made = [e for e in shots if e.x is not None and e.made and e.signals.get("points") in (2, 3) and e.signals["location"]["method"] in ("flight", "path")]
+    made = [e for e in shots if e.x is not None and e.made and e.signals.get("points") in (2, 3) and e.signals["location"]["method"] in ("flight", "path", "pose")]
     r = lambda es: f"{sum(is_three(e.x, e.y) == (e.signals['points'] == 3) for e in es)}/{len(es)}"
     print(f"{gd.name.replace('2026-10-09-new-marcos-de-niza-high-school-vs-', '')[:24]:24s} {key:5s} shots {len(shots):3d} {dict(methods)} 2s {r([e for e in made if e.signals['points'] == 2])} 3s {r([e for e in made if e.signals['points'] == 3])}")
     for e in made:

@@ -563,6 +563,17 @@ The API never sends the machine's dot. Answers go to `labels/dotcheck/answers.js
 - **Confidence does not catch them:** over 10 ft at 0.8 and up 23%, under 0.8 27%; two misses over 12 ft are at conf 1.0.
 - **Next:** the machine's dots are drafts for him to correct on the cards, not stats. Better shooter choice is the biggest gain.
 
+## 2026-11-01 (late): the shooter by their body (branch shooter-pick, not merged)
+
+`film/interpret/shooter_pose.py`: yolo11n-pose over the same 3 s (`games/<id>/shot_poses.json.gz`, about 2 s a shot, `collect_poses` in `film locate`). Score: wrists above the shoulders, with the ball at a wrist, from 1 s before the flight's first sighting to 0.3 s after.
+The best person at 0.2 or above takes the dot unless they look like a non-player; else the path, else the rule. Feet: lower ankle, and over the 0.5 s before, the point nearest the camera, because a foot in the air reads as further from it. `experiments/shooter_hold.py` is the dead end before it: who had the ball longest is the passer (made twos 98/103 fell to 62-87/103).
+
+- **Scoreboard, tuned on:** twos 144/148 (143/148), threes 42/53 (40/53); held-back threes still 2/7.
+- **By eye, 30 random shots of the 128 that moved over 5 ft:** roughly 3 in 4 right. The failure is a defender contesting with arms up.
+- **His 28 blind dots, scored once with the rules already chosen:** over 10 ft 7 to 4 (25% to 14%). But median 3.3 to 3.6 ft, within 3 ft 50% to 43%, zone 64% to 54%. Arc 89% both. Right player more often, placed no closer when already right. The floor rule for feet is the first suspect, and cannot now be judged on these dots.
+- **Confidence separates for the first time:** 0.8 and up n12 median 1.9 ft, none over 10; under 0.8 n16 median 5.5, 4 over 10. Small; recheck on a fresh batch.
+- **These 28 dots are now used up** for anything tuned after this. `experiments/dotcheck_rescore.py` prints them.
+
 ## What Garrett has asked for (requirements gathered in conversation)
 
 1. **Full box score eventually**, as automated as possible; he accepts reviewing some of it.

@@ -22,7 +22,7 @@ def location_sheet(game_id: str, n: int = 12, cols: int = 3, tile_width: int = 6
     gd = game_dir(game_id)
     m = Manifest.load(gd)
     maps = load_mappings(gd)
-    placed = [e for e in load_events(gd) if e.x is not None and e.signals.get("location", {}).get("method") in ("flight", "path")]
+    placed = [e for e in load_events(gd) if e.x is not None and e.signals.get("location", {}).get("method") in ("flight", "path", "pose")]
     if not placed:
         log(f"location sheet {game_id}: no flight-placed shots to draw")
         return None
