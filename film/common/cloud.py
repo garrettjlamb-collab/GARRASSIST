@@ -24,6 +24,7 @@ from film.common.paths import games_dir
 SF_DATALESS = 0x40000000          # st_flags of a file whose contents are in iCloud only; Python 3.12 has no name for it
 POLL_S = 2.0
 REPORT_EVERY_S = 30.0
+ASK_AGAIN_S = 300.0               # iCloud can sit on a request for an hour and start at once when it is asked again
 EVICT_WAIT_S = 30.0
 EVICT_RETRY_S = 5.0
 
@@ -125,7 +126,7 @@ def _pull(source: Path, log) -> None:
     timeout = float(os.environ.get("FILM_CLOUD_TIMEOUT_S", "3600"))
     log(f"pulling {source.name} ({_gb(size)}) from iCloud")
     BACKEND.download(source)
-    started, next_report = _clock(), REPORT_EVERY_S
+    started, next_report, next_ask = _clock(), REPORT_EVERY_S, ASK_AGAIN_S
     while is_cloud_only(source):
         waited = _clock() - started
         if waited >= timeout:
@@ -134,6 +135,12 @@ def _pull(source: Path, log) -> None:
         if waited >= next_report:
             log(f"  still pulling {source.name}: {next_report / 60:.1f} min")
             next_report += REPORT_EVERY_S
+        if waited >= next_ask:
+            next_ask += ASK_AGAIN_S
+            try:
+                BACKEND.download(source)
+            except CloudError as err:          # the first request stands; only the timeout ends the wait
+                log(f"  asked iCloud again for {source.name}: {err}")
         _sleep(POLL_S)
 
 

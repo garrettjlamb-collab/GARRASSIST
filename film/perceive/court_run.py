@@ -1,6 +1,9 @@
 # film/perceive/court_run.py
 from __future__ import annotations
 
+from bisect import bisect_left
+from dataclasses import replace
+
 import time
 from pathlib import Path
 
@@ -19,6 +22,8 @@ COLUMNS = (["frame", "t", "end", "points_used", "error_px", "conf"] + [f"h{i}{j}
               "length"])         # the court's length in feet
 FILE = "court.parquet"
 MAX_GAP_S = 2.0
+BLEND_GAP_S = 2.5
+_BLEND_PIXEL = np.array([640.0, 360.0, 1.0])     # the middle of a 720p picture, inside a 1080p one
 
 
 def default_step(profile: str) -> float:
@@ -80,3 +85,18 @@ def mapping_at(mappings: list[tuple[float, Mapping]], t: float, max_gap_s: float
         return None
     best = min(mappings, key=lambda p: abs(p[0] - t))
     return best[1] if abs(best[0] - t) <= max_gap_s else None
+
+
+def mapping_between(mappings: list[tuple[float, Mapping]], t: float, max_gap_s: float = BLEND_GAP_S) -> Mapping | None:
+    """The mapping at t, blended between the fits either side of it: the camera keeps turning between fits. Falls back on the
+    nearest fit when t is not between two close ones."""
+    i = bisect_left(mappings, t, key=lambda p: p[0])
+    if i == 0 or i >= len(mappings):
+        return mapping_at(mappings, t)
+    (t0, m0), (t1, m1) = mappings[i - 1], mappings[i]
+    if t1 - t0 > max_gap_s or m0.length != m1.length:
+        return mapping_at(mappings, t)
+    u = (t - t0) / max(t1 - t0, 1e-9)
+    # A homography is only defined up to scale and sign: make w 1 at a pixel in the picture on both before blending them.
+    H = (1 - u) * m0.H / (m0.H @ _BLEND_PIXEL)[2] + u * m1.H / (m1.H @ _BLEND_PIXEL)[2]
+    return replace(m0, H=H)

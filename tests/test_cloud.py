@@ -114,6 +114,18 @@ def test_a_pull_that_never_finishes_times_out(tmp_path, cloud_env, monkeypatch):
     assert list((cloud._state_dir(film) / "holds").iterdir()) == []
 
 
+def test_a_pull_that_does_not_start_is_asked_for_again(tmp_path, cloud_env, monkeypatch):
+    film = tmp_path / "film.mp4"
+    film.write_bytes(b"x")
+    now, asks = [0.0], []
+    monkeypatch.setattr(cloud, "_clock", lambda: now[0])
+    monkeypatch.setattr(cloud, "_sleep", lambda s: now.__setitem__(0, now[0] + s))
+    monkeypatch.setattr(cloud, "is_cloud_only", lambda p: len(asks) < 3)
+    monkeypatch.setattr(cloud.BACKEND, "download", lambda p: asks.append(now[0]))
+    cloud._pull(film, log=lambda m: None)
+    assert len(asks) == 3 and asks[0] == 0.0 and 300.0 <= asks[1] < 310.0 and 600.0 <= asks[2] < 610.0
+
+
 def test_a_long_pull_reports_its_progress(tmp_path, cloud_env, monkeypatch):
     film = cloud_env.offload(_film(tmp_path))
     cloud_env.stall_download = True
