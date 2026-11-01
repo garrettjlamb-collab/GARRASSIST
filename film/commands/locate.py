@@ -14,11 +14,12 @@ def run(args) -> int:
     from film.common.cloud import game_film, local_source
     from film.common.device import pick_device
     from film.export.location_sheet import location_sheet
+    from film.perceive.official import OfficialClassifier
     from film.perceive.shotspots import collect, place
 
-    with local_source(game_film(args.game_id)):
+    with local_source(game_film(args.game_id)) as source:
         if not args.again:
             collect(args.game_id, device=pick_device(args.device))
-        place(args.game_id)
+        place(args.game_id, source=source, classifier=OfficialClassifier.load())
         location_sheet(args.game_id)
     return 0

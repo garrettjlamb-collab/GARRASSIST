@@ -25,6 +25,9 @@ from film.review.decisions import load_decisions
 LOOKS = "shot_looks.json.gz"
 BEFORE_S, AFTER_S, FPS = 3.0, 0.3, 10.0
 PERSON_IMGSZ, PERSON_CONF, BALL_CONF = 960, 0.2, 0.1
+MAX_SET_ASIDE = 3
+OFFICIAL_THRESHOLD = 0.5
+SET_ASIDE_CONF = 0.8                        # the first choice looked wrong, so the second is a little less sure
 NO_RIM = 0                                  # a scoreboard-only card has no rim of its own: any rim will do
 
 
@@ -97,24 +100,76 @@ def _rims_in_anchor(row: dict, looks: list[Look]) -> list[tuple[float, float]]:
     return out
 
 
-def place(game_id: str, log=print) -> dict:
-    """Run the location rules over the kept looks and write the spots onto the game's events."""
+def _person_key(t: float, box) -> str:
+    return f"{t:.2f}:" + ",".join(f"{v:.0f}" for v in box[:4])
+
+
+def official_score(row: dict, t: float, box, source: Path | None, classifier) -> float | None:
+    """How much this person looks like a non-player, kept on the shot so the rules can run again without the film. None when
+    it cannot be read: no model, or no film at hand."""
+    kept = row.setdefault("officials", {})
+    key = _person_key(t, box)
+    if key in kept:
+        return kept[key]
+    if classifier is None or source is None:
+        return None
+    from film.train.prelabel import first_frame_at
+
+    frame = first_frame_at(source, t, FPS)
+    if frame is None:
+        return None
+    x1, y1, x2, y2 = (int(v) for v in box[:4])
+    crop = frame[max(y1, 0):y2, max(x1, 0):x2]
+    if crop.size == 0:
+        return None
+    kept[key] = round(float(classifier.scores([crop])[0]), 3)
+    return kept[key]
+
+
+def spot_of_a_player(looks: list[Look], row: dict, arrival_t, t: float, points, scale: float, source: Path | None, classifier) -> dict:
+    """The rules' spot, setting aside anyone chosen as shooter who looks like a non-player and choosing again."""
+    rims = _rims_in_anchor(row, looks)
+    aside = 0
+    for _ in range(MAX_SET_ASIDE + 1):
+        spot = shot_spot(looks, rims, arrival_t, t, points, scale=scale)
+        if spot["method"] != "flight" or not spot["box"]:
+            break
+        at = min(looks, key=lambda k: abs(k.t - spot["release_t"]))
+        person = max(at.people, key=lambda b: location._iou(b, spot["box"]), default=spot["box"])
+        score = official_score(row, at.t, person, source, classifier)
+        if score is None or score < OFFICIAL_THRESHOLD:
+            break
+        looks = location.set_aside(looks, at.t, person)
+        aside += 1
+    else:
+        spot = {**spot, "x": None, "y": None, "conf": None, "method": "none", "flags": ["no-player-found"], "shot_type": None, "release_t": None, "box": None}
+    if aside and spot["x"] is not None:
+        spot["flags"] = [*spot["flags"], "official-set-aside"]
+        spot["conf"] = round(spot["conf"] * SET_ASIDE_CONF, 2)
+    spot["set_aside"] = aside
+    return spot
+
+
+def place(game_id: str, source: Path | None = None, classifier=None, log=print) -> dict:
+    """Run the location rules over the kept looks and write the spots onto the game's events. With the film and a model,
+    people chosen as shooter are checked and non-players set aside; what was read is kept in the looks file."""
     gd = game_dir(game_id)
     scale = Manifest.load(gd).width / location.REFERENCE_WIDTH
     maps = load_mappings(gd)
     rows = {r["id"]: r for r in read_looks(gd)}
     events = load_events(gd)
-    placed, methods, truth = 0, {}, {"sides": 0, "right": 0}
+    placed, set_aside, methods, truth = 0, 0, {}, {"sides": 0, "right": 0}
     for e in events:
         row = rows.get(e.id)
         if row is None:
             continue
         looks = [Look(f["t"], mapping_at(maps, f["t"]), [tuple(b) for b in f["people"]], [tuple(b) for b in f["ball"]]) for f in row["frames"]]
         points = e.signals.get("points") if e.made else None
-        spot = shot_spot(looks, _rims_in_anchor(row, looks), e.t if row["rim_id"] >= NO_RIM else None, e.t, points, scale=scale)
+        spot = spot_of_a_player(looks, row, e.t if row["rim_id"] >= NO_RIM else None, e.t, points, scale, source, classifier)
+        set_aside += spot["set_aside"]
         methods[spot["method"]] = methods.get(spot["method"], 0) + 1
         e.signals["location"] = {k: spot[k] for k in ("method", "release_t", "flight_points", "reach_px", "box")}
-        e.flags = [f for f in e.flags if f not in ("no-flight", "no-shooter", "shooter-far-from-ball")] + spot["flags"]
+        e.flags = [f for f in e.flags if f not in ("no-flight", "no-shooter", "shooter-far-from-ball", "official-set-aside", "no-player-found")] + spot["flags"]
         if spot["x"] is None:
             e.x = e.y = e.zone = e.shot_type = e.location_conf = None
             e.needs_location = True
@@ -128,7 +183,8 @@ def place(game_id: str, log=print) -> dict:
             truth["sides"] += 1
             truth["right"] += is_three(e.x, e.y) == (points == 3)
     save_events(gd, events)
-    result = {"shots": len(rows), "placed": placed, "methods": methods, "made_twos_threes": truth["sides"], "arc_side_right": truth["right"]}
-    log(f"film locate {game_id}: {placed} of {len(rows)} shots placed {methods}; "
+    _write(gd / LOOKS, rows)
+    result = {"shots": len(rows), "placed": placed, "methods": methods, "set_aside": set_aside, "made_twos_threes": truth["sides"], "arc_side_right": truth["right"]}
+    log(f"film locate {game_id}: {placed} of {len(rows)} shots placed {methods}; {set_aside} non-players set aside; "
         + (f"arc side right on {truth['right']} of {truth['sides']} made twos and threes" if truth["sides"] else "no scoreboard to check the arc against"))
     return result

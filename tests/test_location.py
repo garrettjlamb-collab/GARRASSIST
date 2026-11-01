@@ -125,3 +125,22 @@ def test_raised_arms_are_within_reach():
     box = (100.0, 200.0, 140.0, 300.0, 0.9)
     assert _reach(box, 120.0, 165.0) == 0.0
     assert _reach(box, 120.0, 100.0) > 0.0
+
+
+def test_a_person_set_aside_is_gone_from_every_frame_they_can_be_followed_through():
+    from film.interpret.location import set_aside
+
+    walking = [(100.0 + i, 50.0, 124.0 + i, 110.0, 0.9) for i in range(6)]
+    other = (400.0, 50.0, 424.0, 110.0, 0.9)
+    looks = [Look(float(i), MAP, [walking[i], other], []) for i in range(6)]
+    out = set_aside(looks, 3.0, walking[3])
+    assert all(k.people == [other] for k in out)
+    assert all(len(k.people) == 2 for k in looks)      # the caller's looks are left alone
+
+
+def test_a_hidden_frame_does_not_lose_the_person():
+    from film.interpret.location import set_aside
+
+    box = (100.0, 50.0, 124.0, 110.0, 0.9)
+    looks = [Look(0.0, MAP, [box], []), Look(0.1, MAP, [], []), Look(0.2, MAP, [box], [])]
+    assert all(k.people == [] for k in set_aside(looks, 0.0, box))
