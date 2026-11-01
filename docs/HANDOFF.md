@@ -483,8 +483,14 @@ review. Spec: `docs/superpowers/specs/2026-10-31-court-review-design.md`. Plan: 
 - **State (2026-10-31).** He approved all 5 in 74 seconds: 0 pulls on Prescott, 7 on Mesquite, the largest move about
   24 px. Prescott's three references agree to a median of about 4 px at 84 ft; Mesquite's wide picture agrees with the
   others to 2.6 px at 94 ft, and its 49:03 and 55:44 pictures do not line up with each other, so they are not checked.
-- **Next:** `film court` on Prescott and Mesquite (a few minutes each, ask first), check each
-  `court_sheet.jpg`, then `film court <other_mdn_game> --refs-from <mesquite_id>`.
+- **Run 2026-10-31.** `film court` on Prescott and Mesquite, then `--refs-from` Mesquite on Arcadia, Cactus Shadows,
+  Saguaro and St. Mary's at MDN (about 13 min each). All 12 frames of all 6 contact sheets checked by eye: the court
+  lands on the paint, so the MDN camera does reuse its pictures across games. Of 511 confirmed shots on these six games,
+  none is more than 2 s from a placed court. The longest gaps are 163-252 s on Mesquite, Saguaro and St. Mary's and fall
+  where no shot was confirmed. Accuracy in feet is still unmeasured: `median_dot_error_ft` needs plan B's machine dots.
+- **Next:** 10 games have no court: the 7 handheld ones other than Prescott, the 2 Arcadia Hudl games and Deer Valley. They
+  need `film prelabel court <id> --refs` (about 3 min), drafts, his review, then `film court`. Plan B (people, release,
+  automatic dots) can start on these six games.
 - **Later:** `film court --train-frames` and `film train court` on approved games give the model that replaces Claude's
   drafts. Not started.
 
