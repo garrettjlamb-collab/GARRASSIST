@@ -20,6 +20,7 @@ from film.perceive.rims import basket_sides
 from film.perceive.scoreboard import has_scoreboard
 from film.perceive.tracks import read_tracks
 from film.perceive.detectors import Box
+from film.review import dotcheck
 from film.review.films import Films
 from film.review.decisions import apply_decisions, load_decisions, save_decision
 from film.train import datasets as ds
@@ -68,6 +69,13 @@ class CourtReview(BaseModel):
     handles: list[CourtHandle]
     length: float = 94.0
     seconds: float | None = None
+
+
+class DotAnswer(BaseModel):
+    game_id: str
+    event_id: str
+    x: float | None = None
+    y: float | None = None
 
 
 class Quarters(BaseModel):
@@ -238,6 +246,10 @@ def create_app(films: Films | None = None) -> FastAPI:
             raise HTTPException(404, "clip not cut yet; run film clips")
         return FileResponse(path, media_type="video/mp4")
 
+    @app.get("/api/games/{game_id}/rims/{rim_id}/side")
+    def rim_side(game_id: str, rim_id: int):
+        return {"side": _basket_sides(_gd(game_id)).get(rim_id)}
+
     @app.get("/api/games/{game_id}/film")
     def film_status(game_id: str):
         return films.status(game_id, Path(Manifest.load(_gd(game_id)).source))
@@ -303,6 +315,28 @@ def create_app(films: Films | None = None) -> FastAPI:
             return {"split": ds.accept_points(dataset, image_id, {k: (float(x), float(y)) for k, (x, y) in body.points.items()})}
         except FileNotFoundError:
             raise HTTPException(404, f"no image {image_id} in {dataset}")
+
+    @app.get("/api/dotcheck/next")
+    def dotcheck_next():
+        return dotcheck.next_shot()
+
+    @app.post("/api/dotcheck/answer")
+    def dotcheck_answer(body: DotAnswer):
+        if body.x is None or body.y is None:
+            raise HTTPException(400, "a dot needs both x and y")
+        try:
+            return dotcheck.answer(body.game_id, body.event_id, body.x, body.y)
+        except KeyError:
+            raise HTTPException(404, "that shot is not in the dot check")
+        except ValueError as exc:
+            raise HTTPException(400, str(exc))
+
+    @app.post("/api/dotcheck/skip")
+    def dotcheck_skip(body: DotAnswer):
+        try:
+            return dotcheck.skip(body.game_id, body.event_id)
+        except KeyError:
+            raise HTTPException(404, "that shot is not in the dot check")
 
     @app.post("/api/label/court/{image_id}/draw")
     def court_draw(image_id: str, body: CourtReview):

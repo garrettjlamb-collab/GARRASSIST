@@ -47,6 +47,7 @@
     <button data-tab="ball">Label ball</button>
     <button data-tab="rimclf">Label clips</button>
     <button data-tab="court">Label court</button>
+    <button data-tab="dotcheck">Dot check</button>
   </nav>
   <div id="status"></div>
   <section id="shots"></section>
@@ -222,7 +223,77 @@ function render() {
   $("#label").hidden = state.tab === "shots" || state.tab === "quarters";
   if (state.tab === "shots") renderShots();
   else if (state.tab === "quarters") loadQuarters().catch(showError);
+  else if (state.tab === "dotcheck") loadDotCheck().catch(showError);
   else loadLabel();
+}
+
+// ---- Dot check: the coach's own dot on a queued shot. The server never sends the machine's dot, so it cannot lead him. ----
+async function showDotCheck(d) {
+  state.dot = d;
+  if (d.done) {
+    $("#label").innerHTML = d.total
+      ? `<p><b>Dot check done: ${d.answered} of ${d.total} shots.</b> Tell Claude, and it will work out how far off the dots are.</p>`
+      : `<p>No shots queued. Queue them with: film dotcheck pick</p>`;
+    return;
+  }
+  d.basket_side = d.rim_id >= 0 ? (await api(`/api/games/${d.game_id}/rims/${d.rim_id}/side`)).side : null;
+  $("#label").innerHTML = `<div class="row"><b>Shot ${d.answered + 1} of ${d.total}</b><span class="muted">${esc(d.title)}</span></div>
+    <div class="card">
+      <video id="clip" src="/clips/${esc(d.game_id)}/${esc(d.event_id)}.mp4" autoplay loop muted playsinline></video>
+      <div style="display:inline-block;vertical-align:top;margin-left:12px">
+        <canvas id="court" width="${courtCanvasSize().w}" height="${courtCanvasSize().h}" style="border-radius:6px;cursor:crosshair"></canvas>
+        <div class="muted" id="zone-line">Click where the shooter's feet were when the ball left their hands.</div>
+      </div>
+      <div class="keys">Click the court, <kbd>Enter</kbd> next. Arrows nudge a foot. <kbd>D</kbd> can't tell, skip. <kbd>R</kbd> replay
+        <kbd>F</kbd> speed <kbd>B</kbd> flip the basket's side. The machine's dot is hidden on purpose, so this measures it.</div>
+    </div>`;
+  drawHalfCourt($("#court"), d);
+  $("#court").onclick = (ev) => {
+    const c = $("#court"), r = c.getBoundingClientRect();
+    const { w, h } = courtCanvasSize(), sx = w / c.clientWidth, sy = h / c.clientHeight;
+    const [x, y] = toFtM(courtMatrix(courtView(d)), (ev.clientX - r.left - c.clientLeft) * sx, (ev.clientY - r.top - c.clientTop) * sy);
+    dotCheckPlace(x, y);
+  };
+  const video = $("#clip");
+  video.onloadedmetadata = () => {
+    video.currentTime = Math.max(0, (d.clip ? d.t - d.clip.start : 0) - LEAD_IN_S);
+    video.playbackRate = state.rate;
+  };
+}
+
+async function loadDotCheck() { await showDotCheck(await api("/api/dotcheck/next")); }
+
+function dotCheckPlace(x, y) {
+  const d = state.dot;
+  d.x = Math.max(0, Math.min(HALF.w, Math.round(x * 10) / 10)); d.y = Math.max(0, Math.min(HALF.h, Math.round(y * 10) / 10));
+  drawHalfCourt($("#court"), d);
+  $("#zone-line").innerHTML = esc(ZONE_LABELS[zoneOf(d.x, d.y)] || "") + " · Enter for the next shot";
+}
+
+function dotCheckKeys(ev) {
+  const d = state.dot;
+  if (!d || d.done) return;
+  const k = ev.key.toLowerCase();
+  if (ev.key === "Enter") {
+    if (d.x == null) { $("#zone-line").textContent = "Click the court first, or press D if you can't tell."; }
+    else guarded(async () => { await showDotCheck(await post("/api/dotcheck/answer", { game_id: d.game_id, event_id: d.event_id, x: d.x, y: d.y })); });
+  } else if (k === "d") {
+    guarded(async () => { await showDotCheck(await post("/api/dotcheck/skip", { game_id: d.game_id, event_id: d.event_id })); });
+  } else if (k === "r") { const v = $("#clip"); if (v) { v.currentTime = 0; v.play(); } }
+  else if (k === "f") {
+    state.rate = RATES[(RATES.indexOf(state.rate) + 1) % RATES.length];
+    const v = $("#clip"); if (v) v.playbackRate = state.rate;
+  } else if (k === "b") {
+    d.basket_side = courtView(d) === "right" ? "left" : "right";
+    try { localStorage.setItem("basketSide", d.basket_side); } catch (err) {}
+    drawHalfCourt($("#court"), d);
+  } else if (ev.key.startsWith("Arrow") && d.x != null) {
+    const m = courtMatrix(courtView(d));
+    const dpx = (ev.key === "ArrowRight" ? 1 : ev.key === "ArrowLeft" ? -1 : 0) * SCALE, dpy = (ev.key === "ArrowDown" ? 1 : ev.key === "ArrowUp" ? -1 : 0) * SCALE;
+    const [x0, y0] = toFtM(m, 0, 0), [x1, y1] = toFtM(m, dpx, dpy);
+    dotCheckPlace(d.x + (x1 - x0), d.y + (y1 - y0));
+  } else return;
+  ev.preventDefault();
 }
 
 function renderShots() {
@@ -892,12 +963,13 @@ document.addEventListener("keydown", (ev) => {
   else if (state.tab === "quarters") quarterKeys(ev);
   else if (state.tab === "rimclf") clipKeys(ev);
   else if (state.tab === "court") courtKeys(ev);
+  else if (state.tab === "dotcheck") dotCheckKeys(ev);
   else boxKeys(ev);
 });
 document.querySelectorAll("nav button").forEach(b => b.onclick = () => { state.tab = b.dataset.tab; render(); });
 // A link such as /#ball opens straight on that tab.
 const wanted = location.hash.slice(1);
-if (["shots", "quarters", "rim", "ball", "rimclf", "court"].includes(wanted)) state.tab = wanted;
+if (["shots", "quarters", "rim", "ball", "rimclf", "court", "dotcheck"].includes(wanted)) state.tab = wanted;
 loadGames();
 </script>
 </body>
