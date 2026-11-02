@@ -616,6 +616,9 @@ here, so the 60 on MDN vs Cactus Shadows belong to that game, whose 24% made is 
 live confirmed shots have a dot, and the other 6 are shots he skipped with D. Still open: 1,646 live cards nobody has decided, 288 of them at confidence 0.5 or over,
 so the shot counts are floors.
 
+Same day: the 11 other D-skips were rejected on his word (backup `games/_backups/skipped-11-2026-11-02/`), so every live confirmed shot has a dot. `shot-012100-sb` on JV vs Marcos looks real: the board goes 22-11 to 24-11 at 1212 s and no other make is near it. Left rejected until he says.
+Scoreboard check on the five Hudl varsity games: 76 of 238 baskets have no confirmed make within 20 s before or 4 s after, and 69 of the 76 have an undecided card there. The two fully reviewed JV games miss 2 of 62. MaxPreps for MDN at Cactus Shadows, 2025-01-13: MDN 55, CS 71; MDN FG 25-60, 3P 2-15, FT 3-5. Probably the iPad film (CS gym, a board around 68 in period 4), level and date unconfirmed; `Marcos de Niza vs Cactus Shadows - Angle 1.mp4` is evicted to iCloud, so only 360p clips were read.
+
 ## What Garrett has asked for (requirements gathered in conversation)
 
 1. **Full box score eventually**, as automated as possible; he accepts reviewing some of it.
