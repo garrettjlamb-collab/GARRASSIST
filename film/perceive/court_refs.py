@@ -32,7 +32,8 @@ DATASET = "court"
 REF_ID = re.compile(r"^(?P<game>.+)_(?P<t10>\d{6})$")
 MAX_CHAIN_S = 30.0
 CHAIN_CONF = 0.8                  # a carried court is trusted less than one a reference placed
-CENTRE_MARGIN_FT = 15.0           # the middle of the picture must be on (or near) the court
+FLOOR_MARGIN_FT = 15.0            # one of these places in the picture must be on (or near) the court
+FLOOR_PROBES = ((0.5, 0.5), (0.25, 0.8), (0.5, 0.8), (0.75, 0.8))     # share of width, of height: a low camera's middle is the bleachers, its floor is low
 FIT_TOL_PX_AT_1080P = 8.0
 TRAIN_MIN_CONF = 0.8
 TRAIN_MIN_POINTS = 4
@@ -94,7 +95,7 @@ def place_points(f: Features, refs: list[Reference]) -> tuple[dict[str, tuple[fl
 
 def _fit(points: dict, w: int, h: int, length: float = FULL_DEPTH) -> Mapping | None:
     mapping = fit_mapping(points, reproj_tol_px=max(3.0, FIT_TOL_PX_AT_1080P * w / 1920), length=length)
-    if mapping is None or not mapping.contains(w / 2, h / 2, margin=CENTRE_MARGIN_FT):
+    if mapping is None or not any(mapping.contains(w * a, h * b, margin=FLOOR_MARGIN_FT) for a, b in FLOOR_PROBES):
         return None
     return mapping
 

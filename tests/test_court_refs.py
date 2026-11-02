@@ -213,3 +213,25 @@ def test_the_view_furthest_round_is_found_through_a_chain_of_neighbours(pano):
     anchor = feats[0][1]
     assert match(feats[5][1], anchor) is None                       # the far view shares nothing with the anchor
     assert _spread_picks(feats, links, anchor, {1, 2, 3, 4, 5}) == [5, 1]        # the far one first
+
+
+def _floor_low_points(top):
+    """Marks for a court whose far sideline is at pixel row `top`, in a 1000 x 500 picture: 10 px a foot along, 4 px a foot across."""
+    from film.interpret.court import template
+
+    return {n: (100 + template()[n][1] * 10, top + template()[n][0] * 4) for n in ("near-corner-left", "near-corner-right", "near-lane-left", "near-lane-right", "mid-left", "mid-right")}
+
+
+def test_a_low_camera_with_the_bleachers_in_the_middle_of_the_picture_still_gets_a_court():
+    from film.perceive.court_refs import FLOOR_MARGIN_FT, _fit
+
+    points = _floor_low_points(320)                           # the floor fills only the bottom of the picture
+    mapping = _fit(points, 1000, 500)
+    assert mapping is not None
+    assert not mapping.contains(500, 250, margin=FLOOR_MARGIN_FT)      # the middle of the picture really is off the court
+
+
+def test_a_fit_with_no_floor_in_the_lower_picture_is_refused():
+    from film.perceive.court_refs import _fit
+
+    assert _fit(_floor_low_points(-900), 1000, 500) is None
