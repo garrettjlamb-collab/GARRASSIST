@@ -606,6 +606,16 @@ Contact sheets by eye: Combs, MDN vs CS pass; CS gym passes but the near sidelin
 He answered all 403 (340 dots, 63 skipped; 32 min). Hidden cards: Combs n14 good 64%, median 4.3 ft, 2 over 10; MDN vs CS n14 good 29%, median 8.2, 5 over 10; CS gym n2, no use. Ten earlier games n88 good 60%, median 3.9, 12% over 10. Trusted hidden on the three n9: good 89%, 0 over 10; not trusted n21: 29%, 38%. These dots no longer matter on these games: every live shot there has his own dot, placed from the clip, so a poor court does not touch it.
 **He skipped 60 on MDN vs CS and says most had no shot in the clip.** All 60 are misses from `Confirm all above 0.9` (46 at one minute on 2026-10-10, 14 on 2026-10-12): the card's "confirmed" was never watched. So that button's misses on a no-scoreboard game are not to be trusted, and `rimclf`/`picclf` training may have read them as shots. On his word they are rejected (2026-11-02; earlier review.json in `games/_backups/phantoms-2026-11-02`). 11 skips on other games stay confirmed with no dot unless he says otherwise. His dots at the free-throw line (36 on the three) say the free-throw rule misses many on these cameras.
 
+## 2026-11-02: RKDA, Cortez and Tempe clicked by hand (branch click-three, not merged)
+
+On "whichever you think is best" the courts were dropped for these three: `dotreview._rows` takes any game with events, so a game with no court queues every shot with no machine dot. 277 shots: RKDA 115, Cortez 70, Tempe 92. In Dot review **X** now says no shot in the clip and rejects it; **D** says a shot he cannot place. No court means no machine dots to measure, no `film locate`, and no free throws by rule: he clicks those too. Those games' `Confirm all above 0.9` shots (RKDA 94, Cortez 62, Tempe 89) were not watched, so X may be used a lot.
+
+He finished all 277: 273 placed, 4 no-shot (RKDA 114 + 1, Cortez 69 + 1, Tempe 90 + 2), about 15 minutes. These three games have
+no machine dot, so nothing measures these dots; every dot is in bounds and made rates are 43%, 54%, 43%. The bulk button produced almost no phantoms
+here, so the 60 on MDN vs Cactus Shadows belong to that game, whose 24% made is still the outlier. All 16 games now have locations: 1,605 of 1,611
+live confirmed shots have a dot, and the other 6 are shots he skipped with D. Still open: 1,646 live cards nobody has decided, 288 of them at confidence 0.5 or over,
+so the shot counts are floors.
+
 ## What Garrett has asked for (requirements gathered in conversation)
 
 1. **Full box score eventually**, as automated as possible; he accepts reviewing some of it.

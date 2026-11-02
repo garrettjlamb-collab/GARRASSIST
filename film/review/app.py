@@ -336,6 +336,13 @@ def create_app(films: Films | None = None) -> FastAPI:
         except KeyError:
             raise HTTPException(404, "that shot is not in the dot review")
 
+    @app.post("/api/dotreview/noshot")
+    def dotreview_noshot(body: DotAnswer):
+        try:
+            return dotreview.no_shot(body.game_id, body.event_id)
+        except KeyError:
+            raise HTTPException(404, "that shot is not in the dot review")
+
     @app.post("/api/dotreview/bulk")
     def dotreview_bulk():
         dotreview.bulk_approve()

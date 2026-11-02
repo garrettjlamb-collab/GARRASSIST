@@ -261,7 +261,7 @@ async function showDotCheck(d) {
           <div class="muted" id="zone-line">${shown ? esc(ZONE_LABELS[zoneOf(d.x, d.y)] || "") + " · Enter keeps it, or click where the shooter's feet were" : "Click where the shooter's feet were when the ball left their hands."}</div>
         </div>
         <div class="keys">${shown ? "<kbd>Enter</kbd> keeps the dot. Click the court to move it first." : "Click the court, then <kbd>Enter</kbd>. The dot is hidden on some cards so these keep measuring it."}
-          Arrows nudge a foot. <kbd>D</kbd> can't tell, skip. <kbd>R</kbd> replay <kbd>F</kbd> speed <kbd>B</kbd> flip the basket's side. You can stop any time; the worst dots come first.</div>
+          Arrows nudge a foot. <kbd>X</kbd> no shot in the clip. <kbd>D</kbd> there is a shot but you can't place it. <kbd>R</kbd> replay <kbd>F</kbd> speed <kbd>B</kbd> flip the basket's side. You can stop any time.</div>
       </div>`;
     if ($("#dot-bulk")) $("#dot-bulk").onclick = dotBulk;
     drawHalfCourt($("#court"), d);
@@ -323,6 +323,8 @@ function dotCheckKeys(ev) {
   if (ev.key === "Enter") {
     if (d.x == null) { $("#zone-line").textContent = "Click the court first, or press D if you can't tell."; }
     else guarded(async () => { await showDotCheck(await post(`${dotApi()}/answer`, { game_id: d.game_id, event_id: d.event_id, ...(state.tab === "dotreview" && !d.moved ? {} : { x: d.x, y: d.y }) })); });
+  } else if (k === "x" && state.tab === "dotreview") {
+    guarded(async () => { await showDotCheck(await post("/api/dotreview/noshot", { game_id: d.game_id, event_id: d.event_id })); });
   } else if (k === "d") {
     guarded(async () => { await showDotCheck(await post(`${dotApi()}/skip`, { game_id: d.game_id, event_id: d.event_id })); });
   } else if (k === "r") { const v = $("#clip"); if (v) { v.currentTime = 0; v.play(); } }
