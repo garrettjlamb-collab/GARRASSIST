@@ -4,7 +4,6 @@ from film.common.paths import game_dir
 from film.export.clips import clip_path, cut_clip
 from film.ingest.run import ingest
 from film.interpret.events import Event, save_events
-from film.perceive.shotspots import LOOKS
 from film.review import dotreview
 from film.review.decisions import apply_decisions, load_decisions, save_decision
 
@@ -16,7 +15,6 @@ def game(synthetic_video, tmp_path, monkeypatch):
     monkeypatch.setenv("FILM_LABELS_DIR", str(tmp_path / "labels"))
     m = ingest(synthetic_video, date="2026-01-01", profile="test")
     gd = game_dir(m.game_id)
-    (gd / LOOKS).write_bytes(b"")
     made = [("low", 30.0, 20.0, 0.3, "flight"), ("mid", 31.0, 21.0, 0.6, "pose"), ("sure", 32.0, 22.0, 0.95, "pose"), ("none", None, None, None, "none"), ("ft", 25.0, 19.0, 0.9, "free-throw")]
     events = []
     for i, (name, x, y, conf, method) in enumerate(made):
@@ -154,3 +152,27 @@ def test_one_trusted_dot_in_five_stays_hidden_and_is_not_kept_in_bulk(game, monk
     monkeypatch.setattr(dotreview, "is_trust_check", lambda g, e: True)
     assert dotreview.next_shot()["event_id"] == "shot-sure" and dotreview.next_shot()["blind"] is True
     assert dotreview.bulk_approve(log=lambda m: None) == 0
+
+
+def test_no_shot_stops_it_being_a_shot_and_keeps_what_else_he_said(game):
+    game_id, gd = game
+    dotreview.no_shot(game_id, "shot-none")
+    d = load_decisions(gd)["shot-none"]
+    assert d["status"] == "rejected" and d["team"] == "home" and "x" not in d
+    assert "shot-none" not in [r["event_id"] for r in dotreview.queue()]
+    assert dotreview.read_answers()[-1]["no_shot"] is True
+
+
+def test_skip_leaves_it_a_shot(game):
+    game_id, gd = game
+    dotreview.skip(game_id, "shot-none")
+    assert load_decisions(gd)["shot-none"]["status"] == "confirmed"
+
+
+def test_a_game_with_no_court_has_all_its_shots_queued_with_no_dot_and_never_counts_as_measuring(game):
+    game_id, gd = game
+    card = next(c for c in dotreview.queue() if c["event_id"] == "shot-none")
+    assert card["x"] is None and dotreview.next_shot()["no_dot"] == 1
+    dotreview.answer(game_id, "shot-none", 12.0, 20.0)
+    assert load_decisions(gd)["shot-none"]["dot_source"] == "coach"
+    assert dotreview.score()["hidden"]["all"] is None and dotreview.score()["no_machine_dot_placed"] == 1

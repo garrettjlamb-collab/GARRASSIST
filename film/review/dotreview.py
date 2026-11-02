@@ -15,7 +15,6 @@ from film.common.paths import game_dir, games_dir, labels_dir
 from film.export.clips import clip_path
 from film.interpret.events import load_events
 from film.interpret.zones import is_three, zone_of
-from film.perceive.shotspots import LOOKS
 from film.review.decisions import load_decisions, save_decision
 
 HIGH_CONF = 0.8
@@ -55,7 +54,7 @@ def _rows() -> list[dict]:
     """Every confirmed live shot with no dot of his yet and nothing he skipped. Free throws are on the line by rule and are left out."""
     skipped = {(a["game_id"], a["event_id"]) for a in read_answers() if a.get("skipped")}
     rows = []
-    for gd in sorted(p for p in games_dir().iterdir() if (p / LOOKS).exists()):
+    for gd in sorted(p for p in games_dir().iterdir() if (p / "events.json").exists() and (p / "manifest.json").exists()):   # a game with no court has no machine dots: he places them all
         decisions = load_decisions(gd)
         for e in load_events(gd):
             d = decisions.get(e.id) or {}
@@ -136,6 +135,16 @@ def answer(game_id: str, event_id: str, x: float | None = None, y: float | None 
 def skip(game_id: str, event_id: str) -> dict:
     _find(game_id, event_id)
     _log({"game_id": game_id, "event_id": event_id, "skipped": True})
+    return next_shot()
+
+
+def no_shot(game_id: str, event_id: str) -> dict:
+    """He watched it and there is no shot in the clip: it stops being a shot. Different from skip, which only says he cannot place it."""
+    _find(game_id, event_id)
+    gd = game_dir(game_id)
+    previous = load_decisions(gd).get(event_id) or {}
+    save_decision(gd, event_id, {**{k: previous[k] for k in ("made", "team", "foul") if k in previous}, "status": "rejected"})
+    _log({"game_id": game_id, "event_id": event_id, "skipped": True, "no_shot": True})
     return next_shot()
 
 
