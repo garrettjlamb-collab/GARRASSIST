@@ -14,7 +14,7 @@ from film.common.device import pick_device
 from film.common.manifest import Manifest
 from film.common.paths import game_dir
 from film.common.video import iter_frames
-from film.interpret.court import FULL_DEPTH, Mapping
+from film.interpret.court import FULL_DEPTH, WIDTH, Mapping
 from film.perceive.courtfinder import CourtFinder
 
 COLUMNS = (["frame", "t", "end", "points_used", "error_px", "conf"] + [f"h{i}{j}" for i in range(3) for j in range(3)]
@@ -23,7 +23,6 @@ COLUMNS = (["frame", "t", "end", "points_used", "error_px", "conf"] + [f"h{i}{j}
 FILE = "court.parquet"
 MAX_GAP_S = 2.0
 BLEND_GAP_S = 2.5
-_BLEND_PIXEL = np.array([640.0, 360.0, 1.0])     # the middle of a 720p picture, inside a 1080p one
 
 
 def default_step(profile: str) -> float:
@@ -97,6 +96,8 @@ def mapping_between(mappings: list[tuple[float, Mapping]], t: float, max_gap_s: 
     if t1 - t0 > max_gap_s or m0.length != m1.length:
         return mapping_at(mappings, t)
     u = (t - t0) / max(t1 - t0, 1e-9)
-    # A homography is only defined up to scale and sign: make w 1 at a pixel in the picture on both before blending them.
-    H = (1 - u) * m0.H / (m0.H @ _BLEND_PIXEL)[2] + u * m1.H / (m1.H @ _BLEND_PIXEL)[2]
+    # A homography is only defined up to scale and sign: make w 1 on both at the same place on the floor before blending them. Not at
+    # a fixed pixel: on a low camera that pixel can be above the horizon, where w is small or negative, and the floor would read as sky.
+    pixel = np.linalg.inv(m0.H) @ np.array([WIDTH / 2, m0.length / 2, 1.0])
+    H = (1 - u) * m0.H / (m0.H @ pixel)[2] + u * m1.H / (m1.H @ pixel)[2]
     return replace(m0, H=H)
