@@ -595,6 +595,12 @@ He reviewed everything but the 308 sure dots. He says he was picky on layups, nu
 The 119 trusted dots are kept (`dot_source: bulk`). 19 pictures on Combs, RKDA at MDN, Cortez, Tempe, MDN vs Cactus Shadows and the Cactus Shadows gym hold rough drafts by Claude (`experiments/rough_drafts.py`: marks by eye on one wide picture, carried into the rest through registration; 18 of 19 lined up; lengths guessed: RKDA 94 because it is the MDN floor, the others 84, so `L` may be needed). JV vs Marcos's 3 leftover queued pictures were removed: it has its court from Arcadia's references. `experiments/court_snap.py` tried snapping a rough court onto painted lines and failed (3 of 7 better, one flew off the picture).
 **After he approves them:** `film court <id>` on the six, contact sheets by eye, `film locate <id>` (detectors and poses, about 4 s a shot, two films in iCloud), `film dotreview trust`, then the Dot review tab.
 
+## 2026-11-01 (evening): three low-camera games located (branch low-camera-courts, not merged)
+
+Of the six, he called Tempe's 3 pictures and MDN vs Cactus Shadows 003724 terrible (withdrawn, labels in `games/_backups/court-2026-11-01`) and skipped RKDA's 3 and Cortez 009271. Those numbers are his count including skips; he has not confirmed the mapping.
+`court_refs._fit` required the picture's middle to be on the court, which refused 35 of 37 sampled Combs frames: the middle of a low camera is the bleachers. Now the middle or low in the picture (`FLOOR_PROBES`). Placed: Combs 287 to 8686, Cortez 720 to 6517, MDN vs CS 5675 to 6738, CS gym 3445 to 7090.
+Contact sheets by eye: Combs, MDN vs CS pass; CS gym passes but the near sideline runs through the bench; **Cortez fails** (arc well off; references disagree 50-60 px; fitted at an assumed 94 ft though approved at 84: `refs_pass` ignores the approved length when no picture shows both ends, a bug to fix). `film locate` ran on the three that pass. Dots: Combs 48/134, MDN vs CS 169/231, CS gym 60/83. Dot review holds 423: 5 checks, 231 doubtful, 171 no dot, 16 trusted. The trust model has never seen these cameras, so do not keep those 16 unseen on its word.
+
 ## What Garrett has asked for (requirements gathered in conversation)
 
 1. **Full box score eventually**, as automated as possible; he accepts reviewing some of it.
