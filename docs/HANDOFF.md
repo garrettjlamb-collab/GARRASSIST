@@ -610,6 +610,12 @@ He answered all 403 (340 dots, 63 skipped; 32 min). Hidden cards: Combs n14 good
 
 On "whichever you think is best" the courts were dropped for these three: `dotreview._rows` takes any game with events, so a game with no court queues every shot with no machine dot. 277 shots: RKDA 115, Cortez 70, Tempe 92. In Dot review **X** now says no shot in the clip and rejects it; **D** says a shot he cannot place. No court means no machine dots to measure, no `film locate`, and no free throws by rule: he clicks those too. Those games' `Confirm all above 0.9` shots (RKDA 94, Cortez 62, Tempe 89) were not watched, so X may be used a lot.
 
+He finished all 277: 273 placed, 4 no-shot (RKDA 114 + 1, Cortez 69 + 1, Tempe 90 + 2), about 15 minutes. These three games have
+no machine dot, so nothing measures these dots; every dot is in bounds and made rates are 43%, 54%, 43%. The bulk button produced almost no phantoms
+here, so the 60 on MDN vs Cactus Shadows belong to that game, whose 24% made is still the outlier. All 16 games now have locations: 1,605 of 1,611
+live confirmed shots have a dot, and the other 6 are shots he skipped with D. Still open: 1,646 live cards nobody has decided, 288 of them at confidence 0.5 or over,
+so the shot counts are floors.
+
 ## What Garrett has asked for (requirements gathered in conversation)
 
 1. **Full box score eventually**, as automated as possible; he accepts reviewing some of it.
