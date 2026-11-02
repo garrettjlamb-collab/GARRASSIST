@@ -590,6 +590,22 @@ He reviewed everything but the 308 sure dots. He says he was picky on layups, nu
 - **Fresh test, 30 hidden trusted dots, answered after the claim was fixed:** good enough 77%, median 3.0 ft, 0 over 10, arc 97%. With 0 of 30 the true rate of big misses could still be near 10%. He answered the 159 doubtful too (shown, so not independent): 23 kept, 136 moved. 119 trusted dots wait on the button.
 - **Next:** where feet are read; threes outside the paint; free throws the rule misses; the six low-camera courts.
 
+## 2026-11-01 (night): the six low-camera courts (branch low-camera-courts, not merged)
+
+The 119 trusted dots are kept (`dot_source: bulk`). 19 pictures on Combs, RKDA at MDN, Cortez, Tempe, MDN vs Cactus Shadows and the Cactus Shadows gym hold rough drafts by Claude (`experiments/rough_drafts.py`: marks by eye on one wide picture, carried into the rest through registration; 18 of 19 lined up; lengths guessed: RKDA 94 because it is the MDN floor, the others 84, so `L` may be needed). JV vs Marcos's 3 leftover queued pictures were removed: it has its court from Arcadia's references. `experiments/court_snap.py` tried snapping a rough court onto painted lines and failed (3 of 7 better, one flew off the picture).
+**After he approves them:** `film court <id>` on the six, contact sheets by eye, `film locate <id>` (detectors and poses, about 4 s a shot, two films in iCloud), `film dotreview trust`, then the Dot review tab.
+
+## 2026-11-01 (evening): three low-camera games located (branch low-camera-courts, not merged)
+
+Of the six, he called Tempe's 3 pictures and MDN vs Cactus Shadows 003724 terrible (withdrawn, labels in `games/_backups/court-2026-11-01`) and skipped RKDA's 3 and Cortez 009271. Those numbers are his count including skips; he has not confirmed the mapping.
+`court_refs._fit` required the picture's middle to be on the court, which refused 35 of 37 sampled Combs frames: the middle of a low camera is the bleachers. Now the middle or low in the picture (`FLOOR_PROBES`). Placed: Combs 287 to 8686, Cortez 720 to 6517, MDN vs CS 5675 to 6738, CS gym 3445 to 7090.
+Contact sheets by eye: Combs, MDN vs CS pass; CS gym passes but the near sideline runs through the bench; **Cortez fails** (arc well off; references disagree 50-60 px; fitted at an assumed 94 ft though approved at 84: `refs_pass` ignores the approved length when no picture shows both ends, a bug to fix). `film locate` ran on the three that pass. `mapping_between` normalised at a fixed pixel that sat above a low camera's horizon, so the floor read as sky and nobody was on court (Combs 262/435 fits; none of the ten reviewed games): now at a floor point. Dots: Combs 129/134, MDN vs CS 169/231, CS gym 66/83; the rest are no-flight. Dot review holds 403: 10 checks, 286 doubtful, 84 no dot, 23 trusted. The trust model has never seen these cameras, so do not keep those 16 unseen on its word.
+
+## 2026-11-02: the three low-camera games reviewed; 60 phantom shots on MDN vs Cactus Shadows
+
+He answered all 403 (340 dots, 63 skipped; 32 min). Hidden cards: Combs n14 good 64%, median 4.3 ft, 2 over 10; MDN vs CS n14 good 29%, median 8.2, 5 over 10; CS gym n2, no use. Ten earlier games n88 good 60%, median 3.9, 12% over 10. Trusted hidden on the three n9: good 89%, 0 over 10; not trusted n21: 29%, 38%. These dots no longer matter on these games: every live shot there has his own dot, placed from the clip, so a poor court does not touch it.
+**He skipped 60 on MDN vs CS and says most had no shot in the clip.** All 60 are misses from `Confirm all above 0.9` (46 at one minute on 2026-10-10, 14 on 2026-10-12): the card's "confirmed" was never watched. So that button's misses on a no-scoreboard game are not to be trusted, and `rimclf`/`picclf` training may have read them as shots. On his word they are rejected (2026-11-02; earlier review.json in `games/_backups/phantoms-2026-11-02`). 11 skips on other games stay confirmed with no dot unless he says otherwise. His dots at the free-throw line (36 on the three) say the free-throw rule misses many on these cameras.
+
 ## What Garrett has asked for (requirements gathered in conversation)
 
 1. **Full box score eventually**, as automated as possible; he accepts reviewing some of it.

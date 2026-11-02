@@ -98,3 +98,18 @@ def test_mappings_far_apart_are_not_blended():
     a = np.eye(3)
     got = mapping_between([(0.0, _map(a)), (10.0, _map(a * 2))], 2.0)
     assert np.allclose(got.H, a)
+
+
+def test_a_low_camera_with_the_horizon_low_in_the_picture_still_reads_the_floor_after_blending():
+    # A camera 5 ft up, level: the horizon is the picture's middle row at 540, so the upper part of the picture is above it.
+    eye, f = np.array([25.0, -20.0, 5.0]), 1400.0
+    R = np.array([[1.0, 0.0, 0.0], [0.0, 0.0, -1.0], [0.0, 1.0, 0.0]])
+    K = np.array([[f, 0, 960.0], [0, f, 540.0], [0, 0, 1.0]])
+    P = K @ np.column_stack([R, -R @ eye])
+    H = np.linalg.inv(P[:, [0, 1, 3]])
+    v = P @ np.array([25.0, 10.0, 0.0, 1.0])
+    px, py = v[0] / v[2], v[1] / v[2]
+    fixed = _map(H if (H @ np.array([px, py, 1.0]))[2] > 0 else -H)
+    got = mapping_between([(0.0, fixed), (1.0, fixed)], 0.5)
+    at = got.to_court(px, py)
+    assert at is not None and abs(at[0] - 25.0) < 0.1 and abs(at[1] - 10.0) < 0.1
