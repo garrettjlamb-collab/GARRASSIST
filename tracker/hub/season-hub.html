@@ -57,6 +57,9 @@ main{display:flex;flex-direction:column;gap:14px;padding-block:14px 40px}
 .wl{font-family:var(--display);font-weight:700;font-size:12px;letter-spacing:.06em;border-radius:3px;padding:1px 5px;color:var(--accent-ink)}
 .wl.w{background:var(--make)}.wl.l{background:var(--miss)}.wl.t{background:var(--muted)}
 .film{font-size:11px;font-weight:600;color:var(--gold)}
+.tag{font-family:var(--display);font-weight:700;font-size:12px;letter-spacing:.06em;border-radius:3px;padding:1px 5px;border:1px solid var(--line);color:var(--muted);text-transform:uppercase}
+.gcard.scrimmage{border-style:dashed}
+.empty.slim{padding:14px;text-align:left}
 .chip{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:7px 12px;font-weight:600;font-size:14px}
 .chip[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
 .seg{display:inline-flex;border:1px solid var(--line);border-radius:999px;background:var(--surface);padding:3px;gap:2px}
@@ -172,6 +175,12 @@ function gameScore(g){
 }
 function resultOf(g){ const s = gameScore(g); return s.us > s.them ? "w" : s.us < s.them ? "l" : "t"; }
 function selected(){ return GAMES.filter(g => pick.has(g.id)); }
+// A scrimmage stays in the hub to look back on, but never counts toward the season: it is viewed alone.
+const isScrim = g => g.kind === "scrimmage";
+const seasonGames = () => GAMES.filter(g => !isScrim(g));
+const scrimGames = () => GAMES.filter(isScrim);
+const byDate = arr => arr.slice().sort((a, b) => String(b.date).localeCompare(String(a.date)));
+const viewingScrim = () => selected().some(isScrim);
 
 /* ---------- aggregation ---------- */
 function aggregate(games){
@@ -335,28 +344,31 @@ function table(cols, rows, st, name, extra = ""){
 
 /* ---------- views ---------- */
 function header(){
-  const done = GAMES.filter(g => g.events.some(e => e.type === "final"));
+  const done = seasonGames().filter(g => g.events.some(e => e.type === "final"));
   const w = done.filter(g => resultOf(g) === "w").length, l = done.filter(g => resultOf(g) === "l").length;
   const ppg = arr => arr.length ? (arr.reduce((s, g) => s + gameScore(g).us, 0) / arr.length).toFixed(1) : "–";
   const opg = arr => arr.length ? (arr.reduce((s, g) => s + gameScore(g).them, 0) / arr.length).toFixed(1) : "–";
   $("#h-rec").innerHTML = "<div><b>" + w + "-" + l + "</b><span>Record</span></div><div><b>" + ppg(done) + "</b><span>Scored</span></div><div><b>" + opg(done) + "</b><span>Allowed</span></div>";
 }
+function card(g){
+  const s = gameScore(g), r = resultOf(g), on = pick.has(g.id);
+  return '<button class="gcard' + (isScrim(g) ? " scrimmage" : "") + '" data-act="toggle" data-id="' + esc(g.id) + '" aria-pressed="' + on + '">' +
+    '<span class="meta">' + esc(g.date) + (FILMS[g.id] ? ' · <span class="film">▶ film</span>' : "") + "</span>" +
+    '<span class="opp">vs ' + esc(g.them) + "</span>" +
+    '<span class="meta"><span class="score">' + s.us + "–" + s.them + "</span>" + (isScrim(g) ? '<span class="tag">Scrimmage</span>' : '<span class="wl ' + r + '">' + r.toUpperCase() + "</span>") + "</span></button>";
+}
 function picker(){
-  const sorted = GAMES.slice().sort((a, b) => String(b.date).localeCompare(String(a.date)));
-  const cards = sorted.map(g => {
-    const s = gameScore(g), r = resultOf(g), on = pick.has(g.id);
-    return '<button class="gcard" data-act="toggle" data-id="' + esc(g.id) + '" aria-pressed="' + on + '">' +
-      '<span class="meta">' + esc(g.date) + (FILMS[g.id] ? ' · <span class="film">▶ film</span>' : "") + "</span>" +
-      '<span class="opp">vs ' + esc(g.them) + "</span>" +
-      '<span class="meta"><span class="score">' + s.us + "–" + s.them + '</span><span class="wl ' + r + '">' + r.toUpperCase() + "</span></span></button>";
-  }).join("");
-  const n = pick.size;
+  const season = byDate(seasonGames()), scrims = byDate(scrimGames());
   const quick = (v, l, on) => '<button class="chip" data-act="quick" data-v="' + v + '" aria-pressed="' + on + '">' + l + "</button>";
-  const last3 = sorted.slice(0, 3).map(g => g.id);
-  const isAll = n === GAMES.length, isLast3 = !isAll && n === last3.length && last3.every(id => pick.has(id));
-  return '<div class="spread"><span class="label">Games counted · ' + n + " of " + GAMES.length + "</span>" +
-    '<div class="row">' + quick("all", "All games", isAll) + (GAMES.length > 3 ? quick("last3", "Last 3", isLast3) : "") + "</div></div>" +
-    '<div class="games">' + cards + "</div>";
+  const n = season.filter(g => pick.has(g.id)).length;
+  const last3 = season.slice(0, 3).map(g => g.id);
+  const isAll = !viewingScrim() && season.length && n === season.length;
+  const isLast3 = !viewingScrim() && !isAll && n === last3.length && last3.every(id => pick.has(id));
+  const head = viewingScrim() ? '<span class="label">Viewing a scrimmage · not in season totals</span>'
+    : '<span class="label">Season games counted · ' + n + " of " + season.length + "</span>";
+  return '<div class="spread">' + head + '<div class="row">' + (season.length ? quick("all", "All games", isAll) : "") + (season.length > 3 ? quick("last3", "Last 3", isLast3) : "") + "</div></div>" +
+    (season.length ? '<div class="games">' + season.map(card).join("") + "</div>" : '<div class="empty slim"><b>The season starts with the first game</b>Each game shows up here after Claude copies it from the stat book.</div>') +
+    (scrims.length ? '<div class="label">Scrimmages · viewed one at a time</div><div class="games">' + scrims.map(card).join("") + "</div>" : "");
 }
 function controls(){
   const v = (id, l) => '<button data-act="tab" data-v="' + id + '"' + (tab === id ? ' aria-current="page"' : "") + ">" + l + "</button>";
@@ -441,7 +453,7 @@ function viewShots(A){
 const GCOLS = [
   { h:"Date", k:"date", v:r => Date.parse(r.date) || 0, f:r => '<button class="name" data-act="only" data-id="' + esc(r.id) + '">' + esc(r.date) + "</button>" },
   { h:"Opponent", k:"opp", f:r => "<span>" + esc(r.opp) + "</span>" },
-  { h:"", k:"res", f:r => '<span><span class="wl ' + r.res + '">' + r.res.toUpperCase() + "</span></span>" },
+  { h:"", k:"res", f:r => "<span>" + (r.res === "s" ? '<span class="tag">Scrim</span>' : '<span class="wl ' + r.res + '">' + r.res.toUpperCase() + "</span>") + "</span>" },
   { h:"Score", k:"pts", v:r => r.us.pts - r.them.pts, f:r => "<span><b>" + r.us.pts + "–" + r.them.pts + "</b></span>" },
   { h:"FG", k:"fg", v:r => r.us.fga ? r.us.fgm / r.us.fga : null, f:r => "<span>" + r.us.fgm + "-" + r.us.fga + ' <span class="pct">' + pct(r.us.fgm, r.us.fga) + "</span></span>" },
   { h:"3P", k:"tp", v:r => r.us.tpa ? r.us.tpm / r.us.tpa : null, f:r => "<span>" + r.us.tpm + "-" + r.us.tpa + "</span>" },
@@ -452,9 +464,11 @@ const GCOLS = [
   { h:"Opp TO", k:"oto", v:r => r.them.to, f:r => "<span>" + r.them.to + "</span>" }
 ];
 function viewGames(){
-  const rows = GAMES.map(g => { const A = aggregate([g]); return { id:g.id, date:g.date, opp:g.them, res:resultOf(g), us:A.T.us, them:A.T.them }; })
-    .sort((a, b) => String(b.date).localeCompare(String(a.date)));
-  return table(GCOLS, rows, sortState.games, "games") + '<div class="hint">Every game, whatever is counted above. Tap a date to count only that game.</div>';
+  const row = g => { const A = aggregate([g]); return { id:g.id, date:g.date, opp:g.them, res:isScrim(g) ? "s" : resultOf(g), us:A.T.us, them:A.T.them }; };
+  const season = byDate(seasonGames()).map(row), scrims = byDate(scrimGames()).map(row);
+  return (season.length ? table(GCOLS, season, sortState.games, "games") : '<div class="empty slim"><b>No season games yet</b></div>') +
+    (scrims.length ? '<div class="label">Scrimmages</div>' + table(GCOLS, scrims, { k:null, d:0 }, "scrims") : "") +
+    '<div class="hint">Every game, whatever is counted above. Tap a date to look at only that game.</div>';
 }
 
 function render(){
@@ -464,11 +478,11 @@ function render(){
     $("#app").innerHTML = '<main class="inner"><div class="empty"><b>No games yet</b>After each game, Claude copies it here from the stat book: stats right away, film once it is up.</div></main>';
     return;
   }
-  if (!pick) pick = new Set(GAMES.map(g => g.id));
+  if (!pick) pick = new Set(seasonGames().map(g => g.id));
   const A = aggregate(selected());
-  const body = !pick.size ? '<div class="empty"><b>No games counted</b>Tap a game above, or All games.</div>'
+  const body = !pick.size ? (seasonGames().length ? '<div class="empty"><b>No games counted</b>Tap a game above, or All games.</div>' : "")
     : tab === "team" ? viewTeam(A) : tab === "lineups" ? viewLineups(A) : tab === "shots" ? viewShots(A) : tab === "games" ? viewGames() : viewPlayers(A);
-  $("#app").innerHTML = '<main class="inner">' + picker() + controls() + body + "</main>";
+  $("#app").innerHTML = '<main class="inner">' + picker() + (pick.size ? controls() + body : "") + "</main>";
   const mp = $("#minplays"); if (mp) mp.addEventListener("change", ev => { minPlays = +ev.target.value; render(); });
   const sw = $("#shotwho"); if (sw) sw.addEventListener("change", ev => { shotWho = ev.target.value; render(); });
 }
@@ -525,11 +539,17 @@ document.addEventListener("click", ev => {
   const b = ev.target.closest("[data-act]"); if (!b) return;
   const act = b.dataset.act;
   if (act === "close") return closeSheet();
-  if (act === "toggle") { const id = b.dataset.id; pick.has(id) ? pick.delete(id) : pick.add(id); render(); return; }
+  if (act === "toggle") {
+    const g = GAMES.find(x => x.id === b.dataset.id); if (!g) return;
+    if (isScrim(g)) pick = pick.has(g.id) && pick.size === 1 ? new Set(seasonGames().map(x => x.id)) : new Set([g.id]);
+    else if (viewingScrim()) pick = new Set([g.id]);
+    else pick.has(g.id) ? pick.delete(g.id) : pick.add(g.id);
+    render(); return;
+  }
   if (act === "only") { pick = new Set([b.dataset.id]); tab = "players"; render(); window.scrollTo(0, 0); return; }
   if (act === "quick") {
-    const sorted = GAMES.slice().sort((a, b) => String(b.date).localeCompare(String(a.date)));
-    pick = new Set(b.dataset.v === "last3" ? sorted.slice(0, 3).map(g => g.id) : GAMES.map(g => g.id)); render(); return;
+    const sorted = byDate(seasonGames());
+    pick = new Set(b.dataset.v === "last3" ? sorted.slice(0, 3).map(g => g.id) : sorted.map(g => g.id)); render(); return;
   }
   if (act === "tab") { tab = b.dataset.v; try { localStorage.setItem("hub/tab", tab); } catch (e) {} render(); return; }
   if (act === "mode") { mode = b.dataset.v; render(); return; }

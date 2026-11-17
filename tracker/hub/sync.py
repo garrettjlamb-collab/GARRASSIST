@@ -18,13 +18,16 @@ KEEP = ("id", "type", "team", "player", "made", "pts", "off", "p", "on", "in", "
         "action", "period", "ms")
 
 
-def slim(game: dict) -> dict:
+KINDS = Path(__file__).parent / "kinds.json"       # game id -> "scrimmage": kept in the hub, never in season totals
+
+
+def slim(game: dict, kinds: dict | None = None) -> dict:
     events = []
     for e in game["events"]:
         events.append({k: e[k] for k in KEEP if k in e and e[k] is not None})
     return {"id": game["id"], "date": game.get("date"), "us": game.get("us"), "them": game.get("them"),
             "qlen": game.get("qlen"), "roster": game.get("roster", []), "starters": game.get("starters", []),
-            "updated": game.get("updated"), "events": events}
+            "updated": game.get("updated"), "kind": (kinds or {}).get(game["id"], "game"), "events": events}
 
 
 def is_test(game: dict) -> bool:
@@ -39,6 +42,7 @@ def main(argv=None) -> int:
     ap.add_argument("--all", action="store_true")
     args = ap.parse_args(argv)
     args.out.mkdir(parents=True, exist_ok=True)
+    kinds = json.loads(KINDS.read_text()) if KINDS.exists() else {}
     for path in sorted(args.games_dir.glob("*.json")):
         doc = json.loads(path.read_text())
         game = doc.get("data", doc)
@@ -46,12 +50,12 @@ def main(argv=None) -> int:
             print(f"skip  {game['id']} (test game)")
             continue
         out = args.out / f"{game['id']}.json"
-        text = json.dumps(slim(game), separators=(",", ":"))
+        text = json.dumps(slim(game, kinds), separators=(",", ":"))
         if len(text) > 250_000:
             print(f"error {game['id']}: {len(text)} bytes is over the store's 256 KiB document limit", file=sys.stderr)
             return 1
         out.write_text(text)
-        print(f"wrote {out}  {len(text)} bytes, {len(game['events'])} plays")
+        print(f"wrote {out}  {len(text)} bytes, {len(game['events'])} plays, {kinds.get(game['id'], 'game')}")
     return 0
 
 
