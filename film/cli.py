@@ -28,6 +28,7 @@ COMMANDS = [
     "film.commands.export",
     "film.commands.eval",
     "film.commands.title",
+    "film.commands.statbook",
     "film.commands.run",
 ]
 
