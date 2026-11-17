@@ -85,6 +85,18 @@ def classify_arrivals(gd: Path, m: Manifest, arrivals: list[Arrival], rims: pd.D
     return [fuse(a, b) for a, b in zip(path_scores, seen)]
 
 
+def without_frozen_score(timeline):
+    """A board whose score never moved all game (a scrimmage nobody scored on the board) is no evidence
+    that a shot missed: drop its scores so the made/missed classifier decides, as on film with no board.
+    The clock and period stay."""
+    from dataclasses import replace
+
+    totals = {r.home + r.away for r in timeline if r.home is not None and r.away is not None}
+    if len(totals) > 1:
+        return timeline
+    return [replace(r, home=None, away=None) for r in timeline]
+
+
 def interpret(game_id: str, classifier=None, use_classifier: bool = True, device: str | None = None,
               ball_detector=None, picture_classifier=None, log=print) -> list[Event]:
     gd = game_dir(game_id)
@@ -93,7 +105,7 @@ def interpret(game_id: str, classifier=None, use_classifier: bool = True, device
     motion_path = gd / "motion.parquet"
     motion = pd.read_parquet(motion_path) if motion_path.exists() else pd.DataFrame(columns=MOTION_COLUMNS)
     arrivals = merge_arrivals(find_ball_arrivals(ball, rims, m.fps), find_motion_arrivals(motion, rims, m.fps))
-    timeline = load_timeline(gd / "scoreboard.jsonl")
+    timeline = without_frozen_score(load_timeline(gd / "scoreboard.jsonl"))
     clf = classifier
     if clf is None and use_classifier:
         clf = RimClassifier.load(pick_device(device))

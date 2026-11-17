@@ -585,9 +585,12 @@ def place_game(book: StatBook, cards: list[Card], timeline=None, clock_at=None,
         if p.id in placed:
             continue
         parent = placed.get(p.ref) if p.ref else None
-        if parent is not None and p.type in FOLLOW_OFFSET_S:
-            placed[p.id] = Placed(p, parent.film_t + FOLLOW_OFFSET_S[p.type], "follow", card_id=parent.card_id,
-                                  uncertainty_s=2.0, film_period=parent.film_period)
+        if parent is not None and parent.film_t is not None and p.type in FOLLOW_OFFSET_S:
+            # a play that follows an estimated shot is as estimated as the shot
+            how = "follow" if parent.how == "shot" else "fit"
+            placed[p.id] = Placed(p, parent.film_t + FOLLOW_OFFSET_S[p.type], how, card_id=parent.card_id,
+                                  uncertainty_s=2.0 if how == "follow" else parent.uncertainty_s,
+                                  film_period=parent.film_period)
             continue
         fit = fits.get(p.period)
         if fit is None or p.ms is None:

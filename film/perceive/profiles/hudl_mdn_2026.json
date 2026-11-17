@@ -1,0 +1,103 @@
+{
+  "name": "hudl-mdn-2026",
+  "note": "Hudl Focus at Marcos de Niza, 2026-27 season. Same skin as hudl-mdn, but the digits sit 2 px higher and 1 px right, and its slanted LED-dot font defeats the segment zones (a 7 reads as two segments). The clock and period are read by matching glyphs learned from the ALA West Foothills scrimmage (hudl_mdn_2026_glyphs.npz, built by `film glyphs`); the red scores still read by segments. Period changes are untested: the scrimmage never advanced the period digit.",
+  "frame": [
+    1920,
+    1080
+  ],
+  "threshold": 0.15,
+  "fields": {
+    "home": {
+      "color": "red",
+      "cells": [
+        [
+          100,
+          982,
+          15,
+          27
+        ],
+        [
+          117,
+          982,
+          15,
+          27
+        ]
+      ]
+    },
+    "away": {
+      "color": "red",
+      "cells": [
+        [
+          213,
+          982,
+          15,
+          27
+        ],
+        [
+          230,
+          982,
+          15,
+          27
+        ]
+      ]
+    },
+    "period": {
+      "color": "amber",
+      "cells": [
+        [
+          161,
+          984,
+          13,
+          22
+        ]
+      ]
+    },
+    "clock": {
+      "color": "amber",
+      "format": "m:ss",
+      "cells": [
+        [
+          129,
+          928,
+          15,
+          27
+        ],
+        [
+          150,
+          928,
+          15,
+          27
+        ],
+        [
+          175,
+          928,
+          15,
+          27
+        ],
+        [
+          192,
+          928,
+          15,
+          27
+        ]
+      ]
+    }
+  },
+  "patterns": {
+    "abcfg": 9,
+    "abdef": 0,
+    "abdg": 2,
+    "bfg": 4,
+    "adfg": 5,
+    "ab": 7,
+    "abfg": 9,
+    "bcg": 4,
+    "acdg": 5
+  },
+  "quarter_length_s": 480,
+  "glyphs": "hudl_mdn_2026_glyphs.npz",
+  "glyph_fields": [
+    "clock",
+    "period"
+  ]
+}

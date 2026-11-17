@@ -26,6 +26,7 @@ class ScoreboardRead:
     home_fouls: int | None
     away_fouls: int | None
     conf: float
+    clock_alts: list | None = None    # clock values the reader could not choose between (glyph skins)
 
     def to_json(self) -> dict:
         return asdict(self)
@@ -76,8 +77,109 @@ def read_clock(mask: np.ndarray, field: dict, threshold: float = 0.3, patterns: 
     return None
 
 
+_GLYPHS: dict[str, object] = {}
+
+
+def _glyphs_for(profile: dict):
+    from film.perceive.glyphs import Glyphs, glyphs_path
+
+    name = profile.get("glyphs")
+    if not name:
+        return None
+    if name not in _GLYPHS:
+        path = glyphs_path(name)
+        _GLYPHS[name] = Glyphs.load(Path(str(path))) if path.is_file() else None
+    return _GLYPHS[name]
+
+
+def _glyph_digits(frame_bgr, profile: dict, name: str, lit_cache: dict) -> list[int | None]:
+    from film.perceive.glyphs import lit_image
+
+    field = profile["fields"][name]
+    if field["color"] not in lit_cache:
+        lit_cache[field["color"]] = lit_image(frame_bgr, field["color"])
+    glyphs = _glyphs_for(profile)
+    return [glyphs.read(lit_cache[field["color"]], cell, f"{name}{i}") for i, cell in enumerate(_cells(field))]
+
+
+def _number_from(digits: list[int | None]) -> int | None:
+    if all(d is None for d in digits) or any(d == -1 for d in digits):
+        return None
+    value, started = 0, False
+    for d in digits:
+        if d is None:
+            if started:
+                return None
+            continue
+        started, value = True, value * 10 + d
+    return value
+
+
+def _clock_from(digits: list[int | None]) -> float | None:
+    """Cells M M S S, no readable colon: both seconds digits needed, a blank minutes cell is 0."""
+    if any(d == -1 for d in digits) or any(d is None for d in digits[-2:]) or digits[-2] > 5:
+        return None
+    d = [0 if x is None else x for x in digits]
+    return float(d[0] * 600 + d[1] * 60 + d[2] * 10 + d[3])
+
+
+ALT_MARGIN = 0.06       # a cell's runner-up within this of its best is kept as an alternative
+
+
+def _clock_alternatives(frame_bgr, profile: dict, digits: list, lit_cache: dict) -> list[float]:
+    """When a clock cell is unsure (-1), the values its two best digits would make: the minutes digit of a
+    skin that hides half of it cannot tell 0 from 6 alone, but the countdown around it can (resolve_clock)."""
+    glyphs = _glyphs_for(profile)
+    field = profile["fields"]["clock"]
+    options: list[list[int | None]] = []
+    for i, (cell, d) in enumerate(zip(_cells(field), digits)):
+        if d != -1:
+            options.append([d])
+            continue
+        ranked = glyphs.rank(lit_cache[field["color"]], cell, f"clock{i}") or []
+        if not ranked:
+            return []
+        options.append([k for k, sc in ranked[:2] if ranked[0][1] - sc <= ALT_MARGIN])
+    values = []
+    for combo in __import__("itertools").product(*options):
+        v = _clock_from(list(combo))
+        if v is not None:
+            values.append(v)
+    return sorted(set(values))[:4]
+
+
+RESOLVE_S = 90.0
+
+
+def resolve_clock(reads: list[ScoreboardRead]) -> list[ScoreboardRead]:
+    """A read with alternatives takes the one the countdown allows: no higher than the last sure read and
+    no lower than that read minus the seconds since (the clock runs or stops, never faster), and likewise
+    against the next sure read. Run forward and backward so a resolved read helps its neighbours."""
+    out = list(reads)
+    for order in (range(len(out)), range(len(out) - 1, -1, -1)):
+        last = None
+        for i in order:
+            r = out[i]
+            if r.clock_s is not None:
+                last = r
+                continue
+            if not r.clock_alts or last is None or abs(r.t - last.t) > RESOLVE_S:
+                continue
+            gap = abs(r.t - last.t)
+            if r.t > last.t:
+                fits = [v for v in r.clock_alts if last.clock_s - gap - 1 <= v <= last.clock_s]
+            else:
+                fits = [v for v in r.clock_alts if last.clock_s <= v <= last.clock_s + gap + 1]
+            if len(fits) == 1:
+                out[i] = ScoreboardRead(**{**r.to_json(), "clock_s": fits[0], "clock_alts": None})
+                last = out[i]
+    return out
+
+
 def read_scoreboard(frame_bgr: np.ndarray, profile: dict, t: float = 0.0) -> ScoreboardRead:
     fields = profile["fields"]
+    glyph_fields = set(profile.get("glyph_fields", [])) if _glyphs_for(profile) is not None else set()
+    lit_cache: dict = {}
     threshold = float(profile.get("threshold", 0.3))        # LED-dot skins fill a segment zone only sparsely
     patterns = profile.get("patterns")                       # a skin's own digit shapes
     masks: dict[str, np.ndarray] = {}
@@ -89,17 +191,26 @@ def read_scoreboard(frame_bgr: np.ndarray, profile: dict, t: float = 0.0) -> Sco
 
     def number(name: str) -> int | None:
         field = fields[name]
+        if name in glyph_fields:
+            return _number_from(_glyph_digits(frame_bgr, profile, name, lit_cache))
         return decode_number(mask_for(field["color"]), _cells(field), threshold, patterns)
 
     home, away, period = number("home"), number("away"), number("period")
     # A skin whose clock font the segment zones cannot read leaves the clock out; the scores still give
     # made-or-missed, and quarter marks supply what the clock would have.
-    clock = read_clock(mask_for(fields["clock"]["color"]), fields["clock"], threshold, patterns) if "clock" in fields else None
+    clock_alts = None
+    if "clock" in glyph_fields:
+        digits = _glyph_digits(frame_bgr, profile, "clock", lit_cache)
+        clock = _clock_from(digits)
+        if clock is None:
+            clock_alts = _clock_alternatives(frame_bgr, profile, digits, lit_cache) or None
+    else:
+        clock = read_clock(mask_for(fields["clock"]["color"]), fields["clock"], threshold, patterns) if "clock" in fields else None
     home_fouls = number("home_fouls") if "home_fouls" in fields else None
     away_fouls = number("away_fouls") if "away_fouls" in fields else None
     got = sum(v is not None for v in (home, away, clock, period))
     return ScoreboardRead(t=t, period=period, clock_s=clock, home=home, away=away,
-                          home_fouls=home_fouls, away_fouls=away_fouls, conf=got / 4)
+                          home_fouls=home_fouls, away_fouls=away_fouls, conf=got / 4, clock_alts=clock_alts)
 
 
 def build_timeline(source: Path, profile: dict, limit_s: float | None = None) -> list[ScoreboardRead]:
@@ -107,6 +218,7 @@ def build_timeline(source: Path, profile: dict, limit_s: float | None = None) ->
 
 
 REPAIR_RECENT_S = 90.0
+REPAIR_NEAR_S = 10.0
 
 
 def repair_clock(reads: list[ScoreboardRead]) -> list[ScoreboardRead]:
@@ -120,7 +232,11 @@ def repair_clock(reads: list[ScoreboardRead]) -> list[ScoreboardRead]:
         fixed = r
         if r.clock_s is not None and last is not None and r.t - last.t <= REPAIR_RECENT_S:
             expected = last.clock_s - (r.t - last.t)
-            if expected >= 0 and abs(r.clock_s - expected) in (60.0,) and (r.clock_s % 60) == (expected % 60):
+            off = abs(r.clock_s - expected)
+            # a minute off by one within REPAIR_RECENT_S; off by more (a glyph skin's half-hidden minutes
+            # digit: 4 read as 2) only right after a trusted read, where the countdown leaves no doubt
+            minute_slip = off == 60.0 or (off in (120.0, 180.0, 240.0, 300.0) and r.t - last.t <= REPAIR_NEAR_S)
+            if expected >= 0 and minute_slip and (r.clock_s % 60) == (expected % 60):
                 fixed = ScoreboardRead(**{**r.to_json(), "clock_s": float(expected)})
         out.append(fixed)
         if fixed.clock_s is not None:
@@ -144,7 +260,7 @@ def _plausible(read: ScoreboardRead, last: ScoreboardRead) -> bool:
 
 def clean_timeline(reads: list[ScoreboardRead]) -> list[ScoreboardRead]:
     kept: list[ScoreboardRead] = []
-    for read in repair_clock(reads):
+    for read in repair_clock(resolve_clock(reads)):
         if read.conf < MIN_CONF:
             continue
         if kept and not _plausible(read, kept[-1]):

@@ -14,6 +14,7 @@ COMMANDS = [
     "film.commands.ingest",
     "film.commands.calibrate",
     "film.commands.scoreboard",
+    "film.commands.glyphs",
     "film.commands.perceive",
     "film.commands.court",
     "film.commands.court_draft",
@@ -30,6 +31,7 @@ COMMANDS = [
     "film.commands.title",
     "film.commands.statbook",
     "film.commands.run",
+    "film.commands.game",
 ]
 
 

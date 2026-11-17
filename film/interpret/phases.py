@@ -263,6 +263,11 @@ def _scored_within(reads: list[ScoreboardRead], start: float, end: float) -> boo
     return False
 
 
+def _score_kept(reads: list[ScoreboardRead]) -> bool:
+    totals = {r.home + r.away for r in reads if r.home is not None and r.away is not None}
+    return len(totals) > 1
+
+
 def game_phases(timeline: list[ScoreboardRead], quarter_length_s: float | None = None) -> GamePhases:
     """`quarter_length_s`, when the camera profile states it, beats the commonest clock setting (a board
     that counts down 9:00 over and over before the game would otherwise set the quarter to 9:00); reads
@@ -278,7 +283,9 @@ def game_phases(timeline: list[ScoreboardRead], quarter_length_s: float | None =
     known_length = quarter_length_s is not None
     quarter = float(quarter_length_s) if known_length else float(Counter(settings).most_common(1)[0][0])
     tolerance = KNOWN_TOLERANCE_S if known_length else LIVE_TOLERANCE_S
-    any_scores = any(r.home is not None and r.away is not None for r in reads)
+    # A board whose score never moves (a scrimmage nobody scored on the board) proves nothing about a
+    # countdown either way: only a board that kept the score can say a quarter with no scoring was dead.
+    any_scores = _score_kept(reads)
     over = _game_over_t(reads)
     candidates = [(h, False) for h in _hypotheses(clocked, quarter, tolerance)]
     if known_length:

@@ -619,35 +619,52 @@ so the shot counts are floors.
 Same day: the 11 other D-skips were rejected on his word (backup `games/_backups/skipped-11-2026-11-02/`), so every live confirmed shot has a dot. `shot-012100-sb` on JV vs Marcos looks real: the board goes 22-11 to 24-11 at 1212 s and no other make is near it. Left rejected until he says.
 Scoreboard check on the five Hudl varsity games: 76 of 238 baskets have no confirmed make within 20 s before or 4 s after, and 69 of the 76 have an undecided card there. The two fully reviewed JV games miss 2 of 62. MaxPreps for MDN at Cactus Shadows, 2025-01-13: MDN 55, CS 71; MDN FG 25-60, 3P 2-15, FT 3-5. Probably the iPad film (CS gym, a board around 68 in period 4), level and date unconfirmed; `Marcos de Niza vs Cactus Shadows - Angle 1.mp4` is evicted to iCloud, so only 360p clips were read.
 
-## 2026-11-17: the stat book on the film (`film statbook`)
+## 2026-11-17: the stat book on the film (`film statbook`, `film game`)
 
-Garrett now keeps a courtside stat book on his phone (`tracker/stat-book.html`, a claude.ai artifact; see
-`tracker/`). `film statbook <game_id> <stat book JSON>` puts every logged play on the film: shots are matched
-to shot cards in order (`film/interpret/statbook.py`), every other play is placed from its shot (rebound 2 s
-after, assist and block at the shot) or by a time fit between matched shots. It writes
-`games/<id>/statbook.json` and `export/<id>.plays.csv`; `--player Ryan --reel ryan` cuts labeled clips and a
-phone-sized reel. A label starting "~" was placed by the fit, not matched to a card.
+Garrett keeps a courtside stat book on his phone (`tracker/stat-book.html`, a claude.ai artifact; its games
+live in the artifact's database, `games/<id>`, which only Claude can read, with the ArtifactData tool). So
+after a game the flow is: pull the game from the database to a JSON file, then
 
-First game: the ALA West Foothills scrimmage (2026-11-14, `2026-11-14-marcos-de-niza-high-school-vs-ala-west-
-foothills-...`), film in `~/Desktop/26-27 MDN/` (his folder for every 2026-27 game). 110 of 142 field goal
-attempts matched to a card; three blind samples of eight read by eye: about 7 in 8 right (ball at the rim,
-right basket, a shooter in the logged shirt). What it took, and what to know:
+    uv run film game "<film>.mp4" --statbook <game>.json [--out "<folder>"]
 
-- **The log was kept while rewatching the film**, so its times are squeezed and paused (8-minute periods
-  logged in 5 to 12 minutes). The matcher tells a live log (one offset fits, period lengths agree) from a
-  rewatch, and in a rewatch time only breaks ties: order, made/missed and the basket decide.
-- **The board's score was never kept (0-0 all game)**, so the fused made/missed call said "missed" on every
-  card. The matcher reads the classifier's own call (`signals.clf`). Interpret itself still trusts the frozen
-  board: a game whose score never moves should be treated as no-scoreboard. Not fixed.
-- **The 2026 MDN skin reads 2-3 px higher** than `hudl-mdn`: the clock and period cells miss their top bars,
-  and the period digit was never advanced in the scrimmage. Quarter marks were set from a one-read-a-second
-  scan of the ones digit (the clock running) plus the clock read by eye: P1 starts at 252 s after a pregame
-  countdown, six 8-minute periods. `hudl-mdn` needs a 2026 variant (cells up 2 px, right 1 px) and the
-  tens-of-seconds digit still misreads.
-- **Which basket a card is** comes from where its rim sits in the frame at that moment (about 37% across for
-  the PADRES end, 63% for the other), not `basket_sides`' per-track median, which mixes the two. Each period
-  tries both attack directions and keeps the better fit. The scrimmage did not switch only at the half.
-- **Shots the film never found stay "~"**: four of Ryan's six shots in P1 had no card near them.
+which runs the film (`film run`, profile `hudl-mdn-2026` by default), puts every logged play on the film
+(`film/interpret/statbook.py`), and writes into "<film name> reels" beside the film (his films go in
+`~/Desktop/26-27 MDN/`): a reel for each of our players, the opponent's shots, makes and turnovers, our
+turnovers, our three most-used lineups, and "every play with film time.csv". Any other reel:
+`film statbook <game_id> --player Ryan | --lineup "0 3 4 13 15" | --with "3 4" | --team them --made yes --pts 3
+| --type to | --period 2 [--list] --reel <name>`. A label starting "~" was placed by the time fit, not
+matched to a shot card; a rebound after an estimated shot is estimated too. Estimated plays reach the
+standard reels only from periods logged live (`reel_plays`): from a rewatch log one landed in a timeout.
+
+How matching works: logged shots are aligned to shot cards in order, per period. A match earns more when
+the made/missed call agrees (`signals.clf`, the classifier's own call), when the card is at the basket the
+logged team attacks that period (each period tries both directions; the basket comes from where the rim sits
+in the frame at that moment, `shot_sides`), when the spacing between consecutive matches fits the log's, and,
+for a live log, when the time fits. A live log is told from a rewatch by one offset fitting most shots and
+the logged period lasting about as long as the film's.
+
+First game: the ALA West Foothills scrimmage (2026-11-14). 110 of 142 field goal attempts matched to a card;
+three blind samples of eight read by eye, about 7 in 8 right. It was logged while rewatching the film, so its
+times are squeezed and paused; a live log should do better (untested until the next game). Garrett: some of
+Ryan's clips were still wrong, so the stat book does not feed the shot model's training until a live game's
+clips are checked.
+
+What the scrimmage film needed, now in the code:
+
+- **`hudl-mdn-2026`** (`film/perceive/profiles/`): the 2026 MDN skin's slanted LED font defeats the
+  segment zones (a 7 read as two segments). The clock and period are read by glyph matching
+  (`film/perceive/glyphs.py`) against examples in `hudl_mdn_2026_glyphs.npz`, built by
+  `film glyphs <game> @film/perceive/profiles/hudl_mdn_2026_labels.txt` (clock values read by eye, plus
+  frames between two reads on one countdown). The minutes digit sits half behind the box's edge and is
+  ambiguous alone (0/6, 1/4): an unsure read keeps its alternatives (`clock_alts`) and `resolve_clock` takes
+  the one the countdown allows; `repair_clock` also fixes a minute off by 2-5 within 10 s of a sure read.
+  Result: clock read in 95% of seconds, 99% of steps consistent, all spot checks right. Period changes are
+  untested (the scrimmage never advanced the period digit). Scores still read by segments.
+- **A score that never moves** (nobody scored on the board) is no longer evidence: `game_phases` only drops a
+  scoreless quarter when the board kept score (`_score_kept`), and interpret drops a frozen score
+  (`without_frozen_score`) so the classifier decides made/missed. The scrimmage's six 8-minute quarters are
+  now found from the clock alone, P4 starting 28 s earlier than the hand marks had it.
+- **Shots the film never found stay "~"**: four of Ryan's six P1 shots had no card near them.
 
 ## What Garrett has asked for (requirements gathered in conversation)
 
