@@ -13,3 +13,4 @@ fixtures/clips/
 *.pt
 runs/
 .superpowers/
+tracker/hub/out/
