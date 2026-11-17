@@ -1,0 +1,76 @@
+{
+  "clock": {
+    "at": 0,
+    "rem": 480,
+    "run": false
+  },
+  "clockUsed": false,
+  "created": "2026-11-14T17:05:08.939Z",
+  "date": "2026-11-14",
+  "events": [
+    {
+      "action": "start",
+      "clock": null,
+      "grp": "mwgnp8u72hnl6",
+      "id": "mwgnp8u72hnl6",
+      "ms": 1794675912703,
+      "on": [
+        "3"
+      ],
+      "p": 1,
+      "period": 1,
+      "t": "2026-11-14T17:05:12.703Z",
+      "type": "period"
+    },
+    {
+      "clock": null,
+      "grp": "mwgo2wcypo1xz",
+      "id": "mwgo2wcypo1xz",
+      "made": true,
+      "ms": 1794676549714,
+      "on": [
+        "3"
+      ],
+      "p": 1,
+      "player": null,
+      "pts": 3,
+      "t": "2026-11-14T17:15:49.714Z",
+      "team": "them",
+      "type": "shot"
+    },
+    {
+      "clock": null,
+      "grp": "mwgo2z98zof69",
+      "id": "mwgo2z98zof69",
+      "made": true,
+      "ms": 1794676553468,
+      "on": [
+        "3"
+      ],
+      "p": 1,
+      "player": "3",
+      "pts": 3,
+      "t": "2026-11-14T17:15:53.468Z",
+      "team": "us",
+      "type": "shot",
+      "x": 35,
+      "y": 11.7
+    }
+  ],
+  "format": "titans-stat-book",
+  "id": "2026-11-14-alaw-d5m7",
+  "qlen": 8,
+  "roster": [
+    {
+      "name": "Jordan",
+      "num": "3"
+    }
+  ],
+  "starters": [
+    "3"
+  ],
+  "them": "ALAW",
+  "updated": 1794676554400,
+  "us": "Varsity Scrimmage",
+  "version": 1
+}

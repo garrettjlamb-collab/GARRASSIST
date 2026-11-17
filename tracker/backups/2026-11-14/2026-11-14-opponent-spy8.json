@@ -1,0 +1,294 @@
+{
+  "clock": {
+    "at": 0,
+    "rem": 480,
+    "run": false
+  },
+  "clockUsed": false,
+  "created": "2026-11-14T19:00:04.181Z",
+  "date": "2026-11-14",
+  "events": [
+    {
+      "clock": null,
+      "grp": "mwgrt01qfcc5k",
+      "id": "mwgrt01qfcc5k",
+      "made": false,
+      "ms": 1794682806398,
+      "on": [
+        "2",
+        "13",
+        "15",
+        "3",
+        "4"
+      ],
+      "p": 0,
+      "player": null,
+      "pts": 3,
+      "t": "2026-11-14T19:00:06.398Z",
+      "team": "them",
+      "type": "shot"
+    },
+    {
+      "clock": null,
+      "grp": "mwgrt01qfcc5k",
+      "id": "mwgrt33ueb9zy",
+      "ms": 1794682810362,
+      "off": false,
+      "on": [
+        "2",
+        "13",
+        "15",
+        "3",
+        "4"
+      ],
+      "p": 0,
+      "player": "4",
+      "ref": "mwgrt01qfcc5k",
+      "t": "2026-11-14T19:00:10.362Z",
+      "team": "us",
+      "type": "reb"
+    },
+    {
+      "clock": null,
+      "grp": "mwgrt89hnv5ig",
+      "id": "mwgrt89hnv5ig",
+      "made": true,
+      "ms": 1794682817045,
+      "on": [
+        "2",
+        "13",
+        "15",
+        "3",
+        "4"
+      ],
+      "p": 0,
+      "player": "3",
+      "pts": 2,
+      "t": "2026-11-14T19:00:17.045Z",
+      "team": "us",
+      "type": "shot",
+      "x": 24.7,
+      "y": 4.2
+    },
+    {
+      "clock": null,
+      "grp": "mwgrt89hnv5ig",
+      "id": "mwgrta2b1gfhi",
+      "ms": 1794682819379,
+      "on": [
+        "2",
+        "13",
+        "15",
+        "3",
+        "4"
+      ],
+      "p": 0,
+      "player": "4",
+      "ref": "mwgrt89hnv5ig",
+      "t": "2026-11-14T19:00:19.379Z",
+      "team": "us",
+      "type": "ast"
+    },
+    {
+      "clock": null,
+      "grp": "mwgrth8rpta5v",
+      "id": "mwgrth8rpta5v",
+      "ms": 1794682828683,
+      "on": [
+        "2",
+        "13",
+        "15",
+        "3",
+        "4"
+      ],
+      "p": 0,
+      "player": "4",
+      "t": "2026-11-14T19:00:28.683Z",
+      "team": "us",
+      "type": "stl"
+    },
+    {
+      "clock": null,
+      "grp": "mwgrth8rpta5v",
+      "id": "mwgrth8s5w6hc",
+      "ms": 1794682828684,
+      "on": [
+        "2",
+        "13",
+        "15",
+        "3",
+        "4"
+      ],
+      "p": 0,
+      "player": null,
+      "ref": "mwgrth8rpta5v",
+      "t": "2026-11-14T19:00:28.684Z",
+      "team": "them",
+      "type": "to"
+    },
+    {
+      "clock": null,
+      "grp": "mwgrtkska5ogv",
+      "id": "mwgrtkska5ogv",
+      "made": true,
+      "ms": 1794682833284,
+      "on": [
+        "2",
+        "13",
+        "15",
+        "3",
+        "4"
+      ],
+      "p": 0,
+      "player": "13",
+      "pts": 2,
+      "t": "2026-11-14T19:00:33.284Z",
+      "team": "us",
+      "type": "shot",
+      "x": 27.4,
+      "y": 5.4
+    },
+    {
+      "clock": null,
+      "grp": "mwgrtr0840gfz",
+      "id": "mwgrtr0840gfz",
+      "made": false,
+      "ms": 1794682841336,
+      "on": [
+        "2",
+        "13",
+        "15",
+        "3",
+        "4"
+      ],
+      "p": 0,
+      "player": null,
+      "pts": 3,
+      "t": "2026-11-14T19:00:41.336Z",
+      "team": "them",
+      "type": "shot"
+    },
+    {
+      "clock": null,
+      "grp": "mwgrtr0840gfz",
+      "id": "mwgrtth41uf24",
+      "ms": 1794682844536,
+      "off": true,
+      "on": [
+        "2",
+        "13",
+        "15",
+        "3",
+        "4"
+      ],
+      "p": 0,
+      "player": null,
+      "ref": "mwgrtr0840gfz",
+      "t": "2026-11-14T19:00:44.536Z",
+      "team": "them",
+      "type": "reb"
+    },
+    {
+      "clock": null,
+      "grp": "mwgrtvpmm87r5",
+      "id": "mwgrtvpmm87r5",
+      "made": false,
+      "ms": 1794682847434,
+      "on": [
+        "2",
+        "13",
+        "15",
+        "3",
+        "4"
+      ],
+      "p": 0,
+      "player": null,
+      "pts": 3,
+      "t": "2026-11-14T19:00:47.434Z",
+      "team": "them",
+      "type": "shot"
+    },
+    {
+      "clock": null,
+      "grp": "mwgrtym9olkiu",
+      "id": "mwgrtym9olkiu",
+      "ms": 1794682851201,
+      "on": [
+        "2",
+        "13",
+        "15",
+        "3",
+        "4"
+      ],
+      "p": 0,
+      "player": null,
+      "t": "2026-11-14T19:00:51.201Z",
+      "team": "them",
+      "type": "foul"
+    }
+  ],
+  "format": "titans-stat-book",
+  "id": "2026-11-14-opponent-spy8",
+  "qlen": 8,
+  "roster": [
+    {
+      "name": "Tristan",
+      "num": "13"
+    },
+    {
+      "name": "Dennis",
+      "num": "2"
+    },
+    {
+      "name": "Hayden",
+      "num": "15"
+    },
+    {
+      "name": "diggy",
+      "num": "4"
+    },
+    {
+      "name": "Ryan",
+      "num": "3"
+    },
+    {
+      "name": "Amari",
+      "num": "0"
+    },
+    {
+      "name": "Jayvion",
+      "num": "32"
+    },
+    {
+      "name": "Isaac",
+      "num": "10"
+    },
+    {
+      "name": "Kaleb",
+      "num": "24"
+    },
+    {
+      "name": "dice",
+      "num": "11"
+    },
+    {
+      "name": "Brendan",
+      "num": "1"
+    },
+    {
+      "name": "Achilles",
+      "num": "23"
+    }
+  ],
+  "starters": [
+    "2",
+    "13",
+    "15",
+    "3",
+    "4"
+  ],
+  "them": "Opponent",
+  "updated": 1794682851201,
+  "us": "Arcadia JV",
+  "version": 1
+}

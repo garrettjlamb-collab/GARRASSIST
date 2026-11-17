@@ -1,0 +1,7401 @@
+{
+  "clock": {
+    "at": 0,
+    "rem": 240,
+    "run": false
+  },
+  "clockUsed": false,
+  "created": "2026-11-14T20:54:38.860Z",
+  "date": "2026-11-14",
+  "events": [
+    {
+      "action": "start",
+      "clock": null,
+      "grp": "mwgvx1pdwjojd",
+      "id": "mwgvx1pdwjojd",
+      "ms": 1794689713633,
+      "on": [
+        "13",
+        "2",
+        "15",
+        "4",
+        "3"
+      ],
+      "p": 1,
+      "period": 1,
+      "t": "2026-11-14T20:55:13.633Z",
+      "type": "period"
+    },
+    {
+      "clock": null,
+      "grp": "mwgvx1pe3tqkt",
+      "id": "mwgvx1pe3tqkt",
+      "made": false,
+      "ms": 1794689713634,
+      "on": [
+        "13",
+        "2",
+        "15",
+        "4",
+        "3"
+      ],
+      "p": 1,
+      "player": null,
+      "pts": 3,
+      "t": "2026-11-14T20:55:13.634Z",
+      "team": "them",
+      "type": "shot"
+    },
+    {
+      "clock": null,
+      "grp": "mwgvx1pe3tqkt",
+      "id": "mwgvx2jwjhvvn",
+      "ms": 1794689714732,
+      "off": false,
+      "on": [
+        "13",
+        "2",
+        "15",
+        "4",
+        "3"
+      ],
+      "p": 1,
+      "player": "4",
+      "ref": "mwgvx1pe3tqkt",
+      "t": "2026-11-14T20:55:14.732Z",
+      "team": "us",
+      "type": "reb"
+    },
+    {
+      "clock": null,
+      "grp": "mwgvxq7utlmdv",
+      "id": "mwgvxq7utlmdv",
+      "made": true,
+      "ms": 1794689745402,
+      "on": [
+        "13",
+        "2",
+        "15",
+        "4",
+        "3"
+      ],
+      "p": 1,
+      "player": "3",
+      "pts": 2,
+      "t": "2026-11-14T20:55:45.402Z",
+      "team": "us",
+      "type": "shot",
+      "x": 24.2,
+      "y": 14.6
+    },
+    {
+      "clock": null,
+      "grp": "mwgvxq7utlmdv",
+      "id": "mwgvxs07uz0b0",
+      "ms": 1794689747719,
+      "on": [
+        "13",
+        "2",
+        "15",
+        "4",
+        "3"
+      ],
+      "p": 1,
+      "player": "2",
+      "ref": "mwgvxq7utlmdv",
+      "t": "2026-11-14T20:55:47.719Z",
+      "team": "us",
+      "type": "ast"
+    },
+    {
+      "clock": null,
+      "grp": "mwgvy09imxjmo",
+      "id": "mwgvy09imxjmo",
+      "ms": 1794689758422,
+      "on": [
+        "13",
+        "2",
+        "15",
+        "4",
+        "3"
+      ],
+      "p": 1,
+      "player": "4",
+      "t": "2026-11-14T20:55:58.422Z",
+      "team": "us",
+      "type": "stl"
+    },
+    {
+      "clock": null,
+      "grp": "mwgvy09imxjmo",
+      "id": "mwgvy09inbblq",
+      "ms": 1794689758422,
+      "on": [
+        "13",
+        "2",
+        "15",
+        "4",
+        "3"
+      ],
+      "p": 1,
+      "player": null,
+      "ref": "mwgvy09imxjmo",
+      "t": "2026-11-14T20:55:58.422Z",
+      "team": "them",
+      "type": "to"
+    },
+    {
+      "clock": null,
+      "grp": "mwgvyauzyiuu7",
+      "id": "mwgvyauzyiuu7",
+      "made": false,
+      "ms": 1794689772155,
+      "on": [
+        "13",
+        "2",
+        "15",
+        "4",
+        "3"
+      ],
+      "p": 1,
+      "player": "4",
+      "pts": 3,
+      "t": "2026-11-14T20:56:12.155Z",
+      "team": "us",
+      "type": "shot",
+      "x": 9.8,
+      "y": 23.1
+    },
+    {
+      "clock": null,
+      "grp": "mwgvyauzyiuu7",
+      "id": "mwgvyckll9e3w",
+      "ms": 1794689774373,
+      "off": true,
+      "on": [
+        "13",
+        "2",
+        "15",
+        "4",
+        "3"
+      ],
+      "p": 1,
+      "player": "13",
+      "ref": "mwgvyauzyiuu7",
+      "t": "2026-11-14T20:56:14.373Z",
+      "team": "us",
+      "type": "reb"
+    },
+    {
+      "clock": null,
+      "grp": "mwgvye2q8g928",
+      "id": "mwgvye2q8g928",
+      "made": true,
+      "ms": 1794689776322,
+      "on": [
+        "13",
+        "2",
+        "15",
+        "4",
+        "3"
+      ],
+      "p": 1,
+      "player": "13",
+      "pts": 2,
+      "t": "2026-11-14T20:56:16.322Z",
+      "team": "us",
+      "type": "shot",
+      "x": 28.5,
+      "y": 5.6
+    },
+    {
+      "clock": null,
+      "grp": "mwgvyhy72h3kl",
+      "id": "mwgvyhy72h3kl",
+      "made": false,
+      "ms": 1794689781343,
+      "on": [
+        "13",
+        "2",
+        "15",
+        "4",
+        "3"
+      ],
+      "p": 1,
+      "player": null,
+      "pts": 3,
+      "t": "2026-11-14T20:56:21.343Z",
+      "team": "them",
+      "type": "shot"
+    },
+    {
+      "clock": null,
+      "grp": "mwgvyhy72h3kl",
+      "id": "mwgvyj054gfml",
+      "ms": 1794689782709,
+      "off": true,
+      "on": [
+        "13",
+        "2",
+        "15",
+        "4",
+        "3"
+      ],
+      "p": 1,
+      "player": null,
+      "ref": "mwgvyhy72h3kl",
+      "t": "2026-11-14T20:56:22.709Z",
+      "team": "them",
+      "type": "reb"
+    },
+    {
+      "clock": null,
+      "grp": "mwgvyy8e1kv7q",
+      "id": "mwgvyy8e1kv7q",
+      "ms": 1794689802446,
+      "on": [
+        "13",
+        "2",
+        "15",
+        "4",
+        "3"
+      ],
+      "p": 1,
+      "player": null,
+      "t": "2026-11-14T20:56:42.446Z",
+      "team": "them",
+      "type": "foul"
+    },
+    {
+      "clock": null,
+      "grp": "mwgvza9q4xg0e",
+      "id": "mwgvza9q4xg0e",
+      "made": false,
+      "ms": 1794689818046,
+      "on": [
+        "13",
+        "2",
+        "15",
+        "4",
+        "3"
+      ],
+      "p": 1,
+      "player": "15",
+      "pts": 2,
+      "t": "2026-11-14T20:56:58.046Z",
+      "team": "us",
+      "type": "shot",
+      "x": 28.8,
+      "y": 5.5
+    },
+    {
+      "clock": null,
+      "grp": "mwgvza9q4xg0e",
+      "id": "mwgvzc3jetzj9",
+      "ms": 1794689820415,
+      "off": true,
+      "on": [
+        "13",
+        "2",
+        "15",
+        "4",
+        "3"
+      ],
+      "p": 1,
+      "player": "13",
+      "ref": "mwgvza9q4xg0e",
+      "t": "2026-11-14T20:57:00.415Z",
+      "team": "us",
+      "type": "reb"
+    },
+    {
+      "clock": null,
+      "grp": "mwgvzdo150diw",
+      "id": "mwgvzdo150diw",
+      "made": false,
+      "ms": 1794689822449,
+      "on": [
+        "13",
+        "2",
+        "15",
+        "4",
+        "3"
+      ],
+      "p": 1,
+      "player": "13",
+      "pts": 2,
+      "t": "2026-11-14T20:57:02.449Z",
+      "team": "us",
+      "type": "shot",
+      "x": 27.5,
+      "y": 7
+    },
+    {
+      "clock": null,
+      "grp": "mwgvzdo150diw",
+      "id": "mwgvzew0umvv2",
+      "ms": 1794689824032,
+      "off": false,
+      "on": [
+        "13",
+        "2",
+        "15",
+        "4",
+        "3"
+      ],
+      "p": 1,
+      "player": null,
+      "ref": "mwgvzdo150diw",
+      "t": "2026-11-14T20:57:04.032Z",
+      "team": "them",
+      "type": "reb"
+    },
+    {
+      "clock": null,
+      "grp": "mwgw05oj9lltg",
+      "id": "mwgw05oj9lltg",
+      "made": false,
+      "ms": 1794689858755,
+      "on": [
+        "13",
+        "2",
+        "15",
+        "4",
+        "3"
+      ],
+      "p": 1,
+      "player": null,
+      "pts": 1,
+      "t": "2026-11-14T20:57:38.755Z",
+      "team": "them",
+      "type": "shot"
+    },
+    {
+      "clock": null,
+      "grp": "mwgw0lesmisa1",
+      "id": "mwgw0lesmisa1",
+      "made": true,
+      "ms": 1794689879140,
+      "on": [
+        "13",
+        "2",
+        "15",
+        "4",
+        "3"
+      ],
+      "p": 1,
+      "player": null,
+      "pts": 1,
+      "t": "2026-11-14T20:57:59.140Z",
+      "team": "them",
+      "type": "shot"
+    },
+    {
+      "clock": null,
+      "grp": "mwgw0t8bxagew",
+      "id": "mwgw0t8bxagew",
+      "made": true,
+      "ms": 1794689889275,
+      "on": [
+        "13",
+        "2",
+        "15",
+        "4",
+        "3"
+      ],
+      "p": 1,
+      "player": "13",
+      "pts": 2,
+      "t": "2026-11-14T20:58:09.275Z",
+      "team": "us",
+      "type": "shot",
+      "x": 27.7,
+      "y": 5.6
+    },
+    {
+      "clock": null,
+      "grp": "mwgw0t8bxagew",
+      "id": "mwgw0v5tpdrhi",
+      "ms": 1794689891777,
+      "on": [
+        "13",
+        "2",
+        "15",
+        "4",
+        "3"
+      ],
+      "p": 1,
+      "player": "4",
+      "ref": "mwgw0t8bxagew",
+      "t": "2026-11-14T20:58:11.777Z",
+      "team": "us",
+      "type": "ast"
+    },
+    {
+      "clock": null,
+      "grp": "mwgw1673c8o0h",
+      "id": "mwgw1673c8o0h",
+      "made": false,
+      "ms": 1794689906079,
+      "on": [
+        "13",
+        "2",
+        "15",
+        "4",
+        "3"
+      ],
+      "p": 1,
+      "player": null,
+      "pts": 3,
+      "t": "2026-11-14T20:58:26.079Z",
+      "team": "them",
+      "type": "shot"
+    },
+    {
+      "clock": null,
+      "grp": "mwgw1673c8o0h",
+      "id": "mwgw172lcvcbc",
+      "ms": 1794689907213,
+      "off": true,
+      "on": [
+        "13",
+        "2",
+        "15",
+        "4",
+        "3"
+      ],
+      "p": 1,
+      "player": null,
+      "ref": "mwgw1673c8o0h",
+      "t": "2026-11-14T20:58:27.213Z",
+      "team": "them",
+      "type": "reb"
+    },
+    {
+      "clock": null,
+      "grp": "mwgw1eki9b8qx",
+      "id": "mwgw1eki9b8qx",
+      "made": true,
+      "ms": 1794689916930,
+      "on": [
+        "13",
+        "2",
+        "15",
+        "4",
+        "3"
+      ],
+      "p": 1,
+      "player": null,
+      "pts": 1,
+      "t": "2026-11-14T20:58:36.930Z",
+      "team": "them",
+      "type": "shot"
+    },
+    {
+      "clock": null,
+      "grp": "mwgw1j406093k",
+      "id": "mwgw1j406093k",
+      "made": true,
+      "ms": 1794689922816,
+      "on": [
+        "13",
+        "2",
+        "15",
+        "4",
+        "3"
+      ],
+      "p": 1,
+      "player": null,
+      "pts": 1,
+      "t": "2026-11-14T20:58:42.816Z",
+      "team": "them",
+      "type": "shot"
+    },
+    {
+      "clock": null,
+      "grp": "mwgw1zl5eec2q",
+      "id": "mwgw1zl5eec2q",
+      "made": false,
+      "ms": 1794689944169,
+      "on": [
+        "13",
+        "2",
+        "15",
+        "4",
+        "3"
+      ],
+      "p": 1,
+      "player": "4",
+      "pts": 3,
+      "t": "2026-11-14T20:59:04.169Z",
+      "team": "us",
+      "type": "shot",
+      "x": 9.1,
+      "y": 21
+    },
+    {
+      "clock": null,
+      "grp": "mwgw1zl5eec2q",
+      "id": "mwgw22m0poci5",
+      "ms": 1794689948088,
+      "off": true,
+      "on": [
+        "13",
+        "2",
+        "15",
+        "4",
+        "3"
+      ],
+      "p": 1,
+      "player": "13",
+      "ref": "mwgw1zl5eec2q",
+      "t": "2026-11-14T20:59:08.088Z",
+      "team": "us",
+      "type": "reb"
+    },
+    {
+      "clock": null,
+      "grp": "mwgw2e6p7trtf",
+      "id": "mwgw2e6p7trtf",
+      "made": false,
+      "ms": 1794689963089,
+      "on": [
+        "13",
+        "2",
+        "15",
+        "4",
+        "3"
+      ],
+      "p": 1,
+      "player": "13",
+      "pts": 1,
+      "t": "2026-11-14T20:59:23.089Z",
+      "team": "us",
+      "type": "shot"
+    },
+    {
+      "clock": null,
+      "grp": "mwgw2koyivfdp",
+      "id": "mwgw2koyivfdp",
+      "made": true,
+      "ms": 1794689971522,
+      "on": [
+        "13",
+        "2",
+        "15",
+        "4",
+        "3"
+      ],
+      "p": 1,
+      "player": "13",
+      "pts": 1,
+      "t": "2026-11-14T20:59:31.522Z",
+      "team": "us",
+      "type": "shot"
+    },
+    {
+      "clock": null,
+      "grp": "mwgw2nr5jwi5h",
+      "id": "mwgw2nr5jwi5h",
+      "made": false,
+      "ms": 1794689975489,
+      "on": [
+        "13",
+        "2",
+        "15",
+        "4",
+        "3"
+      ],
+      "p": 1,
+      "player": null,
+      "pts": 2,
+      "t": "2026-11-14T20:59:35.489Z",
+      "team": "them",
+      "type": "shot"
+    },
+    {
+      "clock": null,
+      "grp": "mwgw2nr5jwi5h",
+      "id": "mwgw2rihves6v",
+      "ms": 1794689980361,
+      "off": false,
+      "on": [
+        "13",
+        "2",
+        "15",
+        "4",
+        "3"
+      ],
+      "p": 1,
+      "player": "4",
+      "ref": "mwgw2nr5jwi5h",
+      "t": "2026-11-14T20:59:40.361Z",
+      "team": "us",
+      "type": "reb"
+    },
+    {
+      "clock": null,
+      "grp": "mwgw307epvtpz",
+      "id": "mwgw307epvtpz",
+      "made": true,
+      "ms": 1794689991626,
+      "on": [
+        "13",
+        "2",
+        "15",
+        "4",
+        "3"
+      ],
+      "p": 1,
+      "player": "3",
+      "pts": 2,
+      "t": "2026-11-14T20:59:51.626Z",
+      "team": "us",
+      "type": "shot",
+      "x": 28.2,
+      "y": 5.9
+    },
+    {
+      "clock": null,
+      "grp": "mwgw307epvtpz",
+      "id": "mwgw31rveyfz9",
+      "ms": 1794689993659,
+      "on": [
+        "13",
+        "2",
+        "15",
+        "4",
+        "3"
+      ],
+      "p": 1,
+      "player": "2",
+      "ref": "mwgw307epvtpz",
+      "t": "2026-11-14T20:59:53.659Z",
+      "team": "us",
+      "type": "ast"
+    },
+    {
+      "clock": null,
+      "grp": "mwgw39pldceop",
+      "id": "mwgw39pldceop",
+      "ms": 1794690003945,
+      "on": [
+        "13",
+        "2",
+        "15",
+        "4",
+        "3"
+      ],
+      "p": 1,
+      "player": null,
+      "t": "2026-11-14T21:00:03.945Z",
+      "team": "them",
+      "type": "to"
+    },
+    {
+      "clock": null,
+      "grp": "mwgw3kkew6d6t",
+      "id": "mwgw3kkew6d6t",
+      "made": false,
+      "ms": 1794690018014,
+      "on": [
+        "13",
+        "2",
+        "15",
+        "4",
+        "3"
+      ],
+      "p": 1,
+      "player": "15",
+      "pts": 3,
+      "t": "2026-11-14T21:00:18.014Z",
+      "team": "us",
+      "type": "shot",
+      "x": 37.5,
+      "y": 24.1
+    },
+    {
+      "clock": null,
+      "grp": "mwgw3kkew6d6t",
+      "id": "mwgw3lvmwejpv",
+      "ms": 1794690019714,
+      "off": false,
+      "on": [
+        "13",
+        "2",
+        "15",
+        "4",
+        "3"
+      ],
+      "p": 1,
+      "player": null,
+      "ref": "mwgw3kkew6d6t",
+      "t": "2026-11-14T21:00:19.714Z",
+      "team": "them",
+      "type": "reb"
+    },
+    {
+      "clock": null,
+      "grp": "mwgw3rwe1ytf4",
+      "id": "mwgw3rwe1ytf4",
+      "ms": 1794690027518,
+      "on": [
+        "13",
+        "2",
+        "15",
+        "4",
+        "3"
+      ],
+      "p": 1,
+      "player": "3",
+      "t": "2026-11-14T21:00:27.518Z",
+      "team": "us",
+      "type": "stl"
+    },
+    {
+      "clock": null,
+      "grp": "mwgw3rwe1ytf4",
+      "id": "mwgw3rwep025e",
+      "ms": 1794690027518,
+      "on": [
+        "13",
+        "2",
+        "15",
+        "4",
+        "3"
+      ],
+      "p": 1,
+      "player": null,
+      "ref": "mwgw3rwe1ytf4",
+      "t": "2026-11-14T21:00:27.518Z",
+      "team": "them",
+      "type": "to"
+    },
+    {
+      "clock": null,
+      "grp": "mwgw3tornbune",
+      "id": "mwgw3tornbune",
+      "made": true,
+      "ms": 1794690029835,
+      "on": [
+        "13",
+        "2",
+        "15",
+        "4",
+        "3"
+      ],
+      "p": 1,
+      "player": "3",
+      "pts": 2,
+      "t": "2026-11-14T21:00:29.835Z",
+      "team": "us",
+      "type": "shot",
+      "x": 27.7,
+      "y": 5.6
+    },
+    {
+      "clock": null,
+      "grp": "mwgw3yhxwgicf",
+      "id": "mwgw3yhxwgicf",
+      "ms": 1794690036069,
+      "on": [
+        "13",
+        "2",
+        "15",
+        "4",
+        "3"
+      ],
+      "p": 1,
+      "player": null,
+      "t": "2026-11-14T21:00:36.069Z",
+      "team": "them",
+      "type": "to"
+    },
+    {
+      "clock": null,
+      "grp": "mwgw49k3i1i09",
+      "id": "mwgw49k3i1i09",
+      "ms": 1794690050403,
+      "on": [
+        "13",
+        "2",
+        "15",
+        "4",
+        "3"
+      ],
+      "p": 1,
+      "player": "4",
+      "t": "2026-11-14T21:00:50.403Z",
+      "team": "us",
+      "type": "to"
+    },
+    {
+      "clock": null,
+      "grp": "mwgw4es5owekg",
+      "id": "mwgw4es5owekg",
+      "made": false,
+      "ms": 1794690057173,
+      "on": [
+        "13",
+        "2",
+        "15",
+        "4",
+        "3"
+      ],
+      "p": 1,
+      "player": null,
+      "pts": 3,
+      "t": "2026-11-14T21:00:57.173Z",
+      "team": "them",
+      "type": "shot"
+    },
+    {
+      "clock": null,
+      "grp": "mwgw4es5owekg",
+      "id": "mwgw4iogf1hir",
+      "ms": 1794690062224,
+      "off": true,
+      "on": [
+        "13",
+        "2",
+        "15",
+        "4",
+        "3"
+      ],
+      "p": 1,
+      "player": null,
+      "ref": "mwgw4es5owekg",
+      "t": "2026-11-14T21:01:02.224Z",
+      "team": "them",
+      "type": "reb"
+    },
+    {
+      "clock": null,
+      "grp": "mwgw4l6aw2h8d",
+      "id": "mwgw4l6aw2h8d",
+      "ms": 1794690065458,
+      "on": [
+        "13",
+        "2",
+        "15",
+        "4",
+        "3"
+      ],
+      "p": 1,
+      "player": "3",
+      "t": "2026-11-14T21:01:05.458Z",
+      "team": "us",
+      "type": "stl"
+    },
+    {
+      "clock": null,
+      "grp": "mwgw4l6aw2h8d",
+      "id": "mwgw4l6b6avmh",
+      "ms": 1794690065459,
+      "on": [
+        "13",
+        "2",
+        "15",
+        "4",
+        "3"
+      ],
+      "p": 1,
+      "player": null,
+      "ref": "mwgw4l6aw2h8d",
+      "t": "2026-11-14T21:01:05.459Z",
+      "team": "them",
+      "type": "to"
+    },
+    {
+      "clock": null,
+      "grp": "mwgw4pdn93r66",
+      "id": "mwgw4pdn93r66",
+      "made": false,
+      "ms": 1794690070907,
+      "on": [
+        "13",
+        "2",
+        "15",
+        "4",
+        "3"
+      ],
+      "p": 1,
+      "player": "4",
+      "pts": 2,
+      "t": "2026-11-14T21:01:10.907Z",
+      "team": "us",
+      "type": "shot",
+      "x": 28,
+      "y": 5.6
+    },
+    {
+      "clock": null,
+      "grp": "mwgw4pdn93r66",
+      "id": "mwgw4qjdvqws9",
+      "ms": 1794690072409,
+      "off": false,
+      "on": [
+        "13",
+        "2",
+        "15",
+        "4",
+        "3"
+      ],
+      "p": 1,
+      "player": null,
+      "ref": "mwgw4pdn93r66",
+      "t": "2026-11-14T21:01:12.409Z",
+      "team": "them",
+      "type": "reb"
+    },
+    {
+      "clock": null,
+      "grp": "mwgw4uwq4867n",
+      "id": "mwgw4uwq4867n",
+      "ms": 1794690078074,
+      "on": [
+        "13",
+        "2",
+        "15",
+        "4",
+        "3"
+      ],
+      "p": 1,
+      "player": null,
+      "t": "2026-11-14T21:01:18.074Z",
+      "team": "them",
+      "type": "to"
+    },
+    {
+      "clock": null,
+      "grp": "mwgw546nk798r",
+      "id": "mwgw546nk798r",
+      "made": false,
+      "ms": 1794690090095,
+      "on": [
+        "13",
+        "2",
+        "15",
+        "4",
+        "3"
+      ],
+      "p": 1,
+      "player": "2",
+      "pts": 2,
+      "t": "2026-11-14T21:01:30.095Z",
+      "team": "us",
+      "type": "shot",
+      "x": 36.2,
+      "y": 10.8
+    },
+    {
+      "clock": null,
+      "grp": "mwgw546nk798r",
+      "id": "mwgw55utf66nm",
+      "ms": 1794690092261,
+      "off": true,
+      "on": [
+        "13",
+        "2",
+        "15",
+        "4",
+        "3"
+      ],
+      "p": 1,
+      "player": "13",
+      "ref": "mwgw546nk798r",
+      "t": "2026-11-14T21:01:32.261Z",
+      "team": "us",
+      "type": "reb"
+    },
+    {
+      "clock": null,
+      "grp": "mwgw599kcthg7",
+      "id": "mwgw599kcthg7",
+      "made": true,
+      "ms": 1794690096680,
+      "on": [
+        "13",
+        "2",
+        "15",
+        "4",
+        "3"
+      ],
+      "p": 1,
+      "player": "13",
+      "pts": 2,
+      "t": "2026-11-14T21:01:36.680Z",
+      "team": "us",
+      "type": "shot",
+      "x": 28.8,
+      "y": 5.5
+    },
+    {
+      "clock": null,
+      "grp": "mwgw5np1d7red",
+      "id": "mwgw5np1d7red",
+      "made": false,
+      "ms": 1794690115381,
+      "on": [
+        "13",
+        "2",
+        "15",
+        "4",
+        "3"
+      ],
+      "p": 1,
+      "player": null,
+      "pts": 3,
+      "t": "2026-11-14T21:01:55.381Z",
+      "team": "them",
+      "type": "shot"
+    },
+    {
+      "clock": null,
+      "grp": "mwgw5np1d7red",
+      "id": "mwgw5op78vou4",
+      "ms": 1794690116683,
+      "off": false,
+      "on": [
+        "13",
+        "2",
+        "15",
+        "4",
+        "3"
+      ],
+      "p": 1,
+      "player": "4",
+      "ref": "mwgw5np1d7red",
+      "t": "2026-11-14T21:01:56.683Z",
+      "team": "us",
+      "type": "reb"
+    },
+    {
+      "clock": null,
+      "grp": "mwgw5t1llufjg",
+      "id": "mwgw5t1llufjg",
+      "made": false,
+      "ms": 1794690122313,
+      "on": [
+        "13",
+        "2",
+        "15",
+        "4",
+        "3"
+      ],
+      "p": 1,
+      "player": "15",
+      "pts": 3,
+      "t": "2026-11-14T21:02:02.313Z",
+      "team": "us",
+      "type": "shot",
+      "x": 40.9,
+      "y": 22.6
+    },
+    {
+      "clock": null,
+      "grp": "mwgw5t1llufjg",
+      "id": "mwgw5uxrhk4ud",
+      "ms": 1794690124767,
+      "off": true,
+      "on": [
+        "13",
+        "2",
+        "15",
+        "4",
+        "3"
+      ],
+      "p": 1,
+      "player": "13",
+      "ref": "mwgw5t1llufjg",
+      "t": "2026-11-14T21:02:04.767Z",
+      "team": "us",
+      "type": "reb"
+    },
+    {
+      "clock": null,
+      "grp": "mwgw62g4aazt1",
+      "id": "mwgw62g4aazt1",
+      "ms": 1794690134500,
+      "on": [
+        "13",
+        "2",
+        "15",
+        "4",
+        "3"
+      ],
+      "p": 1,
+      "player": "13",
+      "t": "2026-11-14T21:02:14.500Z",
+      "team": "us",
+      "type": "to"
+    },
+    {
+      "clock": null,
+      "grp": "mwgw69l7fz2uv",
+      "id": "mwgw69l7fz2uv",
+      "made": false,
+      "ms": 1794690143755,
+      "on": [
+        "13",
+        "2",
+        "15",
+        "4",
+        "3"
+      ],
+      "p": 1,
+      "player": null,
+      "pts": 2,
+      "t": "2026-11-14T21:02:23.755Z",
+      "team": "them",
+      "type": "shot"
+    },
+    {
+      "clock": null,
+      "grp": "mwgw6ilbdz8qb",
+      "id": "mwgw6ilbdz8qb",
+      "made": false,
+      "ms": 1794690155423,
+      "on": [
+        "13",
+        "2",
+        "15",
+        "4",
+        "3"
+      ],
+      "p": 1,
+      "player": "4",
+      "pts": 3,
+      "t": "2026-11-14T21:02:35.423Z",
+      "team": "us",
+      "type": "shot",
+      "x": 45.7,
+      "y": 6.9
+    },
+    {
+      "clock": null,
+      "grp": "mwgw6ilbdz8qb",
+      "id": "mwgw6ljtqvsll",
+      "ms": 1794690159257,
+      "off": true,
+      "on": [
+        "13",
+        "2",
+        "15",
+        "4",
+        "3"
+      ],
+      "p": 1,
+      "player": "13",
+      "ref": "mwgw6ilbdz8qb",
+      "t": "2026-11-14T21:02:39.257Z",
+      "team": "us",
+      "type": "reb"
+    },
+    {
+      "clock": null,
+      "grp": "mwgw6t4gsj0wr",
+      "id": "mwgw6t4gsj0wr",
+      "made": true,
+      "ms": 1794690169072,
+      "on": [
+        "13",
+        "2",
+        "15",
+        "4",
+        "3"
+      ],
+      "p": 1,
+      "player": "15",
+      "pts": 3,
+      "t": "2026-11-14T21:02:49.072Z",
+      "team": "us",
+      "type": "shot",
+      "x": 7.7,
+      "y": 18.4
+    },
+    {
+      "clock": null,
+      "grp": "mwgw6t4gsj0wr",
+      "id": "mwgw6uoir12v1",
+      "ms": 1794690171090,
+      "on": [
+        "13",
+        "2",
+        "15",
+        "4",
+        "3"
+      ],
+      "p": 1,
+      "player": "4",
+      "ref": "mwgw6t4gsj0wr",
+      "t": "2026-11-14T21:02:51.090Z",
+      "team": "us",
+      "type": "ast"
+    },
+    {
+      "clock": null,
+      "grp": "mwgw78emtr6qw",
+      "id": "mwgw78emtr6qw",
+      "ms": 1794690188878,
+      "on": [
+        "13",
+        "2",
+        "15",
+        "4",
+        "3"
+      ],
+      "p": 1,
+      "player": "2",
+      "t": "2026-11-14T21:03:08.878Z",
+      "team": "us",
+      "type": "stl"
+    },
+    {
+      "clock": null,
+      "grp": "mwgw78emtr6qw",
+      "id": "mwgw78enho3zw",
+      "ms": 1794690188879,
+      "on": [
+        "13",
+        "2",
+        "15",
+        "4",
+        "3"
+      ],
+      "p": 1,
+      "player": null,
+      "ref": "mwgw78emtr6qw",
+      "t": "2026-11-14T21:03:08.879Z",
+      "team": "them",
+      "type": "to"
+    },
+    {
+      "clock": null,
+      "grp": "mwgw7b21xmnte",
+      "id": "mwgw7b21xmnte",
+      "ms": 1794690192313,
+      "on": [
+        "13",
+        "2",
+        "15",
+        "4",
+        "3"
+      ],
+      "p": 1,
+      "player": "13",
+      "t": "2026-11-14T21:03:12.313Z",
+      "team": "us",
+      "type": "to"
+    },
+    {
+      "clock": null,
+      "grp": "mwgw7fh8w4dug",
+      "id": "mwgw7fh8w4dug",
+      "ms": 1794690198044,
+      "on": [
+        "13",
+        "2",
+        "15",
+        "4",
+        "3"
+      ],
+      "p": 1,
+      "player": "13",
+      "t": "2026-11-14T21:03:18.044Z",
+      "team": "us",
+      "type": "stl"
+    },
+    {
+      "clock": null,
+      "grp": "mwgw7fh8w4dug",
+      "id": "mwgw7fh8670g7",
+      "ms": 1794690198044,
+      "on": [
+        "13",
+        "2",
+        "15",
+        "4",
+        "3"
+      ],
+      "p": 1,
+      "player": null,
+      "ref": "mwgw7fh8w4dug",
+      "t": "2026-11-14T21:03:18.044Z",
+      "team": "them",
+      "type": "to"
+    },
+    {
+      "clock": null,
+      "grp": "mwgw7hx6xyz03",
+      "id": "mwgw7hx6xyz03",
+      "made": true,
+      "ms": 1794690201210,
+      "on": [
+        "13",
+        "2",
+        "15",
+        "4",
+        "3"
+      ],
+      "p": 1,
+      "player": "3",
+      "pts": 2,
+      "t": "2026-11-14T21:03:21.210Z",
+      "team": "us",
+      "type": "shot",
+      "x": 23.5,
+      "y": 5.5
+    },
+    {
+      "clock": null,
+      "grp": "mwgw7hx6xyz03",
+      "id": "mwgw7jq2ni5uu",
+      "ms": 1794690203546,
+      "on": [
+        "13",
+        "2",
+        "15",
+        "4",
+        "3"
+      ],
+      "p": 1,
+      "player": "4",
+      "ref": "mwgw7hx6xyz03",
+      "t": "2026-11-14T21:03:23.546Z",
+      "team": "us",
+      "type": "ast"
+    },
+    {
+      "clock": null,
+      "grp": "mwgw7n15r414r",
+      "id": "mwgw7n15r414r",
+      "made": true,
+      "ms": 1794690207833,
+      "on": [
+        "13",
+        "2",
+        "15",
+        "4",
+        "3"
+      ],
+      "p": 1,
+      "player": null,
+      "pts": 2,
+      "t": "2026-11-14T21:03:27.833Z",
+      "team": "them",
+      "type": "shot"
+    },
+    {
+      "clock": null,
+      "grp": "mwgw7r7zo5m1r",
+      "id": "mwgw7r7zo5m1r",
+      "ms": 1794690213263,
+      "on": [
+        "13",
+        "2",
+        "15",
+        "4",
+        "3"
+      ],
+      "p": 1,
+      "player": "15",
+      "t": "2026-11-14T21:03:33.263Z",
+      "team": "us",
+      "type": "to"
+    },
+    {
+      "clock": null,
+      "grp": "mwgw7xxb3d6el",
+      "id": "mwgw7xxb3d6el",
+      "made": true,
+      "ms": 1794690221951,
+      "on": [
+        "13",
+        "2",
+        "15",
+        "4",
+        "3"
+      ],
+      "p": 1,
+      "player": null,
+      "pts": 2,
+      "t": "2026-11-14T21:03:41.951Z",
+      "team": "them",
+      "type": "shot"
+    },
+    {
+      "clock": null,
+      "grp": "mwgw829alvque",
+      "id": "mwgw829alvque",
+      "ms": 1794690227566,
+      "on": [
+        "13",
+        "2",
+        "15",
+        "4",
+        "3"
+      ],
+      "p": 1,
+      "player": "4",
+      "t": "2026-11-14T21:03:47.566Z",
+      "team": "us",
+      "type": "to"
+    },
+    {
+      "clock": null,
+      "grp": "mwgw85vdueuk0",
+      "id": "mwgw85vdueuk0",
+      "ms": 1794690232249,
+      "on": [
+        "13",
+        "2",
+        "15",
+        "4",
+        "3"
+      ],
+      "p": 1,
+      "player": null,
+      "t": "2026-11-14T21:03:52.249Z",
+      "team": "them",
+      "type": "to"
+    },
+    {
+      "clock": null,
+      "grp": "mwgw8bv7dqt3n",
+      "id": "mwgw8bv7dqt3n",
+      "made": false,
+      "ms": 1794690240019,
+      "on": [
+        "13",
+        "2",
+        "15",
+        "4",
+        "3"
+      ],
+      "p": 1,
+      "player": "13",
+      "pts": 2,
+      "t": "2026-11-14T21:04:00.019Z",
+      "team": "us",
+      "type": "shot",
+      "x": 43,
+      "y": 3.1
+    },
+    {
+      "clock": null,
+      "grp": "mwgw8bv7dqt3n",
+      "id": "mwgw8dsn37z79",
+      "ms": 1794690242519,
+      "off": false,
+      "on": [
+        "13",
+        "2",
+        "15",
+        "4",
+        "3"
+      ],
+      "p": 1,
+      "player": null,
+      "ref": "mwgw8bv7dqt3n",
+      "t": "2026-11-14T21:04:02.519Z",
+      "team": "them",
+      "type": "reb"
+    },
+    {
+      "clock": null,
+      "grp": "mwgw8gdbf0d33",
+      "id": "mwgw8gdbf0d33",
+      "made": true,
+      "ms": 1794690245855,
+      "on": [
+        "13",
+        "2",
+        "15",
+        "4",
+        "3"
+      ],
+      "p": 1,
+      "player": null,
+      "pts": 2,
+      "t": "2026-11-14T21:04:05.855Z",
+      "team": "them",
+      "type": "shot"
+    },
+    {
+      "action": "end",
+      "clock": null,
+      "grp": "mwgw8q8vqtrdy",
+      "id": "mwgw8q8vqtrdy",
+      "ms": 1794690258655,
+      "on": [
+        "13",
+        "2",
+        "15",
+        "4",
+        "3"
+      ],
+      "p": 1,
+      "period": 1,
+      "t": "2026-11-14T21:04:18.655Z",
+      "type": "period"
+    },
+    {
+      "action": "start",
+      "clock": null,
+      "grp": "mwgw8q8v7pbtz",
+      "id": "mwgw8q8v7pbtz",
+      "ms": 1794690258655,
+      "on": [
+        "13",
+        "2",
+        "15",
+        "4",
+        "3"
+      ],
+      "p": 2,
+      "period": 2,
+      "t": "2026-11-14T21:04:18.655Z",
+      "type": "period"
+    },
+    {
+      "clock": null,
+      "grp": "mwgw8zac4g9pp",
+      "id": "mwgw8zac4g9pp",
+      "in": [
+        "0",
+        "10",
+        "12",
+        "24",
+        "11"
+      ],
+      "ms": 1794690270372,
+      "on": [
+        "13",
+        "2",
+        "15",
+        "4",
+        "3"
+      ],
+      "out": [
+        "13",
+        "2",
+        "15",
+        "3",
+        "4"
+      ],
+      "p": 2,
+      "t": "2026-11-14T21:04:30.372Z",
+      "type": "sub"
+    },
+    {
+      "clock": null,
+      "grp": "mwgw97cwlmvsq",
+      "id": "mwgw97cwlmvsq",
+      "made": true,
+      "ms": 1794690280832,
+      "on": [
+        "0",
+        "10",
+        "12",
+        "24",
+        "11"
+      ],
+      "p": 2,
+      "player": null,
+      "pts": 3,
+      "t": "2026-11-14T21:04:40.832Z",
+      "team": "them",
+      "type": "shot"
+    },
+    {
+      "clock": null,
+      "grp": "mwgw9hhn5yhyb",
+      "id": "mwgw9hhn5yhyb",
+      "ms": 1794690293963,
+      "on": [
+        "0",
+        "10",
+        "12",
+        "24",
+        "11"
+      ],
+      "p": 2,
+      "player": "0",
+      "t": "2026-11-14T21:04:53.963Z",
+      "team": "us",
+      "type": "to"
+    },
+    {
+      "clock": null,
+      "grp": "mwgw9ku2syxqu",
+      "id": "mwgw9ku2syxqu",
+      "made": false,
+      "ms": 1794690298298,
+      "on": [
+        "0",
+        "10",
+        "12",
+        "24",
+        "11"
+      ],
+      "p": 2,
+      "player": null,
+      "pts": 2,
+      "t": "2026-11-14T21:04:58.298Z",
+      "team": "them",
+      "type": "shot"
+    },
+    {
+      "clock": null,
+      "grp": "mwgw9ku2syxqu",
+      "id": "mwgw9lltct7cm",
+      "ms": 1794690299297,
+      "off": false,
+      "on": [
+        "0",
+        "10",
+        "12",
+        "24",
+        "11"
+      ],
+      "p": 2,
+      "player": "0",
+      "ref": "mwgw9ku2syxqu",
+      "t": "2026-11-14T21:04:59.297Z",
+      "team": "us",
+      "type": "reb"
+    },
+    {
+      "clock": null,
+      "grp": "mwgw9phn74ycs",
+      "id": "mwgw9phn74ycs",
+      "made": false,
+      "ms": 1794690304331,
+      "on": [
+        "0",
+        "10",
+        "12",
+        "24",
+        "11"
+      ],
+      "p": 2,
+      "player": "0",
+      "pts": 3,
+      "t": "2026-11-14T21:05:04.331Z",
+      "team": "us",
+      "type": "shot",
+      "x": 10,
+      "y": 22.5
+    },
+    {
+      "clock": null,
+      "grp": "mwgw9phn74ycs",
+      "id": "mwgw9rl28s8zo",
+      "ms": 1794690307046,
+      "off": false,
+      "on": [
+        "0",
+        "10",
+        "12",
+        "24",
+        "11"
+      ],
+      "p": 2,
+      "player": null,
+      "ref": "mwgw9phn74ycs",
+      "t": "2026-11-14T21:05:07.046Z",
+      "team": "them",
+      "type": "reb"
+    },
+    {
+      "clock": null,
+      "grp": "mwgw9sa54dz89",
+      "id": "mwgw9sa54dz89",
+      "made": false,
+      "ms": 1794690307949,
+      "on": [
+        "0",
+        "10",
+        "12",
+        "24",
+        "11"
+      ],
+      "p": 2,
+      "player": null,
+      "pts": 2,
+      "t": "2026-11-14T21:05:07.949Z",
+      "team": "them",
+      "type": "shot"
+    },
+    {
+      "clock": null,
+      "grp": "mwgw9sa54dz89",
+      "id": "mwgw9stijwnca",
+      "ms": 1794690308646,
+      "off": true,
+      "on": [
+        "0",
+        "10",
+        "12",
+        "24",
+        "11"
+      ],
+      "p": 2,
+      "player": null,
+      "ref": "mwgw9sa54dz89",
+      "t": "2026-11-14T21:05:08.646Z",
+      "team": "them",
+      "type": "reb"
+    },
+    {
+      "clock": null,
+      "grp": "mwgw9ux3s2g7r",
+      "id": "mwgw9ux3s2g7r",
+      "made": false,
+      "ms": 1794690311367,
+      "on": [
+        "0",
+        "10",
+        "12",
+        "24",
+        "11"
+      ],
+      "p": 2,
+      "player": null,
+      "pts": 2,
+      "t": "2026-11-14T21:05:11.367Z",
+      "team": "them",
+      "type": "shot"
+    },
+    {
+      "clock": null,
+      "grp": "mwgw9ux3s2g7r",
+      "id": "mwgw9vy1yi8me",
+      "ms": 1794690312697,
+      "off": true,
+      "on": [
+        "0",
+        "10",
+        "12",
+        "24",
+        "11"
+      ],
+      "p": 2,
+      "player": null,
+      "ref": "mwgw9ux3s2g7r",
+      "t": "2026-11-14T21:05:12.697Z",
+      "team": "them",
+      "type": "reb"
+    },
+    {
+      "clock": null,
+      "grp": "mwgwa0owdg0hs",
+      "id": "mwgwa0owdg0hs",
+      "made": false,
+      "ms": 1794690318848,
+      "on": [
+        "0",
+        "10",
+        "12",
+        "24",
+        "11"
+      ],
+      "p": 2,
+      "player": null,
+      "pts": 1,
+      "t": "2026-11-14T21:05:18.848Z",
+      "team": "them",
+      "type": "shot"
+    },
+    {
+      "clock": null,
+      "grp": "mwgwa3v9rlfu0",
+      "id": "mwgwa3v9rlfu0",
+      "made": true,
+      "ms": 1794690322965,
+      "on": [
+        "0",
+        "10",
+        "12",
+        "24",
+        "11"
+      ],
+      "p": 2,
+      "player": null,
+      "pts": 1,
+      "t": "2026-11-14T21:05:22.965Z",
+      "team": "them",
+      "type": "shot"
+    },
+    {
+      "clock": null,
+      "grp": "mwgwabycupqf9",
+      "id": "mwgwabycupqf9",
+      "ms": 1794690333444,
+      "on": [
+        "0",
+        "10",
+        "12",
+        "24",
+        "11"
+      ],
+      "p": 2,
+      "player": "0",
+      "t": "2026-11-14T21:05:33.444Z",
+      "team": "us",
+      "type": "to"
+    },
+    {
+      "clock": null,
+      "grp": "mwgwal94nljjc",
+      "id": "mwgwal94nljjc",
+      "made": true,
+      "ms": 1794690345496,
+      "on": [
+        "0",
+        "10",
+        "12",
+        "24",
+        "11"
+      ],
+      "p": 2,
+      "player": null,
+      "pts": 2,
+      "t": "2026-11-14T21:05:45.496Z",
+      "team": "them",
+      "type": "shot"
+    },
+    {
+      "clock": null,
+      "grp": "mwgwaw5srrt08",
+      "id": "mwgwaw5srrt08",
+      "made": false,
+      "ms": 1794690359632,
+      "on": [
+        "0",
+        "10",
+        "12",
+        "24",
+        "11"
+      ],
+      "p": 2,
+      "player": "0",
+      "pts": 2,
+      "t": "2026-11-14T21:05:59.632Z",
+      "team": "us",
+      "type": "shot",
+      "x": 27.8,
+      "y": 8.6
+    },
+    {
+      "clock": null,
+      "grp": "mwgwaw5srrt08",
+      "id": "mwgwaxcsu1wve",
+      "ms": 1794690361180,
+      "off": false,
+      "on": [
+        "0",
+        "10",
+        "12",
+        "24",
+        "11"
+      ],
+      "p": 2,
+      "player": null,
+      "ref": "mwgwaw5srrt08",
+      "t": "2026-11-14T21:06:01.180Z",
+      "team": "them",
+      "type": "reb"
+    },
+    {
+      "clock": null,
+      "grp": "mwgwazbq4g0f2",
+      "id": "mwgwazbq4g0f2",
+      "made": true,
+      "ms": 1794690363734,
+      "on": [
+        "0",
+        "10",
+        "12",
+        "24",
+        "11"
+      ],
+      "p": 2,
+      "player": null,
+      "pts": 2,
+      "t": "2026-11-14T21:06:03.734Z",
+      "team": "them",
+      "type": "shot"
+    },
+    {
+      "clock": null,
+      "grp": "mwgwb7i61450n",
+      "id": "mwgwb7i61450n",
+      "ms": 1794690374334,
+      "on": [
+        "0",
+        "10",
+        "12",
+        "24",
+        "11"
+      ],
+      "p": 2,
+      "player": "24",
+      "t": "2026-11-14T21:06:14.334Z",
+      "team": "us",
+      "type": "to"
+    },
+    {
+      "clock": null,
+      "grp": "mwgwbduwzbraa",
+      "id": "mwgwbduwzbraa",
+      "ms": 1794690382568,
+      "on": [
+        "0",
+        "10",
+        "12",
+        "24",
+        "11"
+      ],
+      "p": 2,
+      "player": null,
+      "t": "2026-11-14T21:06:22.568Z",
+      "team": "them",
+      "type": "to"
+    },
+    {
+      "clock": null,
+      "grp": "mwgwbt9n2n8db",
+      "id": "mwgwbt9n2n8db",
+      "ms": 1794690402539,
+      "on": [
+        "0",
+        "10",
+        "12",
+        "24",
+        "11"
+      ],
+      "p": 2,
+      "player": "0",
+      "t": "2026-11-14T21:06:42.539Z",
+      "team": "us",
+      "type": "to"
+    },
+    {
+      "clock": null,
+      "grp": "mwgwcocbtfmli",
+      "id": "mwgwcocbtfmli",
+      "made": false,
+      "ms": 1794690442811,
+      "on": [
+        "0",
+        "10",
+        "12",
+        "24",
+        "11"
+      ],
+      "p": 2,
+      "player": null,
+      "pts": 2,
+      "t": "2026-11-14T21:07:22.811Z",
+      "team": "them",
+      "type": "shot"
+    },
+    {
+      "clock": null,
+      "grp": "mwgwcocbtfmli",
+      "id": "mwgwcryax4vkc",
+      "ms": 1794690447490,
+      "off": false,
+      "on": [
+        "0",
+        "10",
+        "12",
+        "24",
+        "11"
+      ],
+      "p": 2,
+      "player": "0",
+      "ref": "mwgwcocbtfmli",
+      "t": "2026-11-14T21:07:27.490Z",
+      "team": "us",
+      "type": "reb"
+    },
+    {
+      "clock": null,
+      "grp": "mwgwdkqaozxhr",
+      "id": "mwgwdkqaozxhr",
+      "made": true,
+      "ms": 1794690484786,
+      "on": [
+        "0",
+        "10",
+        "12",
+        "24",
+        "11"
+      ],
+      "p": 2,
+      "player": "24",
+      "pts": 2,
+      "t": "2026-11-14T21:08:04.786Z",
+      "team": "us",
+      "type": "shot",
+      "x": 28,
+      "y": 6.5
+    },
+    {
+      "clock": null,
+      "grp": "mwgwdkqaozxhr",
+      "id": "mwgwdm9e724cx",
+      "ms": 1794690486770,
+      "on": [
+        "0",
+        "10",
+        "12",
+        "24",
+        "11"
+      ],
+      "p": 2,
+      "player": "0",
+      "ref": "mwgwdkqaozxhr",
+      "t": "2026-11-14T21:08:06.770Z",
+      "team": "us",
+      "type": "ast"
+    },
+    {
+      "clock": null,
+      "grp": "mwgwdt2d48tto",
+      "id": "mwgwdt2d48tto",
+      "made": false,
+      "ms": 1794690495589,
+      "on": [
+        "0",
+        "10",
+        "12",
+        "24",
+        "11"
+      ],
+      "p": 2,
+      "player": null,
+      "pts": 3,
+      "t": "2026-11-14T21:08:15.589Z",
+      "team": "them",
+      "type": "shot"
+    },
+    {
+      "clock": null,
+      "grp": "mwgwdt2d48tto",
+      "id": "mwgwdukz983qq",
+      "ms": 1794690497555,
+      "off": true,
+      "on": [
+        "0",
+        "10",
+        "12",
+        "24",
+        "11"
+      ],
+      "p": 2,
+      "player": null,
+      "ref": "mwgwdt2d48tto",
+      "t": "2026-11-14T21:08:17.555Z",
+      "team": "them",
+      "type": "reb"
+    },
+    {
+      "clock": null,
+      "grp": "mwgwe0t1qaqwu",
+      "id": "mwgwe0t1qaqwu",
+      "made": true,
+      "ms": 1794690505621,
+      "on": [
+        "0",
+        "10",
+        "12",
+        "24",
+        "11"
+      ],
+      "p": 2,
+      "player": null,
+      "pts": 1,
+      "t": "2026-11-14T21:08:25.621Z",
+      "team": "them",
+      "type": "shot"
+    },
+    {
+      "clock": null,
+      "grp": "mwgwe8hfztfr5",
+      "id": "mwgwe8hfztfr5",
+      "made": false,
+      "ms": 1794690515571,
+      "on": [
+        "0",
+        "10",
+        "12",
+        "24",
+        "11"
+      ],
+      "p": 2,
+      "player": null,
+      "pts": 1,
+      "t": "2026-11-14T21:08:35.571Z",
+      "team": "them",
+      "type": "shot"
+    },
+    {
+      "clock": null,
+      "grp": "mwgwe8hfztfr5",
+      "id": "mwgwebggfjpsr",
+      "ms": 1794690519424,
+      "off": true,
+      "on": [
+        "0",
+        "10",
+        "12",
+        "24",
+        "11"
+      ],
+      "p": 2,
+      "player": null,
+      "ref": "mwgwe8hfztfr5",
+      "t": "2026-11-14T21:08:39.424Z",
+      "team": "them",
+      "type": "reb"
+    },
+    {
+      "clock": null,
+      "grp": "mwgwfyoguc09r",
+      "id": "mwgwfyoguc09r",
+      "made": true,
+      "ms": 1794690596176,
+      "on": [
+        "0",
+        "10",
+        "12",
+        "24",
+        "11"
+      ],
+      "p": 2,
+      "player": null,
+      "pts": 2,
+      "t": "2026-11-14T21:09:56.176Z",
+      "team": "them",
+      "type": "shot"
+    },
+    {
+      "clock": null,
+      "grp": "mwgwg82heyhdr",
+      "id": "mwgwg82heyhdr",
+      "made": false,
+      "ms": 1794690608345,
+      "on": [
+        "0",
+        "10",
+        "12",
+        "24",
+        "11"
+      ],
+      "p": 2,
+      "player": "10",
+      "pts": 3,
+      "t": "2026-11-14T21:10:08.345Z",
+      "team": "us",
+      "type": "shot",
+      "x": 45.7,
+      "y": 3.1
+    },
+    {
+      "clock": null,
+      "grp": "mwgwg82heyhdr",
+      "id": "mwgwgat7b64yc",
+      "ms": 1794690611899,
+      "off": false,
+      "on": [
+        "0",
+        "10",
+        "12",
+        "24",
+        "11"
+      ],
+      "p": 2,
+      "player": null,
+      "ref": "mwgwg82heyhdr",
+      "t": "2026-11-14T21:10:11.899Z",
+      "team": "them",
+      "type": "reb"
+    },
+    {
+      "clock": null,
+      "grp": "mwgwhskybng3c",
+      "id": "mwgwhskybng3c",
+      "ms": 1794690681586,
+      "on": [
+        "0",
+        "10",
+        "12",
+        "24",
+        "11"
+      ],
+      "p": 2,
+      "player": "10",
+      "t": "2026-11-14T21:11:21.586Z",
+      "team": "us",
+      "type": "to"
+    },
+    {
+      "clock": null,
+      "grp": "mwgwhv0zxjzs7",
+      "id": "mwgwhv0zxjzs7",
+      "made": false,
+      "ms": 1794690684755,
+      "on": [
+        "0",
+        "10",
+        "12",
+        "24",
+        "11"
+      ],
+      "p": 2,
+      "player": null,
+      "pts": 3,
+      "t": "2026-11-14T21:11:24.755Z",
+      "team": "them",
+      "type": "shot"
+    },
+    {
+      "clock": null,
+      "grp": "mwgwhv0zxjzs7",
+      "id": "mwgwhx8mnbwh0",
+      "ms": 1794690687622,
+      "off": false,
+      "on": [
+        "0",
+        "10",
+        "12",
+        "24",
+        "11"
+      ],
+      "p": 2,
+      "player": "11",
+      "ref": "mwgwhv0zxjzs7",
+      "t": "2026-11-14T21:11:27.622Z",
+      "team": "us",
+      "type": "reb"
+    },
+    {
+      "clock": null,
+      "grp": "mwgwibv2xjrg1",
+      "id": "mwgwibv2xjrg1",
+      "ms": 1794690706574,
+      "on": [
+        "0",
+        "10",
+        "12",
+        "24",
+        "11"
+      ],
+      "p": 2,
+      "player": "12",
+      "t": "2026-11-14T21:11:46.574Z",
+      "team": "us",
+      "type": "to"
+    },
+    {
+      "clock": null,
+      "grp": "mwgwifysqmfjp",
+      "id": "mwgwifysqmfjp",
+      "made": false,
+      "ms": 1794690711892,
+      "on": [
+        "0",
+        "10",
+        "12",
+        "24",
+        "11"
+      ],
+      "p": 2,
+      "player": null,
+      "pts": 2,
+      "t": "2026-11-14T21:11:51.892Z",
+      "team": "them",
+      "type": "shot"
+    },
+    {
+      "clock": null,
+      "grp": "mwgwifysqmfjp",
+      "id": "mwgwihqo989eo",
+      "ms": 1794690714192,
+      "off": true,
+      "on": [
+        "0",
+        "10",
+        "12",
+        "24",
+        "11"
+      ],
+      "p": 2,
+      "player": null,
+      "ref": "mwgwifysqmfjp",
+      "t": "2026-11-14T21:11:54.192Z",
+      "team": "them",
+      "type": "reb"
+    },
+    {
+      "clock": null,
+      "grp": "mwgwiow2920vw",
+      "id": "mwgwiow2920vw",
+      "made": false,
+      "ms": 1794690723458,
+      "on": [
+        "0",
+        "10",
+        "12",
+        "24",
+        "11"
+      ],
+      "p": 2,
+      "player": null,
+      "pts": 3,
+      "t": "2026-11-14T21:12:03.458Z",
+      "team": "them",
+      "type": "shot"
+    },
+    {
+      "clock": null,
+      "grp": "mwgwiow2920vw",
+      "id": "mwgwiq7dj756k",
+      "ms": 1794690725161,
+      "off": true,
+      "on": [
+        "0",
+        "10",
+        "12",
+        "24",
+        "11"
+      ],
+      "p": 2,
+      "player": null,
+      "ref": "mwgwiow2920vw",
+      "t": "2026-11-14T21:12:05.161Z",
+      "team": "them",
+      "type": "reb"
+    },
+    {
+      "clock": null,
+      "grp": "mwgwitdo1vkp5",
+      "id": "mwgwitdo1vkp5",
+      "ms": 1794690729276,
+      "on": [
+        "0",
+        "10",
+        "12",
+        "24",
+        "11"
+      ],
+      "p": 2,
+      "player": null,
+      "t": "2026-11-14T21:12:09.276Z",
+      "team": "them",
+      "type": "to"
+    },
+    {
+      "clock": null,
+      "grp": "mwgwj4j40iojg",
+      "id": "mwgwj4j40iojg",
+      "made": false,
+      "ms": 1794690743728,
+      "on": [
+        "0",
+        "10",
+        "12",
+        "24",
+        "11"
+      ],
+      "p": 2,
+      "player": "24",
+      "pts": 2,
+      "t": "2026-11-14T21:12:23.728Z",
+      "team": "us",
+      "type": "shot",
+      "x": 19.8,
+      "y": 18.2
+    },
+    {
+      "clock": null,
+      "grp": "mwgwj4j40iojg",
+      "id": "mwgwj66u0vxu1",
+      "ms": 1794690745878,
+      "off": false,
+      "on": [
+        "0",
+        "10",
+        "12",
+        "24",
+        "11"
+      ],
+      "p": 2,
+      "player": null,
+      "ref": "mwgwj4j40iojg",
+      "t": "2026-11-14T21:12:25.878Z",
+      "team": "them",
+      "type": "reb"
+    },
+    {
+      "clock": null,
+      "grp": "mwgwj8mv9dpj2",
+      "id": "mwgwj8mv9dpj2",
+      "made": true,
+      "ms": 1794690749047,
+      "on": [
+        "0",
+        "10",
+        "12",
+        "24",
+        "11"
+      ],
+      "p": 2,
+      "player": null,
+      "pts": 3,
+      "t": "2026-11-14T21:12:29.047Z",
+      "team": "them",
+      "type": "shot"
+    },
+    {
+      "clock": null,
+      "grp": "mwgwjfed05hri",
+      "id": "mwgwjfed05hri",
+      "made": true,
+      "ms": 1794690757813,
+      "on": [
+        "0",
+        "10",
+        "12",
+        "24",
+        "11"
+      ],
+      "p": 2,
+      "player": "10",
+      "pts": 2,
+      "t": "2026-11-14T21:12:37.813Z",
+      "team": "us",
+      "type": "shot",
+      "x": 27,
+      "y": 6.1
+    },
+    {
+      "clock": null,
+      "grp": "mwgwjfed05hri",
+      "id": "mwgwjhzhlxpp0",
+      "ms": 1794690761165,
+      "on": [
+        "0",
+        "10",
+        "12",
+        "24",
+        "11"
+      ],
+      "p": 2,
+      "player": "12",
+      "ref": "mwgwjfed05hri",
+      "t": "2026-11-14T21:12:41.165Z",
+      "team": "us",
+      "type": "ast"
+    },
+    {
+      "clock": null,
+      "grp": "mwgwjm3ozlh7f",
+      "id": "mwgwjm3ozlh7f",
+      "ms": 1794690766500,
+      "on": [
+        "0",
+        "10",
+        "12",
+        "24",
+        "11"
+      ],
+      "p": 2,
+      "player": null,
+      "t": "2026-11-14T21:12:46.500Z",
+      "team": "them",
+      "type": "to"
+    },
+    {
+      "clock": null,
+      "grp": "mwgwjrxe32dxl",
+      "id": "mwgwjrxe32dxl",
+      "ms": 1794690774050,
+      "on": [
+        "0",
+        "10",
+        "12",
+        "24",
+        "11"
+      ],
+      "p": 2,
+      "player": "0",
+      "t": "2026-11-14T21:12:54.050Z",
+      "team": "us",
+      "type": "to"
+    },
+    {
+      "clock": null,
+      "grp": "mwgwjx2ou4q37",
+      "id": "mwgwjx2ou4q37",
+      "made": false,
+      "ms": 1794690780720,
+      "on": [
+        "0",
+        "10",
+        "12",
+        "24",
+        "11"
+      ],
+      "p": 2,
+      "player": null,
+      "pts": 2,
+      "t": "2026-11-14T21:13:00.720Z",
+      "team": "them",
+      "type": "shot"
+    },
+    {
+      "clock": null,
+      "grp": "mwgwjx2ou4q37",
+      "id": "mwgwjym8wj5pt",
+      "ms": 1794690782720,
+      "off": false,
+      "on": [
+        "0",
+        "10",
+        "12",
+        "24",
+        "11"
+      ],
+      "p": 2,
+      "player": "12",
+      "ref": "mwgwjx2ou4q37",
+      "t": "2026-11-14T21:13:02.720Z",
+      "team": "us",
+      "type": "reb"
+    },
+    {
+      "clock": null,
+      "grp": "mwgwk0xy6onxt",
+      "id": "mwgwk0xy6onxt",
+      "made": false,
+      "ms": 1794690785734,
+      "on": [
+        "0",
+        "10",
+        "12",
+        "24",
+        "11"
+      ],
+      "p": 2,
+      "player": "12",
+      "pts": 2,
+      "t": "2026-11-14T21:13:05.734Z",
+      "team": "us",
+      "type": "shot",
+      "x": 22.6,
+      "y": 5.5
+    },
+    {
+      "clock": null,
+      "grp": "mwgwk0xy6onxt",
+      "id": "mwgwk236pa3mx",
+      "ms": 1794690787218,
+      "off": false,
+      "on": [
+        "0",
+        "10",
+        "12",
+        "24",
+        "11"
+      ],
+      "p": 2,
+      "player": null,
+      "ref": "mwgwk0xy6onxt",
+      "t": "2026-11-14T21:13:07.218Z",
+      "team": "them",
+      "type": "reb"
+    },
+    {
+      "clock": null,
+      "grp": "mwgwk59kw9nb8",
+      "id": "mwgwk59kw9nb8",
+      "made": true,
+      "ms": 1794690791336,
+      "on": [
+        "0",
+        "10",
+        "12",
+        "24",
+        "11"
+      ],
+      "p": 2,
+      "player": null,
+      "pts": 2,
+      "t": "2026-11-14T21:13:11.336Z",
+      "team": "them",
+      "type": "shot"
+    },
+    {
+      "clock": null,
+      "grp": "mwgwkczf1ry15",
+      "id": "mwgwkczf1ry15",
+      "ms": 1794690801339,
+      "on": [
+        "0",
+        "10",
+        "12",
+        "24",
+        "11"
+      ],
+      "p": 2,
+      "player": "12",
+      "t": "2026-11-14T21:13:21.339Z",
+      "team": "us",
+      "type": "to"
+    },
+    {
+      "clock": null,
+      "grp": "mwgwkipgpmow9",
+      "id": "mwgwkipgpmow9",
+      "made": true,
+      "ms": 1794690808756,
+      "on": [
+        "0",
+        "10",
+        "12",
+        "24",
+        "11"
+      ],
+      "p": 2,
+      "player": null,
+      "pts": 1,
+      "t": "2026-11-14T21:13:28.756Z",
+      "team": "them",
+      "type": "shot"
+    },
+    {
+      "clock": null,
+      "grp": "mwgwklod26gxd",
+      "id": "mwgwklod26gxd",
+      "made": true,
+      "ms": 1794690812605,
+      "on": [
+        "0",
+        "10",
+        "12",
+        "24",
+        "11"
+      ],
+      "p": 2,
+      "player": null,
+      "pts": 1,
+      "t": "2026-11-14T21:13:32.605Z",
+      "team": "them",
+      "type": "shot"
+    },
+    {
+      "clock": null,
+      "grp": "mwgwkr4qyjsdp",
+      "id": "mwgwkr4qyjsdp",
+      "ms": 1794690819674,
+      "on": [
+        "0",
+        "10",
+        "12",
+        "24",
+        "11"
+      ],
+      "p": 2,
+      "player": "0",
+      "t": "2026-11-14T21:13:39.674Z",
+      "team": "us",
+      "type": "to"
+    },
+    {
+      "clock": null,
+      "grp": "mwgwkx8akba2k",
+      "id": "mwgwkx8akba2k",
+      "made": false,
+      "ms": 1794690827578,
+      "on": [
+        "0",
+        "10",
+        "12",
+        "24",
+        "11"
+      ],
+      "p": 2,
+      "player": null,
+      "pts": 1,
+      "t": "2026-11-14T21:13:47.578Z",
+      "team": "them",
+      "type": "shot"
+    },
+    {
+      "clock": null,
+      "grp": "mwgwl20hdgdyi",
+      "id": "mwgwl20hdgdyi",
+      "made": true,
+      "ms": 1794690833777,
+      "on": [
+        "0",
+        "10",
+        "12",
+        "24",
+        "11"
+      ],
+      "p": 2,
+      "player": null,
+      "pts": 1,
+      "t": "2026-11-14T21:13:53.777Z",
+      "team": "them",
+      "type": "shot"
+    },
+    {
+      "clock": null,
+      "grp": "mwgwla6zwuv4h",
+      "id": "mwgwla6zwuv4h",
+      "ms": 1794690844379,
+      "on": [
+        "0",
+        "10",
+        "12",
+        "24",
+        "11"
+      ],
+      "p": 2,
+      "player": "0",
+      "t": "2026-11-14T21:14:04.379Z",
+      "team": "us",
+      "type": "to"
+    },
+    {
+      "clock": null,
+      "grp": "mwgwlaon6rerp",
+      "id": "mwgwlaon6rerp",
+      "made": true,
+      "ms": 1794690845015,
+      "on": [
+        "0",
+        "10",
+        "12",
+        "24",
+        "11"
+      ],
+      "p": 2,
+      "player": null,
+      "pts": 2,
+      "t": "2026-11-14T21:14:05.015Z",
+      "team": "them",
+      "type": "shot"
+    },
+    {
+      "clock": null,
+      "grp": "mwgwlk2lbgisw",
+      "id": "mwgwlk2lbgisw",
+      "ms": 1794690857181,
+      "on": [
+        "0",
+        "10",
+        "12",
+        "24",
+        "11"
+      ],
+      "p": 2,
+      "player": "0",
+      "t": "2026-11-14T21:14:17.181Z",
+      "team": "us",
+      "type": "to"
+    },
+    {
+      "clock": null,
+      "grp": "mwgwlni9nzc61",
+      "id": "mwgwlni9nzc61",
+      "ms": 1794690861633,
+      "on": [
+        "0",
+        "10",
+        "12",
+        "24",
+        "11"
+      ],
+      "p": 2,
+      "player": null,
+      "t": "2026-11-14T21:14:21.633Z",
+      "team": "them",
+      "type": "to"
+    },
+    {
+      "clock": null,
+      "grp": "mwgwlwb0qh3fn",
+      "id": "mwgwlwb0qh3fn",
+      "made": true,
+      "ms": 1794690873036,
+      "on": [
+        "0",
+        "10",
+        "12",
+        "24",
+        "11"
+      ],
+      "p": 2,
+      "player": "12",
+      "pts": 2,
+      "t": "2026-11-14T21:14:33.036Z",
+      "team": "us",
+      "type": "shot",
+      "x": 28,
+      "y": 4.7
+    },
+    {
+      "clock": null,
+      "grp": "mwgwm07s55v6h",
+      "id": "mwgwm07s55v6h",
+      "made": false,
+      "ms": 1794690878104,
+      "on": [
+        "0",
+        "10",
+        "12",
+        "24",
+        "11"
+      ],
+      "p": 2,
+      "player": null,
+      "pts": 2,
+      "t": "2026-11-14T21:14:38.104Z",
+      "team": "them",
+      "type": "shot"
+    },
+    {
+      "clock": null,
+      "grp": "mwgwm07s55v6h",
+      "id": "mwgwm13ppjunm",
+      "ms": 1794690879253,
+      "off": true,
+      "on": [
+        "0",
+        "10",
+        "12",
+        "24",
+        "11"
+      ],
+      "p": 2,
+      "player": null,
+      "ref": "mwgwm07s55v6h",
+      "t": "2026-11-14T21:14:39.253Z",
+      "team": "them",
+      "type": "reb"
+    },
+    {
+      "clock": null,
+      "grp": "mwgwm4fkm2nap",
+      "id": "mwgwm4fkm2nap",
+      "made": false,
+      "ms": 1794690883568,
+      "on": [
+        "0",
+        "10",
+        "12",
+        "24",
+        "11"
+      ],
+      "p": 2,
+      "player": null,
+      "pts": 2,
+      "t": "2026-11-14T21:14:43.568Z",
+      "team": "them",
+      "type": "shot"
+    },
+    {
+      "clock": null,
+      "grp": "mwgwm4fkm2nap",
+      "id": "mwgwm52ql4vjq",
+      "ms": 1794690884402,
+      "off": true,
+      "on": [
+        "0",
+        "10",
+        "12",
+        "24",
+        "11"
+      ],
+      "p": 2,
+      "player": null,
+      "ref": "mwgwm4fkm2nap",
+      "t": "2026-11-14T21:14:44.402Z",
+      "team": "them",
+      "type": "reb"
+    },
+    {
+      "clock": null,
+      "grp": "mwgwm8yokoxyx",
+      "id": "mwgwm8yokoxyx",
+      "made": false,
+      "ms": 1794690889440,
+      "on": [
+        "0",
+        "10",
+        "12",
+        "24",
+        "11"
+      ],
+      "p": 2,
+      "player": null,
+      "pts": 2,
+      "t": "2026-11-14T21:14:49.440Z",
+      "team": "them",
+      "type": "shot"
+    },
+    {
+      "clock": null,
+      "grp": "mwgwm8yokoxyx",
+      "id": "mwgwmb5cl2y2b",
+      "ms": 1794690892272,
+      "off": true,
+      "on": [
+        "0",
+        "10",
+        "12",
+        "24",
+        "11"
+      ],
+      "p": 2,
+      "player": null,
+      "ref": "mwgwm8yokoxyx",
+      "t": "2026-11-14T21:14:52.272Z",
+      "team": "them",
+      "type": "reb"
+    },
+    {
+      "clock": null,
+      "grp": "mwgwmfj752fht",
+      "id": "mwgwmfj752fht",
+      "ms": 1794690897955,
+      "on": [
+        "0",
+        "10",
+        "12",
+        "24",
+        "11"
+      ],
+      "p": 2,
+      "player": "11",
+      "t": "2026-11-14T21:14:57.955Z",
+      "team": "us",
+      "type": "stl"
+    },
+    {
+      "clock": null,
+      "grp": "mwgwmfj752fht",
+      "id": "mwgwmfj867ocz",
+      "ms": 1794690897956,
+      "on": [
+        "0",
+        "10",
+        "12",
+        "24",
+        "11"
+      ],
+      "p": 2,
+      "player": null,
+      "ref": "mwgwmfj752fht",
+      "t": "2026-11-14T21:14:57.956Z",
+      "team": "them",
+      "type": "to"
+    },
+    {
+      "clock": null,
+      "grp": "mwgwmoe89ome0",
+      "id": "mwgwmoe89ome0",
+      "made": false,
+      "ms": 1794690909440,
+      "on": [
+        "0",
+        "10",
+        "12",
+        "24",
+        "11"
+      ],
+      "p": 2,
+      "player": "12",
+      "pts": 2,
+      "t": "2026-11-14T21:15:09.440Z",
+      "team": "us",
+      "type": "shot",
+      "x": 27.5,
+      "y": 4.4
+    },
+    {
+      "clock": null,
+      "grp": "mwgwmoe89ome0",
+      "id": "mwgwmpizfnl0a",
+      "ms": 1794690910907,
+      "off": false,
+      "on": [
+        "0",
+        "10",
+        "12",
+        "24",
+        "11"
+      ],
+      "p": 2,
+      "player": null,
+      "ref": "mwgwmoe89ome0",
+      "t": "2026-11-14T21:15:10.907Z",
+      "team": "them",
+      "type": "reb"
+    },
+    {
+      "clock": null,
+      "grp": "mwgwmxvjah877",
+      "id": "mwgwmxvjah877",
+      "made": false,
+      "ms": 1794690921727,
+      "on": [
+        "0",
+        "10",
+        "12",
+        "24",
+        "11"
+      ],
+      "p": 2,
+      "player": null,
+      "pts": 1,
+      "t": "2026-11-14T21:15:21.727Z",
+      "team": "them",
+      "type": "shot"
+    },
+    {
+      "clock": null,
+      "grp": "mwgwn39hcp4hy",
+      "id": "mwgwn39hcp4hy",
+      "ms": 1794690928709,
+      "on": [
+        "0",
+        "10",
+        "12",
+        "24",
+        "11"
+      ],
+      "p": 2,
+      "player": null,
+      "t": "2026-11-14T21:15:28.709Z",
+      "team": "them",
+      "type": "to"
+    },
+    {
+      "clock": null,
+      "grp": "mwgwn9lq8xeqq",
+      "id": "mwgwn9lq8xeqq",
+      "made": true,
+      "ms": 1794690936926,
+      "on": [
+        "0",
+        "10",
+        "12",
+        "24",
+        "11"
+      ],
+      "p": 2,
+      "player": "12",
+      "pts": 2,
+      "t": "2026-11-14T21:15:36.926Z",
+      "team": "us",
+      "type": "shot",
+      "x": 26.7,
+      "y": 5.6
+    },
+    {
+      "clock": null,
+      "grp": "mwgwnge930wqv",
+      "id": "mwgwnge930wqv",
+      "made": false,
+      "ms": 1794690945729,
+      "on": [
+        "0",
+        "10",
+        "12",
+        "24",
+        "11"
+      ],
+      "p": 2,
+      "player": null,
+      "pts": 2,
+      "t": "2026-11-14T21:15:45.729Z",
+      "team": "them",
+      "type": "shot"
+    },
+    {
+      "clock": null,
+      "grp": "mwgwnge930wqv",
+      "id": "mwgwnhi56vj2l",
+      "ms": 1794690947165,
+      "off": true,
+      "on": [
+        "0",
+        "10",
+        "12",
+        "24",
+        "11"
+      ],
+      "p": 2,
+      "player": null,
+      "ref": "mwgwnge930wqv",
+      "t": "2026-11-14T21:15:47.165Z",
+      "team": "them",
+      "type": "reb"
+    },
+    {
+      "clock": null,
+      "grp": "mwgwni2zi8253",
+      "id": "mwgwni2zi8253",
+      "made": false,
+      "ms": 1794690947915,
+      "on": [
+        "0",
+        "10",
+        "12",
+        "24",
+        "11"
+      ],
+      "p": 2,
+      "player": null,
+      "pts": 2,
+      "t": "2026-11-14T21:15:47.915Z",
+      "team": "them",
+      "type": "shot"
+    },
+    {
+      "action": "end",
+      "clock": null,
+      "grp": "mwgwntfag0df5",
+      "id": "mwgwntfag0df5",
+      "ms": 1794690962614,
+      "on": [
+        "0",
+        "10",
+        "12",
+        "24",
+        "11"
+      ],
+      "p": 2,
+      "period": 2,
+      "t": "2026-11-14T21:16:02.614Z",
+      "type": "period"
+    },
+    {
+      "action": "start",
+      "clock": null,
+      "grp": "mwgwntfbakraa",
+      "id": "mwgwntfbakraa",
+      "ms": 1794690962615,
+      "on": [
+        "0",
+        "10",
+        "12",
+        "24",
+        "11"
+      ],
+      "p": 3,
+      "period": 3,
+      "t": "2026-11-14T21:16:02.615Z",
+      "type": "period"
+    },
+    {
+      "clock": null,
+      "grp": "mwgwnylk180rr",
+      "id": "mwgwnylk180rr",
+      "in": [
+        "13",
+        "15",
+        "4",
+        "3",
+        "2"
+      ],
+      "ms": 1794690969320,
+      "on": [
+        "0",
+        "10",
+        "12",
+        "24",
+        "11"
+      ],
+      "out": [
+        "0",
+        "10",
+        "12",
+        "24",
+        "11"
+      ],
+      "p": 3,
+      "t": "2026-11-14T21:16:09.320Z",
+      "type": "sub"
+    },
+    {
+      "clock": null,
+      "grp": "mwgwoj6t3r873",
+      "id": "mwgwoj6t3r873",
+      "made": false,
+      "ms": 1794690996005,
+      "on": [
+        "13",
+        "15",
+        "4",
+        "3",
+        "2"
+      ],
+      "p": 3,
+      "player": null,
+      "pts": 3,
+      "t": "2026-11-14T21:16:36.005Z",
+      "team": "them",
+      "type": "shot"
+    },
+    {
+      "clock": null,
+      "grp": "mwgwoj6t3r873",
+      "id": "mwgwol7yww7vz",
+      "ms": 1794690998638,
+      "off": true,
+      "on": [
+        "13",
+        "15",
+        "4",
+        "3",
+        "2"
+      ],
+      "p": 3,
+      "player": null,
+      "ref": "mwgwoj6t3r873",
+      "t": "2026-11-14T21:16:38.638Z",
+      "team": "them",
+      "type": "reb"
+    },
+    {
+      "clock": null,
+      "grp": "mwgwopevyg7d0",
+      "id": "mwgwopevyg7d0",
+      "ms": 1794691004071,
+      "on": [
+        "13",
+        "15",
+        "4",
+        "3",
+        "2"
+      ],
+      "p": 3,
+      "player": null,
+      "t": "2026-11-14T21:16:44.071Z",
+      "team": "them",
+      "type": "to"
+    },
+    {
+      "clock": null,
+      "grp": "mwgwovoq84kmq",
+      "id": "mwgwovoq84kmq",
+      "made": true,
+      "ms": 1794691012202,
+      "on": [
+        "13",
+        "15",
+        "4",
+        "3",
+        "2"
+      ],
+      "p": 3,
+      "player": "15",
+      "pts": 3,
+      "t": "2026-11-14T21:16:52.202Z",
+      "team": "us",
+      "type": "shot",
+      "x": 2.4,
+      "y": 7.9
+    },
+    {
+      "clock": null,
+      "grp": "mwgwovoq84kmq",
+      "id": "mwgwoxn6ckg1w",
+      "ms": 1794691014738,
+      "on": [
+        "13",
+        "15",
+        "4",
+        "3",
+        "2"
+      ],
+      "p": 3,
+      "player": "3",
+      "ref": "mwgwovoq84kmq",
+      "t": "2026-11-14T21:16:54.738Z",
+      "team": "us",
+      "type": "ast"
+    },
+    {
+      "clock": null,
+      "grp": "mwgwp1ilejduv",
+      "id": "mwgwp1ilejduv",
+      "made": false,
+      "ms": 1794691019757,
+      "on": [
+        "13",
+        "15",
+        "4",
+        "3",
+        "2"
+      ],
+      "p": 3,
+      "player": null,
+      "pts": 3,
+      "t": "2026-11-14T21:16:59.757Z",
+      "team": "them",
+      "type": "shot"
+    },
+    {
+      "clock": null,
+      "grp": "mwgwp1ilejduv",
+      "id": "mwgwp3g2hof6f",
+      "ms": 1794691022258,
+      "off": false,
+      "on": [
+        "13",
+        "15",
+        "4",
+        "3",
+        "2"
+      ],
+      "p": 3,
+      "player": "13",
+      "ref": "mwgwp1ilejduv",
+      "t": "2026-11-14T21:17:02.258Z",
+      "team": "us",
+      "type": "reb"
+    },
+    {
+      "clock": null,
+      "grp": "mwgwp8gkzdidk",
+      "id": "mwgwp8gkzdidk",
+      "made": true,
+      "ms": 1794691028756,
+      "on": [
+        "13",
+        "15",
+        "4",
+        "3",
+        "2"
+      ],
+      "p": 3,
+      "player": "2",
+      "pts": 2,
+      "t": "2026-11-14T21:17:08.756Z",
+      "team": "us",
+      "type": "shot",
+      "x": 28.5,
+      "y": 5.5
+    },
+    {
+      "clock": null,
+      "grp": "mwgwp8gkzdidk",
+      "id": "mwgwpa20bttvd",
+      "ms": 1794691030824,
+      "on": [
+        "13",
+        "15",
+        "4",
+        "3",
+        "2"
+      ],
+      "p": 3,
+      "player": "13",
+      "ref": "mwgwp8gkzdidk",
+      "t": "2026-11-14T21:17:10.824Z",
+      "team": "us",
+      "type": "ast"
+    },
+    {
+      "clock": null,
+      "grp": "mwgwphi2m3d6z",
+      "id": "mwgwphi2m3d6z",
+      "made": true,
+      "ms": 1794691040474,
+      "on": [
+        "13",
+        "15",
+        "4",
+        "3",
+        "2"
+      ],
+      "p": 3,
+      "player": null,
+      "pts": 2,
+      "t": "2026-11-14T21:17:20.474Z",
+      "team": "them",
+      "type": "shot"
+    },
+    {
+      "clock": null,
+      "grp": "mwgwpwa30d9yu",
+      "id": "mwgwpwa30d9yu",
+      "made": true,
+      "ms": 1794691059627,
+      "on": [
+        "13",
+        "15",
+        "4",
+        "3",
+        "2"
+      ],
+      "p": 3,
+      "player": "13",
+      "pts": 2,
+      "t": "2026-11-14T21:17:39.627Z",
+      "team": "us",
+      "type": "shot",
+      "x": 24.9,
+      "y": 7.3
+    },
+    {
+      "clock": null,
+      "grp": "mwgwpwa30d9yu",
+      "id": "mwgwpxzph4vue",
+      "ms": 1794691061845,
+      "on": [
+        "13",
+        "15",
+        "4",
+        "3",
+        "2"
+      ],
+      "p": 3,
+      "player": "3",
+      "ref": "mwgwpwa30d9yu",
+      "t": "2026-11-14T21:17:41.845Z",
+      "team": "us",
+      "type": "ast"
+    },
+    {
+      "clock": null,
+      "grp": "mwgwq6obp6cxe",
+      "id": "mwgwq6obp6cxe",
+      "ms": 1794691073099,
+      "on": [
+        "13",
+        "15",
+        "4",
+        "3",
+        "2"
+      ],
+      "p": 3,
+      "player": null,
+      "t": "2026-11-14T21:17:53.099Z",
+      "team": "them",
+      "type": "to"
+    },
+    {
+      "clock": null,
+      "grp": "mwgwqgmp5j35l",
+      "id": "mwgwqgmp5j35l",
+      "ms": 1794691086001,
+      "on": [
+        "13",
+        "15",
+        "4",
+        "3",
+        "2"
+      ],
+      "p": 3,
+      "player": "3",
+      "t": "2026-11-14T21:18:06.001Z",
+      "team": "us",
+      "type": "to"
+    },
+    {
+      "clock": null,
+      "grp": "mwgwqij8507en",
+      "id": "mwgwqij8507en",
+      "made": true,
+      "ms": 1794691088468,
+      "on": [
+        "13",
+        "15",
+        "4",
+        "3",
+        "2"
+      ],
+      "p": 3,
+      "player": null,
+      "pts": 2,
+      "t": "2026-11-14T21:18:08.468Z",
+      "team": "them",
+      "type": "shot"
+    },
+    {
+      "clock": null,
+      "grp": "mwgwqr6vy20ze",
+      "id": "mwgwqr6vy20ze",
+      "made": true,
+      "ms": 1794691099687,
+      "on": [
+        "13",
+        "15",
+        "4",
+        "3",
+        "2"
+      ],
+      "p": 3,
+      "player": null,
+      "pts": 1,
+      "t": "2026-11-14T21:18:19.687Z",
+      "team": "them",
+      "type": "shot"
+    },
+    {
+      "clock": null,
+      "grp": "mwgwr64cisum8",
+      "id": "mwgwr64cisum8",
+      "ms": 1794691119036,
+      "on": [
+        "13",
+        "15",
+        "4",
+        "3",
+        "2"
+      ],
+      "p": 3,
+      "player": "15",
+      "t": "2026-11-14T21:18:39.036Z",
+      "team": "us",
+      "type": "to"
+    },
+    {
+      "clock": null,
+      "grp": "mwgwrcvhz0xud",
+      "id": "mwgwrcvhz0xud",
+      "made": true,
+      "ms": 1794691127789,
+      "on": [
+        "13",
+        "15",
+        "4",
+        "3",
+        "2"
+      ],
+      "p": 3,
+      "player": null,
+      "pts": 2,
+      "t": "2026-11-14T21:18:47.789Z",
+      "team": "them",
+      "type": "shot"
+    },
+    {
+      "clock": null,
+      "grp": "mwgwrlch44ka9",
+      "id": "mwgwrlch44ka9",
+      "made": false,
+      "ms": 1794691138769,
+      "on": [
+        "13",
+        "15",
+        "4",
+        "3",
+        "2"
+      ],
+      "p": 3,
+      "player": "4",
+      "pts": 2,
+      "t": "2026-11-14T21:18:58.769Z",
+      "team": "us",
+      "type": "shot",
+      "x": 13.9,
+      "y": 5.9
+    },
+    {
+      "clock": null,
+      "grp": "mwgwrlch44ka9",
+      "id": "mwgwrpfts1mne",
+      "ms": 1794691144073,
+      "off": false,
+      "on": [
+        "13",
+        "15",
+        "4",
+        "3",
+        "2"
+      ],
+      "p": 3,
+      "player": null,
+      "ref": "mwgwrlch44ka9",
+      "t": "2026-11-14T21:19:04.073Z",
+      "team": "them",
+      "type": "reb"
+    },
+    {
+      "clock": null,
+      "grp": "mwgwrqyhl0s0o",
+      "id": "mwgwrqyhl0s0o",
+      "made": false,
+      "ms": 1794691146041,
+      "on": [
+        "13",
+        "15",
+        "4",
+        "3",
+        "2"
+      ],
+      "p": 3,
+      "player": null,
+      "pts": 3,
+      "t": "2026-11-14T21:19:06.041Z",
+      "team": "them",
+      "type": "shot"
+    },
+    {
+      "clock": null,
+      "grp": "mwgwrqyhl0s0o",
+      "id": "mwgwrs1tm7rbi",
+      "ms": 1794691147457,
+      "off": true,
+      "on": [
+        "13",
+        "15",
+        "4",
+        "3",
+        "2"
+      ],
+      "p": 3,
+      "player": null,
+      "ref": "mwgwrqyhl0s0o",
+      "t": "2026-11-14T21:19:07.457Z",
+      "team": "them",
+      "type": "reb"
+    },
+    {
+      "clock": null,
+      "grp": "mwgwru07m0qhu",
+      "id": "mwgwru07m0qhu",
+      "made": true,
+      "ms": 1794691149991,
+      "on": [
+        "13",
+        "15",
+        "4",
+        "3",
+        "2"
+      ],
+      "p": 3,
+      "player": null,
+      "pts": 2,
+      "t": "2026-11-14T21:19:09.991Z",
+      "team": "them",
+      "type": "shot"
+    },
+    {
+      "clock": null,
+      "grp": "mwgws0f9kg7t5",
+      "id": "mwgws0f9kg7t5",
+      "ms": 1794691158309,
+      "on": [
+        "13",
+        "15",
+        "4",
+        "3",
+        "2"
+      ],
+      "p": 3,
+      "player": "13",
+      "t": "2026-11-14T21:19:18.309Z",
+      "team": "us",
+      "type": "to"
+    },
+    {
+      "clock": null,
+      "grp": "mwgws92gk9ng2",
+      "id": "mwgws92gk9ng2",
+      "ms": 1794691169512,
+      "on": [
+        "13",
+        "15",
+        "4",
+        "3",
+        "2"
+      ],
+      "p": 3,
+      "player": "13",
+      "t": "2026-11-14T21:19:29.512Z",
+      "team": "us",
+      "type": "stl"
+    },
+    {
+      "clock": null,
+      "grp": "mwgws92gk9ng2",
+      "id": "mwgws92h59lcg",
+      "ms": 1794691169513,
+      "on": [
+        "13",
+        "15",
+        "4",
+        "3",
+        "2"
+      ],
+      "p": 3,
+      "player": null,
+      "ref": "mwgws92gk9ng2",
+      "t": "2026-11-14T21:19:29.513Z",
+      "team": "them",
+      "type": "to"
+    },
+    {
+      "clock": null,
+      "grp": "mwgwsdn76k24u",
+      "id": "mwgwsdn76k24u",
+      "made": false,
+      "ms": 1794691175443,
+      "on": [
+        "13",
+        "15",
+        "4",
+        "3",
+        "2"
+      ],
+      "p": 3,
+      "player": "3",
+      "pts": 2,
+      "t": "2026-11-14T21:19:35.443Z",
+      "team": "us",
+      "type": "shot",
+      "x": 21.8,
+      "y": 7
+    },
+    {
+      "clock": null,
+      "grp": "mwgwsmrznbwv4",
+      "id": "mwgwsmrznbwv4",
+      "made": false,
+      "ms": 1794691187279,
+      "on": [
+        "13",
+        "15",
+        "4",
+        "3",
+        "2"
+      ],
+      "p": 3,
+      "player": "3",
+      "pts": 3,
+      "t": "2026-11-14T21:19:47.279Z",
+      "team": "us",
+      "type": "shot",
+      "x": 8.4,
+      "y": 20.4
+    },
+    {
+      "clock": null,
+      "grp": "mwgwsmrznbwv4",
+      "id": "mwgwsoijfb1i6",
+      "ms": 1794691189531,
+      "off": false,
+      "on": [
+        "13",
+        "15",
+        "4",
+        "3",
+        "2"
+      ],
+      "p": 3,
+      "player": null,
+      "ref": "mwgwsmrznbwv4",
+      "t": "2026-11-14T21:19:49.531Z",
+      "team": "them",
+      "type": "reb"
+    },
+    {
+      "clock": null,
+      "grp": "mwgwsqr2t3kuj",
+      "id": "mwgwsqr2t3kuj",
+      "made": true,
+      "ms": 1794691192430,
+      "on": [
+        "13",
+        "15",
+        "4",
+        "3",
+        "2"
+      ],
+      "p": 3,
+      "player": null,
+      "pts": 3,
+      "t": "2026-11-14T21:19:52.430Z",
+      "team": "them",
+      "type": "shot"
+    },
+    {
+      "clock": null,
+      "grp": "mwgwtwy3xiupi",
+      "id": "mwgwtwy3xiupi",
+      "ms": 1794691247115,
+      "on": [
+        "13",
+        "15",
+        "4",
+        "3",
+        "2"
+      ],
+      "p": 3,
+      "player": "4",
+      "t": "2026-11-14T21:20:47.115Z",
+      "team": "us",
+      "type": "to"
+    },
+    {
+      "clock": null,
+      "grp": "mwgwtzzpqzwih",
+      "id": "mwgwtzzpqzwih",
+      "ms": 1794691251061,
+      "on": [
+        "13",
+        "15",
+        "4",
+        "3",
+        "2"
+      ],
+      "p": 3,
+      "player": null,
+      "t": "2026-11-14T21:20:51.061Z",
+      "team": "them",
+      "type": "to"
+    },
+    {
+      "clock": null,
+      "grp": "mwgwu7xfn7dfu",
+      "id": "mwgwu7xfn7dfu",
+      "ms": 1794691261347,
+      "on": [
+        "13",
+        "15",
+        "4",
+        "3",
+        "2"
+      ],
+      "p": 3,
+      "player": "15",
+      "t": "2026-11-14T21:21:01.347Z",
+      "team": "us",
+      "type": "to"
+    },
+    {
+      "clock": null,
+      "grp": "mwgwu9tiy8zi4",
+      "id": "mwgwu9tiy8zi4",
+      "made": false,
+      "ms": 1794691263798,
+      "on": [
+        "13",
+        "15",
+        "4",
+        "3",
+        "2"
+      ],
+      "p": 3,
+      "player": null,
+      "pts": 3,
+      "t": "2026-11-14T21:21:03.798Z",
+      "team": "them",
+      "type": "shot"
+    },
+    {
+      "clock": null,
+      "grp": "mwgwu9tiy8zi4",
+      "id": "mwgwuaoxnlaun",
+      "ms": 1794691264929,
+      "off": true,
+      "on": [
+        "13",
+        "15",
+        "4",
+        "3",
+        "2"
+      ],
+      "p": 3,
+      "player": null,
+      "ref": "mwgwu9tiy8zi4",
+      "t": "2026-11-14T21:21:04.929Z",
+      "team": "them",
+      "type": "reb"
+    },
+    {
+      "clock": null,
+      "grp": "mwgwub3acxxn1",
+      "id": "mwgwub3acxxn1",
+      "made": true,
+      "ms": 1794691265446,
+      "on": [
+        "13",
+        "15",
+        "4",
+        "3",
+        "2"
+      ],
+      "p": 3,
+      "player": null,
+      "pts": 2,
+      "t": "2026-11-14T21:21:05.446Z",
+      "team": "them",
+      "type": "shot"
+    },
+    {
+      "clock": null,
+      "grp": "mwgwuj8vo3rgy",
+      "id": "mwgwuj8vo3rgy",
+      "made": true,
+      "ms": 1794691276015,
+      "on": [
+        "13",
+        "15",
+        "4",
+        "3",
+        "2"
+      ],
+      "p": 3,
+      "player": "4",
+      "pts": 2,
+      "t": "2026-11-14T21:21:16.015Z",
+      "team": "us",
+      "type": "shot",
+      "x": 27.8,
+      "y": 6.8
+    },
+    {
+      "clock": null,
+      "grp": "mwgwuj8vo3rgy",
+      "id": "mwgwuksx7e57p",
+      "ms": 1794691278033,
+      "on": [
+        "13",
+        "15",
+        "4",
+        "3",
+        "2"
+      ],
+      "p": 3,
+      "player": "15",
+      "ref": "mwgwuj8vo3rgy",
+      "t": "2026-11-14T21:21:18.033Z",
+      "team": "us",
+      "type": "ast"
+    },
+    {
+      "clock": null,
+      "grp": "mwgwumg6zcuwo",
+      "id": "mwgwumg6zcuwo",
+      "ms": 1794691280166,
+      "on": [
+        "13",
+        "15",
+        "4",
+        "3",
+        "2"
+      ],
+      "p": 3,
+      "player": null,
+      "t": "2026-11-14T21:21:20.166Z",
+      "team": "them",
+      "type": "to"
+    },
+    {
+      "clock": null,
+      "grp": "mwgwuwflg2ci5",
+      "id": "mwgwuwflg2ci5",
+      "made": true,
+      "ms": 1794691293108,
+      "on": [
+        "13",
+        "15",
+        "4",
+        "3",
+        "2"
+      ],
+      "p": 3,
+      "player": "2",
+      "pts": 2,
+      "t": "2026-11-14T21:21:33.108Z",
+      "team": "us",
+      "type": "shot",
+      "x": 28.1,
+      "y": 6.2
+    },
+    {
+      "clock": null,
+      "grp": "mwgwuwflg2ci5",
+      "id": "mwgwuxyl1dxbf",
+      "ms": 1794691295085,
+      "on": [
+        "13",
+        "15",
+        "4",
+        "3",
+        "2"
+      ],
+      "p": 3,
+      "player": "13",
+      "ref": "mwgwuwflg2ci5",
+      "t": "2026-11-14T21:21:35.085Z",
+      "team": "us",
+      "type": "ast"
+    },
+    {
+      "clock": null,
+      "grp": "mwgwv7cnob3p8",
+      "id": "mwgwv7cnob3p8",
+      "made": false,
+      "ms": 1794691307255,
+      "on": [
+        "13",
+        "15",
+        "4",
+        "3",
+        "2"
+      ],
+      "p": 3,
+      "player": null,
+      "pts": 2,
+      "t": "2026-11-14T21:21:47.255Z",
+      "team": "them",
+      "type": "shot"
+    },
+    {
+      "clock": null,
+      "grp": "mwgwv7cnob3p8",
+      "id": "mwgwv8wo070tp",
+      "ms": 1794691309272,
+      "off": true,
+      "on": [
+        "13",
+        "15",
+        "4",
+        "3",
+        "2"
+      ],
+      "p": 3,
+      "player": null,
+      "ref": "mwgwv7cnob3p8",
+      "t": "2026-11-14T21:21:49.272Z",
+      "team": "them",
+      "type": "reb"
+    },
+    {
+      "clock": null,
+      "grp": "mwgwv9ds0r44v",
+      "id": "mwgwv9ds0r44v",
+      "made": false,
+      "ms": 1794691309888,
+      "on": [
+        "13",
+        "15",
+        "4",
+        "3",
+        "2"
+      ],
+      "p": 3,
+      "player": null,
+      "pts": 2,
+      "t": "2026-11-14T21:21:49.888Z",
+      "team": "them",
+      "type": "shot"
+    },
+    {
+      "clock": null,
+      "grp": "mwgwv9ds0r44v",
+      "id": "mwgwvaqftd27r",
+      "ms": 1794691311639,
+      "off": true,
+      "on": [
+        "13",
+        "15",
+        "4",
+        "3",
+        "2"
+      ],
+      "p": 3,
+      "player": null,
+      "ref": "mwgwv9ds0r44v",
+      "t": "2026-11-14T21:21:51.639Z",
+      "team": "them",
+      "type": "reb"
+    },
+    {
+      "action": "end",
+      "clock": null,
+      "grp": "mwgwveu4kd1qe",
+      "id": "mwgwveu4kd1qe",
+      "ms": 1794691316956,
+      "on": [
+        "13",
+        "15",
+        "4",
+        "3",
+        "2"
+      ],
+      "p": 3,
+      "period": 3,
+      "t": "2026-11-14T21:21:56.956Z",
+      "type": "period"
+    },
+    {
+      "action": "start",
+      "clock": null,
+      "grp": "mwgwveu5vx86w",
+      "id": "mwgwveu5vx86w",
+      "ms": 1794691316957,
+      "on": [
+        "13",
+        "15",
+        "4",
+        "3",
+        "2"
+      ],
+      "p": 4,
+      "period": 4,
+      "t": "2026-11-14T21:21:56.957Z",
+      "type": "period"
+    },
+    {
+      "clock": null,
+      "grp": "mwgwvzmtt8k5t",
+      "id": "mwgwvzmtt8k5t",
+      "in": [
+        "0",
+        "44",
+        "23",
+        "12",
+        "32"
+      ],
+      "ms": 1794691343909,
+      "on": [
+        "13",
+        "15",
+        "4",
+        "3",
+        "2"
+      ],
+      "out": [
+        "13",
+        "15",
+        "4",
+        "3",
+        "2"
+      ],
+      "p": 4,
+      "t": "2026-11-14T21:22:23.909Z",
+      "type": "sub"
+    },
+    {
+      "clock": null,
+      "grp": "mwgwwc5x78lg9",
+      "id": "mwgwwc5x78lg9",
+      "ms": 1794691360149,
+      "on": [
+        "0",
+        "44",
+        "23",
+        "12",
+        "32"
+      ],
+      "p": 4,
+      "player": "0",
+      "t": "2026-11-14T21:22:40.149Z",
+      "team": "us",
+      "type": "to"
+    },
+    {
+      "clock": null,
+      "grp": "mwgwwl617643b",
+      "id": "mwgwwl617643b",
+      "made": false,
+      "ms": 1794691371817,
+      "on": [
+        "0",
+        "44",
+        "23",
+        "12",
+        "32"
+      ],
+      "p": 4,
+      "player": null,
+      "pts": 3,
+      "t": "2026-11-14T21:22:51.817Z",
+      "team": "them",
+      "type": "shot"
+    },
+    {
+      "clock": null,
+      "grp": "mwgwwl617643b",
+      "id": "mwgwwm56l9zvg",
+      "ms": 1794691373082,
+      "off": true,
+      "on": [
+        "0",
+        "44",
+        "23",
+        "12",
+        "32"
+      ],
+      "p": 4,
+      "player": null,
+      "ref": "mwgwwl617643b",
+      "t": "2026-11-14T21:22:53.082Z",
+      "team": "them",
+      "type": "reb"
+    },
+    {
+      "clock": null,
+      "grp": "mwgwwmu7iodiz",
+      "id": "mwgwwmu7iodiz",
+      "made": false,
+      "ms": 1794691373983,
+      "on": [
+        "0",
+        "44",
+        "23",
+        "12",
+        "32"
+      ],
+      "p": 4,
+      "player": null,
+      "pts": 2,
+      "t": "2026-11-14T21:22:53.983Z",
+      "team": "them",
+      "type": "shot"
+    },
+    {
+      "clock": null,
+      "grp": "mwgwwmu7iodiz",
+      "id": "mwgwwnmwczqxl",
+      "ms": 1794691375016,
+      "off": true,
+      "on": [
+        "0",
+        "44",
+        "23",
+        "12",
+        "32"
+      ],
+      "p": 4,
+      "player": null,
+      "ref": "mwgwwmu7iodiz",
+      "t": "2026-11-14T21:22:55.016Z",
+      "team": "them",
+      "type": "reb"
+    },
+    {
+      "clock": null,
+      "grp": "mwgwwprrd3x20",
+      "id": "mwgwwprrd3x20",
+      "made": false,
+      "ms": 1794691377783,
+      "on": [
+        "0",
+        "44",
+        "23",
+        "12",
+        "32"
+      ],
+      "p": 4,
+      "player": null,
+      "pts": 3,
+      "t": "2026-11-14T21:22:57.783Z",
+      "team": "them",
+      "type": "shot"
+    },
+    {
+      "clock": null,
+      "grp": "mwgwwprrd3x20",
+      "id": "mwgwwrgg9ofdy",
+      "ms": 1794691379968,
+      "off": false,
+      "on": [
+        "0",
+        "44",
+        "23",
+        "12",
+        "32"
+      ],
+      "p": 4,
+      "player": "12",
+      "ref": "mwgwwprrd3x20",
+      "t": "2026-11-14T21:22:59.968Z",
+      "team": "us",
+      "type": "reb"
+    },
+    {
+      "clock": null,
+      "grp": "mwgwx0nyxxxq1",
+      "id": "mwgwx0nyxxxq1",
+      "ms": 1794691391902,
+      "on": [
+        "0",
+        "44",
+        "23",
+        "12",
+        "32"
+      ],
+      "p": 4,
+      "player": "12",
+      "t": "2026-11-14T21:23:11.902Z",
+      "team": "us",
+      "type": "to"
+    },
+    {
+      "clock": null,
+      "grp": "mwgwxc1byln2x",
+      "id": "mwgwxc1byln2x",
+      "made": true,
+      "ms": 1794691406639,
+      "on": [
+        "0",
+        "44",
+        "23",
+        "12",
+        "32"
+      ],
+      "p": 4,
+      "player": null,
+      "pts": 1,
+      "t": "2026-11-14T21:23:26.639Z",
+      "team": "them",
+      "type": "shot"
+    },
+    {
+      "clock": null,
+      "grp": "mwgwxeyvc9q0r",
+      "id": "mwgwxeyvc9q0r",
+      "made": false,
+      "ms": 1794691410440,
+      "on": [
+        "0",
+        "44",
+        "23",
+        "12",
+        "32"
+      ],
+      "p": 4,
+      "player": null,
+      "pts": 1,
+      "t": "2026-11-14T21:23:30.440Z",
+      "team": "them",
+      "type": "shot"
+    },
+    {
+      "clock": null,
+      "grp": "mwgwxpb342q9i",
+      "id": "mwgwxpb342q9i",
+      "made": false,
+      "ms": 1794691423839,
+      "on": [
+        "0",
+        "44",
+        "23",
+        "12",
+        "32"
+      ],
+      "p": 4,
+      "player": "12",
+      "pts": 3,
+      "t": "2026-11-14T21:23:43.839Z",
+      "team": "us",
+      "type": "shot",
+      "x": 7.6,
+      "y": 18.9
+    },
+    {
+      "clock": null,
+      "grp": "mwgwxpb342q9i",
+      "id": "mwgwxqsvbog9f",
+      "ms": 1794691425775,
+      "off": false,
+      "on": [
+        "0",
+        "44",
+        "23",
+        "12",
+        "32"
+      ],
+      "p": 4,
+      "player": null,
+      "ref": "mwgwxpb342q9i",
+      "t": "2026-11-14T21:23:45.775Z",
+      "team": "them",
+      "type": "reb"
+    },
+    {
+      "clock": null,
+      "grp": "mwgwxue2cjw9a",
+      "id": "mwgwxue2cjw9a",
+      "made": false,
+      "ms": 1794691430426,
+      "on": [
+        "0",
+        "44",
+        "23",
+        "12",
+        "32"
+      ],
+      "p": 4,
+      "player": null,
+      "pts": 2,
+      "t": "2026-11-14T21:23:50.426Z",
+      "team": "them",
+      "type": "shot"
+    },
+    {
+      "clock": null,
+      "grp": "mwgwxue2cjw9a",
+      "id": "mwgwxw4k7icqi",
+      "ms": 1794691432676,
+      "off": false,
+      "on": [
+        "0",
+        "44",
+        "23",
+        "12",
+        "32"
+      ],
+      "p": 4,
+      "player": "23",
+      "ref": "mwgwxue2cjw9a",
+      "t": "2026-11-14T21:23:52.676Z",
+      "team": "us",
+      "type": "reb"
+    },
+    {
+      "clock": null,
+      "grp": "mwgwxzw8ngm7d",
+      "id": "mwgwxzw8ngm7d",
+      "ms": 1794691437560,
+      "on": [
+        "0",
+        "44",
+        "23",
+        "12",
+        "32"
+      ],
+      "p": 4,
+      "player": "12",
+      "t": "2026-11-14T21:23:57.560Z",
+      "team": "us",
+      "type": "to"
+    },
+    {
+      "clock": null,
+      "grp": "mwgwy38g20mqk",
+      "id": "mwgwy38g20mqk",
+      "ms": 1794691441888,
+      "on": [
+        "0",
+        "44",
+        "23",
+        "12",
+        "32"
+      ],
+      "p": 4,
+      "player": "0",
+      "t": "2026-11-14T21:24:01.888Z",
+      "team": "us",
+      "type": "blk"
+    },
+    {
+      "clock": null,
+      "grp": "mwgwy38g20mqk",
+      "id": "mwgwy38hipvhc",
+      "made": false,
+      "ms": 1794691441889,
+      "on": [
+        "0",
+        "44",
+        "23",
+        "12",
+        "32"
+      ],
+      "p": 4,
+      "player": null,
+      "pts": 2,
+      "ref": "mwgwy38g20mqk",
+      "t": "2026-11-14T21:24:01.889Z",
+      "team": "them",
+      "type": "shot"
+    },
+    {
+      "clock": null,
+      "grp": "mwgwy38g20mqk",
+      "id": "mwgwy4cuhnew6",
+      "ms": 1794691443342,
+      "off": false,
+      "on": [
+        "0",
+        "44",
+        "23",
+        "12",
+        "32"
+      ],
+      "p": 4,
+      "player": "0",
+      "ref": "mwgwy38hipvhc",
+      "t": "2026-11-14T21:24:03.342Z",
+      "team": "us",
+      "type": "reb"
+    },
+    {
+      "clock": null,
+      "grp": "mwgwy9dwepgyc",
+      "id": "mwgwy9dwepgyc",
+      "made": false,
+      "ms": 1794691449860,
+      "on": [
+        "0",
+        "44",
+        "23",
+        "12",
+        "32"
+      ],
+      "p": 4,
+      "player": "0",
+      "pts": 2,
+      "t": "2026-11-14T21:24:09.860Z",
+      "team": "us",
+      "type": "shot",
+      "x": 22.6,
+      "y": 13.8
+    },
+    {
+      "clock": null,
+      "grp": "mwgwy9dwepgyc",
+      "id": "mwgwyaswy3kzc",
+      "ms": 1794691451696,
+      "off": false,
+      "on": [
+        "0",
+        "44",
+        "23",
+        "12",
+        "32"
+      ],
+      "p": 4,
+      "player": null,
+      "ref": "mwgwy9dwepgyc",
+      "t": "2026-11-14T21:24:11.696Z",
+      "team": "them",
+      "type": "reb"
+    },
+    {
+      "clock": null,
+      "grp": "mwgwydomiqfh9",
+      "id": "mwgwydomiqfh9",
+      "ms": 1794691455430,
+      "on": [
+        "0",
+        "44",
+        "23",
+        "12",
+        "32"
+      ],
+      "p": 4,
+      "player": "12",
+      "t": "2026-11-14T21:24:15.430Z",
+      "team": "us",
+      "type": "blk"
+    },
+    {
+      "clock": null,
+      "grp": "mwgwydomiqfh9",
+      "id": "mwgwydon1da5x",
+      "made": false,
+      "ms": 1794691455431,
+      "on": [
+        "0",
+        "44",
+        "23",
+        "12",
+        "32"
+      ],
+      "p": 4,
+      "player": null,
+      "pts": 2,
+      "ref": "mwgwydomiqfh9",
+      "t": "2026-11-14T21:24:15.431Z",
+      "team": "them",
+      "type": "shot"
+    },
+    {
+      "clock": null,
+      "grp": "mwgwydomiqfh9",
+      "id": "mwgwygugds8m0",
+      "ms": 1794691459528,
+      "off": false,
+      "on": [
+        "0",
+        "44",
+        "23",
+        "12",
+        "32"
+      ],
+      "p": 4,
+      "player": "32",
+      "ref": "mwgwydon1da5x",
+      "t": "2026-11-14T21:24:19.528Z",
+      "team": "us",
+      "type": "reb"
+    },
+    {
+      "clock": null,
+      "grp": "mwgwyns2twl70",
+      "id": "mwgwyns2twl70",
+      "made": false,
+      "ms": 1794691468514,
+      "on": [
+        "0",
+        "44",
+        "23",
+        "12",
+        "32"
+      ],
+      "p": 4,
+      "player": "32",
+      "pts": 3,
+      "t": "2026-11-14T21:24:28.514Z",
+      "team": "us",
+      "type": "shot",
+      "x": 8.3,
+      "y": 21.4
+    },
+    {
+      "clock": null,
+      "grp": "mwgwyns2twl70",
+      "id": "mwgwypjgl3ujd",
+      "ms": 1794691470796,
+      "off": false,
+      "on": [
+        "0",
+        "44",
+        "23",
+        "12",
+        "32"
+      ],
+      "p": 4,
+      "player": null,
+      "ref": "mwgwyns2twl70",
+      "t": "2026-11-14T21:24:30.796Z",
+      "team": "them",
+      "type": "reb"
+    },
+    {
+      "clock": null,
+      "grp": "mwgwyw61z4a4z",
+      "id": "mwgwyw61z4a4z",
+      "made": true,
+      "ms": 1794691479385,
+      "on": [
+        "0",
+        "44",
+        "23",
+        "12",
+        "32"
+      ],
+      "p": 4,
+      "player": null,
+      "pts": 3,
+      "t": "2026-11-14T21:24:39.385Z",
+      "team": "them",
+      "type": "shot"
+    },
+    {
+      "clock": null,
+      "grp": "mwgwz50hctayo",
+      "id": "mwgwz50hctayo",
+      "made": true,
+      "ms": 1794691490849,
+      "on": [
+        "0",
+        "44",
+        "23",
+        "12",
+        "32"
+      ],
+      "p": 4,
+      "player": "44",
+      "pts": 3,
+      "t": "2026-11-14T21:24:50.849Z",
+      "team": "us",
+      "type": "shot",
+      "x": 39.2,
+      "y": 23.8
+    },
+    {
+      "clock": null,
+      "grp": "mwgwz50hctayo",
+      "id": "mwgwz6bpt9zkh",
+      "ms": 1794691492549,
+      "on": [
+        "0",
+        "44",
+        "23",
+        "12",
+        "32"
+      ],
+      "p": 4,
+      "player": "0",
+      "ref": "mwgwz50hctayo",
+      "t": "2026-11-14T21:24:52.549Z",
+      "team": "us",
+      "type": "ast"
+    },
+    {
+      "clock": null,
+      "grp": "mwgwzf5rb9vhd",
+      "id": "mwgwzf5rb9vhd",
+      "made": false,
+      "ms": 1794691503999,
+      "on": [
+        "0",
+        "44",
+        "23",
+        "12",
+        "32"
+      ],
+      "p": 4,
+      "player": null,
+      "pts": 2,
+      "t": "2026-11-14T21:25:03.999Z",
+      "team": "them",
+      "type": "shot"
+    },
+    {
+      "clock": null,
+      "grp": "mwgwzf5rb9vhd",
+      "id": "mwgwzgjuo39w7",
+      "ms": 1794691505802,
+      "off": false,
+      "on": [
+        "0",
+        "44",
+        "23",
+        "12",
+        "32"
+      ],
+      "p": 4,
+      "player": "23",
+      "ref": "mwgwzf5rb9vhd",
+      "t": "2026-11-14T21:25:05.802Z",
+      "team": "us",
+      "type": "reb"
+    },
+    {
+      "clock": null,
+      "grp": "mwgwzkr7wiqi9",
+      "id": "mwgwzkr7wiqi9",
+      "ms": 1794691511251,
+      "on": [
+        "0",
+        "44",
+        "23",
+        "12",
+        "32"
+      ],
+      "p": 4,
+      "player": "0",
+      "t": "2026-11-14T21:25:11.251Z",
+      "team": "us",
+      "type": "to"
+    },
+    {
+      "clock": null,
+      "grp": "mwgwzmjy1g7b0",
+      "id": "mwgwzmjy1g7b0",
+      "made": false,
+      "ms": 1794691513582,
+      "on": [
+        "0",
+        "44",
+        "23",
+        "12",
+        "32"
+      ],
+      "p": 4,
+      "player": null,
+      "pts": 3,
+      "t": "2026-11-14T21:25:13.582Z",
+      "team": "them",
+      "type": "shot"
+    },
+    {
+      "clock": null,
+      "grp": "mwgwzmjy1g7b0",
+      "id": "mwgwzn91at5nu",
+      "ms": 1794691514485,
+      "off": true,
+      "on": [
+        "0",
+        "44",
+        "23",
+        "12",
+        "32"
+      ],
+      "p": 4,
+      "player": null,
+      "ref": "mwgwzmjy1g7b0",
+      "t": "2026-11-14T21:25:14.485Z",
+      "team": "them",
+      "type": "reb"
+    },
+    {
+      "clock": null,
+      "grp": "mwgwzpqtqezyz",
+      "id": "mwgwzpqtqezyz",
+      "ms": 1794691517717,
+      "on": [
+        "0",
+        "44",
+        "23",
+        "12",
+        "32"
+      ],
+      "p": 4,
+      "player": null,
+      "t": "2026-11-14T21:25:17.717Z",
+      "team": "them",
+      "type": "to"
+    },
+    {
+      "clock": null,
+      "grp": "mwgwzvw4i1eqy",
+      "id": "mwgwzvw4i1eqy",
+      "ms": 1794691525684,
+      "on": [
+        "0",
+        "44",
+        "23",
+        "12",
+        "32"
+      ],
+      "p": 4,
+      "player": "44",
+      "t": "2026-11-14T21:25:25.684Z",
+      "team": "us",
+      "type": "to"
+    },
+    {
+      "clock": null,
+      "grp": "mwgx007rb7yov",
+      "id": "mwgx007rb7yov",
+      "ms": 1794691531287,
+      "on": [
+        "0",
+        "44",
+        "23",
+        "12",
+        "32"
+      ],
+      "p": 4,
+      "player": "12",
+      "t": "2026-11-14T21:25:31.287Z",
+      "team": "us",
+      "type": "stl"
+    },
+    {
+      "clock": null,
+      "grp": "mwgx007rb7yov",
+      "id": "mwgx007sbkonn",
+      "ms": 1794691531288,
+      "on": [
+        "0",
+        "44",
+        "23",
+        "12",
+        "32"
+      ],
+      "p": 4,
+      "player": null,
+      "ref": "mwgx007rb7yov",
+      "t": "2026-11-14T21:25:31.288Z",
+      "team": "them",
+      "type": "to"
+    },
+    {
+      "clock": null,
+      "grp": "mwgx04e80on3h",
+      "id": "mwgx04e80on3h",
+      "made": false,
+      "ms": 1794691536704,
+      "on": [
+        "0",
+        "44",
+        "23",
+        "12",
+        "32"
+      ],
+      "p": 4,
+      "player": "12",
+      "pts": 2,
+      "t": "2026-11-14T21:25:36.704Z",
+      "team": "us",
+      "type": "shot",
+      "x": 28.4,
+      "y": 5.5
+    },
+    {
+      "clock": null,
+      "grp": "mwgx04e80on3h",
+      "id": "mwgx07oqviw5z",
+      "ms": 1794691540970,
+      "off": true,
+      "on": [
+        "0",
+        "44",
+        "23",
+        "12",
+        "32"
+      ],
+      "p": 4,
+      "player": "32",
+      "ref": "mwgx04e80on3h",
+      "t": "2026-11-14T21:25:40.970Z",
+      "team": "us",
+      "type": "reb"
+    },
+    {
+      "clock": null,
+      "grp": "mwgx09laiswsb",
+      "id": "mwgx09laiswsb",
+      "made": true,
+      "ms": 1794691543438,
+      "on": [
+        "0",
+        "44",
+        "23",
+        "12",
+        "32"
+      ],
+      "p": 4,
+      "player": "32",
+      "pts": 2,
+      "t": "2026-11-14T21:25:43.438Z",
+      "team": "us",
+      "type": "shot",
+      "x": 26.8,
+      "y": 6.5
+    },
+    {
+      "clock": null,
+      "grp": "mwgx0hb52kyx8",
+      "id": "mwgx0hb52kyx8",
+      "made": false,
+      "ms": 1794691553441,
+      "on": [
+        "0",
+        "44",
+        "23",
+        "12",
+        "32"
+      ],
+      "p": 4,
+      "player": null,
+      "pts": 3,
+      "t": "2026-11-14T21:25:53.441Z",
+      "team": "them",
+      "type": "shot"
+    },
+    {
+      "clock": null,
+      "grp": "mwgx0hb52kyx8",
+      "id": "mwgx0i7ituuxf",
+      "ms": 1794691554606,
+      "off": false,
+      "on": [
+        "0",
+        "44",
+        "23",
+        "12",
+        "32"
+      ],
+      "p": 4,
+      "player": "23",
+      "ref": "mwgx0hb52kyx8",
+      "t": "2026-11-14T21:25:54.606Z",
+      "team": "us",
+      "type": "reb"
+    },
+    {
+      "clock": null,
+      "grp": "mwgx0nmgxbzzn",
+      "id": "mwgx0nmgxbzzn",
+      "made": false,
+      "ms": 1794691561624,
+      "on": [
+        "0",
+        "44",
+        "23",
+        "12",
+        "32"
+      ],
+      "p": 4,
+      "player": "32",
+      "pts": 2,
+      "t": "2026-11-14T21:26:01.624Z",
+      "team": "us",
+      "type": "shot",
+      "x": 28.2,
+      "y": 6.2
+    },
+    {
+      "clock": null,
+      "grp": "mwgx0nmgxbzzn",
+      "id": "mwgx0yyejuteg",
+      "ms": 1794691576310,
+      "off": false,
+      "on": [
+        "0",
+        "44",
+        "23",
+        "12",
+        "32"
+      ],
+      "p": 4,
+      "player": null,
+      "ref": "mwgx0nmgxbzzn",
+      "t": "2026-11-14T21:26:16.310Z",
+      "team": "them",
+      "type": "reb"
+    },
+    {
+      "clock": null,
+      "grp": "mwgx20chlebhl",
+      "id": "mwgx20chlebhl",
+      "made": true,
+      "ms": 1794691624769,
+      "on": [
+        "0",
+        "44",
+        "23",
+        "12",
+        "32"
+      ],
+      "p": 4,
+      "player": null,
+      "pts": 3,
+      "t": "2026-11-14T21:27:04.769Z",
+      "team": "them",
+      "type": "shot"
+    },
+    {
+      "clock": null,
+      "grp": "mwgx25j3csaeu",
+      "id": "mwgx25j3csaeu",
+      "ms": 1794691631487,
+      "on": [
+        "0",
+        "44",
+        "23",
+        "12",
+        "32"
+      ],
+      "p": 4,
+      "player": "0",
+      "t": "2026-11-14T21:27:11.487Z",
+      "team": "us",
+      "type": "to"
+    },
+    {
+      "clock": null,
+      "grp": "mwgx2sdwpjrfx",
+      "id": "mwgx2sdwpjrfx",
+      "ms": 1794691661108,
+      "on": [
+        "0",
+        "44",
+        "23",
+        "12",
+        "32"
+      ],
+      "p": 4,
+      "player": null,
+      "t": "2026-11-14T21:27:41.108Z",
+      "team": "them",
+      "type": "to"
+    },
+    {
+      "clock": null,
+      "grp": "mwgx2ybcprgg7",
+      "id": "mwgx2ybcprgg7",
+      "made": false,
+      "ms": 1794691668792,
+      "on": [
+        "0",
+        "44",
+        "23",
+        "12",
+        "32"
+      ],
+      "p": 4,
+      "player": "32",
+      "pts": 2,
+      "t": "2026-11-14T21:27:48.792Z",
+      "team": "us",
+      "type": "shot",
+      "x": 22.3,
+      "y": 5.2
+    },
+    {
+      "clock": null,
+      "grp": "mwgx2ybcprgg7",
+      "id": "mwgx30yqma3eu",
+      "ms": 1794691672226,
+      "off": true,
+      "on": [
+        "0",
+        "44",
+        "23",
+        "12",
+        "32"
+      ],
+      "p": 4,
+      "player": "23",
+      "ref": "mwgx2ybcprgg7",
+      "t": "2026-11-14T21:27:52.226Z",
+      "team": "us",
+      "type": "reb"
+    },
+    {
+      "clock": null,
+      "grp": "mwgx34bydy4pg",
+      "id": "mwgx34bydy4pg",
+      "made": false,
+      "ms": 1794691676590,
+      "on": [
+        "0",
+        "44",
+        "23",
+        "12",
+        "32"
+      ],
+      "p": 4,
+      "player": "23",
+      "pts": 1,
+      "t": "2026-11-14T21:27:56.590Z",
+      "team": "us",
+      "type": "shot"
+    },
+    {
+      "clock": null,
+      "grp": "mwgx364dqxyqf",
+      "id": "mwgx364dqxyqf",
+      "made": false,
+      "ms": 1794691678909,
+      "on": [
+        "0",
+        "44",
+        "23",
+        "12",
+        "32"
+      ],
+      "p": 4,
+      "player": "23",
+      "pts": 1,
+      "t": "2026-11-14T21:27:58.909Z",
+      "team": "us",
+      "type": "shot"
+    },
+    {
+      "action": "end",
+      "clock": null,
+      "grp": "mwgx3b4yydnpo",
+      "id": "mwgx3b4yydnpo",
+      "ms": 1794691685410,
+      "on": [
+        "0",
+        "44",
+        "23",
+        "12",
+        "32"
+      ],
+      "p": 4,
+      "period": 4,
+      "t": "2026-11-14T21:28:05.410Z",
+      "type": "period"
+    },
+    {
+      "action": "start",
+      "clock": null,
+      "grp": "mwgx3b4z5lvzk",
+      "id": "mwgx3b4z5lvzk",
+      "ms": 1794691685411,
+      "on": [
+        "0",
+        "44",
+        "23",
+        "12",
+        "32"
+      ],
+      "p": 5,
+      "period": 5,
+      "t": "2026-11-14T21:28:05.411Z",
+      "type": "period"
+    },
+    {
+      "clock": null,
+      "grp": "mwgx3km9sbpvu",
+      "id": "mwgx3km9sbpvu",
+      "in": [
+        "4",
+        "1",
+        "24",
+        "10",
+        "11"
+      ],
+      "ms": 1794691697697,
+      "on": [
+        "0",
+        "44",
+        "23",
+        "12",
+        "32"
+      ],
+      "out": [
+        "44",
+        "12",
+        "32",
+        "23",
+        "0"
+      ],
+      "p": 5,
+      "t": "2026-11-14T21:28:17.697Z",
+      "type": "sub"
+    },
+    {
+      "clock": null,
+      "grp": "mwgx3vf7dajp5",
+      "id": "mwgx3vf7dajp5",
+      "made": false,
+      "ms": 1794691711699,
+      "on": [
+        "4",
+        "1",
+        "24",
+        "10",
+        "11"
+      ],
+      "p": 5,
+      "player": "1",
+      "pts": 2,
+      "t": "2026-11-14T21:28:31.699Z",
+      "team": "us",
+      "type": "shot",
+      "x": 13.3,
+      "y": 5.4
+    },
+    {
+      "clock": null,
+      "grp": "mwgx3vf7dajp5",
+      "id": "mwgx3xsfvwrd5",
+      "ms": 1794691714767,
+      "off": true,
+      "on": [
+        "4",
+        "1",
+        "24",
+        "10",
+        "11"
+      ],
+      "p": 5,
+      "player": "11",
+      "ref": "mwgx3vf7dajp5",
+      "t": "2026-11-14T21:28:34.767Z",
+      "team": "us",
+      "type": "reb"
+    },
+    {
+      "clock": null,
+      "grp": "mwgx417f6ly9z",
+      "id": "mwgx417f6ly9z",
+      "made": false,
+      "ms": 1794691719195,
+      "on": [
+        "4",
+        "1",
+        "24",
+        "10",
+        "11"
+      ],
+      "p": 5,
+      "player": "24",
+      "pts": 3,
+      "t": "2026-11-14T21:28:39.195Z",
+      "team": "us",
+      "type": "shot",
+      "x": 40.2,
+      "y": 23.1
+    },
+    {
+      "clock": null,
+      "grp": "mwgx417f6ly9z",
+      "id": "mwgx42v9wfcph",
+      "ms": 1794691721349,
+      "off": true,
+      "on": [
+        "4",
+        "1",
+        "24",
+        "10",
+        "11"
+      ],
+      "p": 5,
+      "player": "10",
+      "ref": "mwgx417f6ly9z",
+      "t": "2026-11-14T21:28:41.349Z",
+      "team": "us",
+      "type": "reb"
+    },
+    {
+      "clock": null,
+      "grp": "mwgx4af2twgbs",
+      "id": "mwgx4af2twgbs",
+      "made": true,
+      "ms": 1794691731134,
+      "on": [
+        "4",
+        "1",
+        "24",
+        "10",
+        "11"
+      ],
+      "p": 5,
+      "player": "10",
+      "pts": 1,
+      "t": "2026-11-14T21:28:51.134Z",
+      "team": "us",
+      "type": "shot"
+    },
+    {
+      "clock": null,
+      "grp": "mwgx4fhkgwr1t",
+      "id": "mwgx4fhkgwr1t",
+      "made": false,
+      "ms": 1794691737704,
+      "on": [
+        "4",
+        "1",
+        "24",
+        "10",
+        "11"
+      ],
+      "p": 5,
+      "player": "10",
+      "pts": 1,
+      "t": "2026-11-14T21:28:57.704Z",
+      "team": "us",
+      "type": "shot"
+    },
+    {
+      "clock": null,
+      "grp": "mwgx4fhkgwr1t",
+      "id": "mwgx4g565175j",
+      "ms": 1794691738554,
+      "off": false,
+      "on": [
+        "4",
+        "1",
+        "24",
+        "10",
+        "11"
+      ],
+      "p": 5,
+      "player": null,
+      "ref": "mwgx4fhkgwr1t",
+      "t": "2026-11-14T21:28:58.554Z",
+      "team": "them",
+      "type": "reb"
+    },
+    {
+      "clock": null,
+      "grp": "mwgx4j0eq8a35",
+      "id": "mwgx4j0eq8a35",
+      "made": true,
+      "ms": 1794691742270,
+      "on": [
+        "4",
+        "1",
+        "24",
+        "10",
+        "11"
+      ],
+      "p": 5,
+      "player": null,
+      "pts": 3,
+      "t": "2026-11-14T21:29:02.270Z",
+      "team": "them",
+      "type": "shot"
+    },
+    {
+      "clock": null,
+      "grp": "mwgx4p8zghvn3",
+      "id": "mwgx4p8zghvn3",
+      "ms": 1794691750355,
+      "on": [
+        "4",
+        "1",
+        "24",
+        "10",
+        "11"
+      ],
+      "p": 5,
+      "player": "10",
+      "t": "2026-11-14T21:29:10.355Z",
+      "team": "us",
+      "type": "to"
+    },
+    {
+      "clock": null,
+      "grp": "mwgx4rf61ee7r",
+      "id": "mwgx4rf61ee7r",
+      "made": true,
+      "ms": 1794691753171,
+      "on": [
+        "4",
+        "1",
+        "24",
+        "10",
+        "11"
+      ],
+      "p": 5,
+      "player": null,
+      "pts": 2,
+      "t": "2026-11-14T21:29:13.171Z",
+      "team": "them",
+      "type": "shot"
+    },
+    {
+      "clock": null,
+      "grp": "mwgx563z8sxvb",
+      "id": "mwgx563z8sxvb",
+      "ms": 1794691772207,
+      "on": [
+        "4",
+        "1",
+        "24",
+        "10",
+        "11"
+      ],
+      "p": 5,
+      "player": "1",
+      "t": "2026-11-14T21:29:32.207Z",
+      "team": "us",
+      "type": "to"
+    },
+    {
+      "clock": null,
+      "grp": "mwgx5a4zzt3ep",
+      "id": "mwgx5a4zzt3ep",
+      "made": false,
+      "ms": 1794691777427,
+      "on": [
+        "4",
+        "1",
+        "24",
+        "10",
+        "11"
+      ],
+      "p": 5,
+      "player": null,
+      "pts": 3,
+      "t": "2026-11-14T21:29:37.427Z",
+      "team": "them",
+      "type": "shot"
+    },
+    {
+      "clock": null,
+      "grp": "mwgx5a4zzt3ep",
+      "id": "mwgx5buznb744",
+      "ms": 1794691779659,
+      "off": false,
+      "on": [
+        "4",
+        "1",
+        "24",
+        "10",
+        "11"
+      ],
+      "p": 5,
+      "player": "10",
+      "ref": "mwgx5a4zzt3ep",
+      "t": "2026-11-14T21:29:39.659Z",
+      "team": "us",
+      "type": "reb"
+    },
+    {
+      "clock": null,
+      "grp": "mwgx5jlpqkf40",
+      "id": "mwgx5jlpqkf40",
+      "made": false,
+      "ms": 1794691789693,
+      "on": [
+        "4",
+        "1",
+        "24",
+        "10",
+        "11"
+      ],
+      "p": 5,
+      "player": "4",
+      "pts": 2,
+      "t": "2026-11-14T21:29:49.693Z",
+      "team": "us",
+      "type": "shot",
+      "x": 25.3,
+      "y": 9.7
+    },
+    {
+      "clock": null,
+      "grp": "mwgx5jlpqkf40",
+      "id": "mwgx5l3xaxoiu",
+      "ms": 1794691791645,
+      "off": true,
+      "on": [
+        "4",
+        "1",
+        "24",
+        "10",
+        "11"
+      ],
+      "p": 5,
+      "player": "10",
+      "ref": "mwgx5jlpqkf40",
+      "t": "2026-11-14T21:29:51.645Z",
+      "team": "us",
+      "type": "reb"
+    },
+    {
+      "clock": null,
+      "grp": "mwgx5pnumdzlf",
+      "id": "mwgx5pnumdzlf",
+      "made": false,
+      "ms": 1794691797546,
+      "on": [
+        "4",
+        "1",
+        "24",
+        "10",
+        "11"
+      ],
+      "p": 5,
+      "player": "10",
+      "pts": 2,
+      "t": "2026-11-14T21:29:57.546Z",
+      "team": "us",
+      "type": "shot",
+      "x": 26.3,
+      "y": 7.9
+    },
+    {
+      "clock": null,
+      "grp": "mwgx5pnumdzlf",
+      "id": "mwgx5r3826dt6",
+      "ms": 1794691799396,
+      "off": false,
+      "on": [
+        "4",
+        "1",
+        "24",
+        "10",
+        "11"
+      ],
+      "p": 5,
+      "player": null,
+      "ref": "mwgx5pnumdzlf",
+      "t": "2026-11-14T21:29:59.396Z",
+      "team": "them",
+      "type": "reb"
+    },
+    {
+      "clock": null,
+      "grp": "mwgx5vyrybk1i",
+      "id": "mwgx5vyrybk1i",
+      "made": false,
+      "ms": 1794691805715,
+      "on": [
+        "4",
+        "1",
+        "24",
+        "10",
+        "11"
+      ],
+      "p": 5,
+      "player": null,
+      "pts": 2,
+      "t": "2026-11-14T21:30:05.715Z",
+      "team": "them",
+      "type": "shot"
+    },
+    {
+      "clock": null,
+      "grp": "mwgx5vyrybk1i",
+      "id": "mwgx5wupvba0z",
+      "ms": 1794691806865,
+      "off": false,
+      "on": [
+        "4",
+        "1",
+        "24",
+        "10",
+        "11"
+      ],
+      "p": 5,
+      "player": "10",
+      "ref": "mwgx5vyrybk1i",
+      "t": "2026-11-14T21:30:06.865Z",
+      "team": "us",
+      "type": "reb"
+    },
+    {
+      "clock": null,
+      "grp": "mwgx60h8dir0e",
+      "id": "mwgx60h8dir0e",
+      "made": true,
+      "ms": 1794691811564,
+      "on": [
+        "4",
+        "1",
+        "24",
+        "10",
+        "11"
+      ],
+      "p": 5,
+      "player": "11",
+      "pts": 2,
+      "t": "2026-11-14T21:30:11.564Z",
+      "team": "us",
+      "type": "shot",
+      "x": 27.4,
+      "y": 6.9
+    },
+    {
+      "clock": null,
+      "grp": "mwgx60h8dir0e",
+      "id": "mwgx620e55dmf",
+      "ms": 1794691813550,
+      "on": [
+        "4",
+        "1",
+        "24",
+        "10",
+        "11"
+      ],
+      "p": 5,
+      "player": "4",
+      "ref": "mwgx60h8dir0e",
+      "t": "2026-11-14T21:30:13.550Z",
+      "team": "us",
+      "type": "ast"
+    },
+    {
+      "clock": null,
+      "grp": "mwgx684b8wsb3",
+      "id": "mwgx684b8wsb3",
+      "made": false,
+      "ms": 1794691821467,
+      "on": [
+        "4",
+        "1",
+        "24",
+        "10",
+        "11"
+      ],
+      "p": 5,
+      "player": null,
+      "pts": 3,
+      "t": "2026-11-14T21:30:21.467Z",
+      "team": "them",
+      "type": "shot"
+    },
+    {
+      "clock": null,
+      "grp": "mwgx684b8wsb3",
+      "id": "mwgx6bqebx0e3",
+      "ms": 1794691826150,
+      "off": true,
+      "on": [
+        "4",
+        "1",
+        "24",
+        "10",
+        "11"
+      ],
+      "p": 5,
+      "player": null,
+      "ref": "mwgx684b8wsb3",
+      "t": "2026-11-14T21:30:26.150Z",
+      "team": "them",
+      "type": "reb"
+    },
+    {
+      "clock": null,
+      "grp": "mwgx6c8hxbt5r",
+      "id": "mwgx6c8hxbt5r",
+      "ms": 1794691826801,
+      "on": [
+        "4",
+        "1",
+        "24",
+        "10",
+        "11"
+      ],
+      "p": 5,
+      "player": null,
+      "t": "2026-11-14T21:30:26.801Z",
+      "team": "them",
+      "type": "to"
+    },
+    {
+      "clock": null,
+      "grp": "mwgx6mbxs16ua",
+      "id": "mwgx6mbxs16ua",
+      "made": true,
+      "ms": 1794691839885,
+      "on": [
+        "4",
+        "1",
+        "24",
+        "10",
+        "11"
+      ],
+      "p": 5,
+      "player": "11",
+      "pts": 2,
+      "t": "2026-11-14T21:30:39.885Z",
+      "team": "us",
+      "type": "shot",
+      "x": 21.9,
+      "y": 5.8
+    },
+    {
+      "clock": null,
+      "grp": "mwgx6mbxs16ua",
+      "id": "mwgx6o1njcrc3",
+      "ms": 1794691842107,
+      "on": [
+        "4",
+        "1",
+        "24",
+        "10",
+        "11"
+      ],
+      "p": 5,
+      "player": "10",
+      "ref": "mwgx6mbxs16ua",
+      "t": "2026-11-14T21:30:42.107Z",
+      "team": "us",
+      "type": "ast"
+    },
+    {
+      "clock": null,
+      "grp": "mwgx6u982dkx3",
+      "id": "mwgx6u982dkx3",
+      "made": false,
+      "ms": 1794691850156,
+      "on": [
+        "4",
+        "1",
+        "24",
+        "10",
+        "11"
+      ],
+      "p": 5,
+      "player": null,
+      "pts": 3,
+      "t": "2026-11-14T21:30:50.156Z",
+      "team": "them",
+      "type": "shot"
+    },
+    {
+      "clock": null,
+      "grp": "mwgx6u982dkx3",
+      "id": "mwgx6uvfp74j9",
+      "ms": 1794691850955,
+      "off": true,
+      "on": [
+        "4",
+        "1",
+        "24",
+        "10",
+        "11"
+      ],
+      "p": 5,
+      "player": null,
+      "ref": "mwgx6u982dkx3",
+      "t": "2026-11-14T21:30:50.955Z",
+      "team": "them",
+      "type": "reb"
+    },
+    {
+      "clock": null,
+      "grp": "mwgx6wgtkjssw",
+      "id": "mwgx6wgtkjssw",
+      "made": false,
+      "ms": 1794691853021,
+      "on": [
+        "4",
+        "1",
+        "24",
+        "10",
+        "11"
+      ],
+      "p": 5,
+      "player": null,
+      "pts": 3,
+      "t": "2026-11-14T21:30:53.021Z",
+      "team": "them",
+      "type": "shot"
+    },
+    {
+      "clock": null,
+      "grp": "mwgx6wgtkjssw",
+      "id": "mwgx6y5xdoeo7",
+      "ms": 1794691855221,
+      "off": false,
+      "on": [
+        "4",
+        "1",
+        "24",
+        "10",
+        "11"
+      ],
+      "p": 5,
+      "player": "4",
+      "ref": "mwgx6wgtkjssw",
+      "t": "2026-11-14T21:30:55.221Z",
+      "team": "us",
+      "type": "reb"
+    },
+    {
+      "clock": null,
+      "grp": "mwgx78tebp0h8",
+      "id": "mwgx78tebp0h8",
+      "in": [
+        "13",
+        "3"
+      ],
+      "ms": 1794691869026,
+      "on": [
+        "4",
+        "1",
+        "24",
+        "10",
+        "11"
+      ],
+      "out": [
+        "10",
+        "24"
+      ],
+      "p": 5,
+      "t": "2026-11-14T21:31:09.026Z",
+      "type": "sub"
+    },
+    {
+      "clock": null,
+      "grp": "mwgx7iasbwu3h",
+      "id": "mwgx7iasbwu3h",
+      "made": false,
+      "ms": 1794691881316,
+      "on": [
+        "4",
+        "1",
+        "11",
+        "13",
+        "3"
+      ],
+      "p": 5,
+      "player": "1",
+      "pts": 3,
+      "t": "2026-11-14T21:31:21.316Z",
+      "team": "us",
+      "type": "shot",
+      "x": 8.6,
+      "y": 19.3
+    },
+    {
+      "clock": null,
+      "grp": "mwgx7qhmefsop",
+      "id": "mwgx7qhmefsop",
+      "made": true,
+      "ms": 1794691891930,
+      "on": [
+        "4",
+        "1",
+        "11",
+        "13",
+        "3"
+      ],
+      "p": 5,
+      "player": null,
+      "pts": 2,
+      "t": "2026-11-14T21:31:31.930Z",
+      "team": "them",
+      "type": "shot"
+    },
+    {
+      "clock": null,
+      "grp": "mwgx7udjbxghr",
+      "id": "mwgx7udjbxghr",
+      "made": false,
+      "ms": 1794691896968,
+      "on": [
+        "4",
+        "1",
+        "11",
+        "13",
+        "3"
+      ],
+      "p": 5,
+      "player": "1",
+      "pts": 3,
+      "t": "2026-11-14T21:31:36.968Z",
+      "team": "us",
+      "type": "shot",
+      "x": 6.4,
+      "y": 20.1
+    },
+    {
+      "clock": null,
+      "grp": "mwgx7udjbxghr",
+      "id": "mwgx7yruia7md",
+      "ms": 1794691902666,
+      "off": true,
+      "on": [
+        "4",
+        "1",
+        "11",
+        "13",
+        "3"
+      ],
+      "p": 5,
+      "player": "11",
+      "ref": "mwgx7udjbxghr",
+      "t": "2026-11-14T21:31:42.666Z",
+      "team": "us",
+      "type": "reb"
+    },
+    {
+      "clock": null,
+      "grp": "mwgx80bg1amfp",
+      "id": "mwgx80bg1amfp",
+      "made": false,
+      "ms": 1794691904668,
+      "on": [
+        "4",
+        "1",
+        "11",
+        "13",
+        "3"
+      ],
+      "p": 5,
+      "player": "11",
+      "pts": 2,
+      "t": "2026-11-14T21:31:44.668Z",
+      "team": "us",
+      "type": "shot",
+      "x": 23.6,
+      "y": 6.2
+    },
+    {
+      "clock": null,
+      "grp": "mwgx8cps930ne",
+      "id": "mwgx8cps930ne",
+      "made": false,
+      "ms": 1794691920736,
+      "on": [
+        "4",
+        "1",
+        "11",
+        "13",
+        "3"
+      ],
+      "p": 5,
+      "player": "4",
+      "pts": 3,
+      "t": "2026-11-14T21:32:00.736Z",
+      "team": "us",
+      "type": "shot",
+      "x": 6.9,
+      "y": 18.4
+    },
+    {
+      "clock": null,
+      "grp": "mwgx8cps930ne",
+      "id": "mwgx8dv3z9uf9",
+      "ms": 1794691922223,
+      "off": false,
+      "on": [
+        "4",
+        "1",
+        "11",
+        "13",
+        "3"
+      ],
+      "p": 5,
+      "player": null,
+      "ref": "mwgx8cps930ne",
+      "t": "2026-11-14T21:32:02.223Z",
+      "team": "them",
+      "type": "reb"
+    },
+    {
+      "clock": null,
+      "grp": "mwgx8iewpd5la",
+      "id": "mwgx8iewpd5la",
+      "made": true,
+      "ms": 1794691928120,
+      "on": [
+        "4",
+        "1",
+        "11",
+        "13",
+        "3"
+      ],
+      "p": 5,
+      "player": null,
+      "pts": 3,
+      "t": "2026-11-14T21:32:08.120Z",
+      "team": "them",
+      "type": "shot"
+    },
+    {
+      "clock": null,
+      "grp": "mwgx8qef8yehd",
+      "id": "mwgx8qef8yehd",
+      "made": true,
+      "ms": 1794691938471,
+      "on": [
+        "4",
+        "1",
+        "11",
+        "13",
+        "3"
+      ],
+      "p": 5,
+      "player": "13",
+      "pts": 2,
+      "t": "2026-11-14T21:32:18.471Z",
+      "team": "us",
+      "type": "shot",
+      "x": 27,
+      "y": 6.1
+    },
+    {
+      "clock": null,
+      "grp": "mwgx8yxx1rhmb",
+      "id": "mwgx8yxx1rhmb",
+      "made": false,
+      "ms": 1794691949541,
+      "on": [
+        "4",
+        "1",
+        "11",
+        "13",
+        "3"
+      ],
+      "p": 5,
+      "player": "13",
+      "pts": 1,
+      "t": "2026-11-14T21:32:29.541Z",
+      "team": "us",
+      "type": "shot"
+    },
+    {
+      "clock": null,
+      "grp": "mwgx8yxx1rhmb",
+      "id": "mwgx8zjp7vkwl",
+      "ms": 1794691950325,
+      "off": false,
+      "on": [
+        "4",
+        "1",
+        "11",
+        "13",
+        "3"
+      ],
+      "p": 5,
+      "player": null,
+      "ref": "mwgx8yxx1rhmb",
+      "t": "2026-11-14T21:32:30.325Z",
+      "team": "them",
+      "type": "reb"
+    },
+    {
+      "clock": null,
+      "grp": "mwgx9b922vb2i",
+      "id": "mwgx9b922vb2i",
+      "made": false,
+      "ms": 1794691965494,
+      "on": [
+        "4",
+        "1",
+        "11",
+        "13",
+        "3"
+      ],
+      "p": 5,
+      "player": null,
+      "pts": 1,
+      "t": "2026-11-14T21:32:45.494Z",
+      "team": "them",
+      "type": "shot"
+    },
+    {
+      "clock": null,
+      "grp": "mwgx9g5j8w4o6",
+      "id": "mwgx9g5j8w4o6",
+      "made": false,
+      "ms": 1794691971847,
+      "on": [
+        "4",
+        "1",
+        "11",
+        "13",
+        "3"
+      ],
+      "p": 5,
+      "player": null,
+      "pts": 1,
+      "t": "2026-11-14T21:32:51.847Z",
+      "team": "them",
+      "type": "shot"
+    },
+    {
+      "clock": null,
+      "grp": "mwgx9g5j8w4o6",
+      "id": "mwgx9gnjyghz8",
+      "ms": 1794691972495,
+      "off": true,
+      "on": [
+        "4",
+        "1",
+        "11",
+        "13",
+        "3"
+      ],
+      "p": 5,
+      "player": null,
+      "ref": "mwgx9g5j8w4o6",
+      "t": "2026-11-14T21:32:52.495Z",
+      "team": "them",
+      "type": "reb"
+    },
+    {
+      "clock": null,
+      "grp": "mwgx9l0hfmkgu",
+      "id": "mwgx9l0hfmkgu",
+      "made": true,
+      "ms": 1794691978145,
+      "on": [
+        "4",
+        "1",
+        "11",
+        "13",
+        "3"
+      ],
+      "p": 5,
+      "player": null,
+      "pts": 2,
+      "t": "2026-11-14T21:32:58.145Z",
+      "team": "them",
+      "type": "shot"
+    },
+    {
+      "clock": null,
+      "grp": "mwgx9qlfm7q7s",
+      "id": "mwgx9qlfm7q7s",
+      "made": false,
+      "ms": 1794691985379,
+      "on": [
+        "4",
+        "1",
+        "11",
+        "13",
+        "3"
+      ],
+      "p": 5,
+      "player": "11",
+      "pts": 2,
+      "t": "2026-11-14T21:33:05.379Z",
+      "team": "us",
+      "type": "shot",
+      "x": 26.5,
+      "y": 6.8
+    },
+    {
+      "clock": null,
+      "grp": "mwgx9xvllwh05",
+      "id": "mwgx9xvllwh05",
+      "ms": 1794691994817,
+      "on": [
+        "4",
+        "1",
+        "11",
+        "13",
+        "3"
+      ],
+      "p": 5,
+      "player": null,
+      "t": "2026-11-14T21:33:14.817Z",
+      "team": "them",
+      "type": "to"
+    },
+    {
+      "action": "end",
+      "clock": null,
+      "grp": "mwgxa4ebx5du5",
+      "id": "mwgxa4ebx5du5",
+      "ms": 1794692003267,
+      "on": [
+        "4",
+        "1",
+        "11",
+        "13",
+        "3"
+      ],
+      "p": 5,
+      "period": 5,
+      "t": "2026-11-14T21:33:23.267Z",
+      "type": "period"
+    },
+    {
+      "action": "start",
+      "clock": null,
+      "grp": "mwgxa4edd5vdj",
+      "id": "mwgxa4edd5vdj",
+      "ms": 1794692003269,
+      "on": [
+        "4",
+        "1",
+        "11",
+        "13",
+        "3"
+      ],
+      "p": 6,
+      "period": 6,
+      "t": "2026-11-14T21:33:23.269Z",
+      "type": "period"
+    },
+    {
+      "clock": null,
+      "grp": "mwgxah5nzx8tf",
+      "id": "mwgxah5nzx8tf",
+      "in": [
+        "0",
+        "15",
+        "23",
+        "32",
+        "10"
+      ],
+      "ms": 1794692019803,
+      "on": [
+        "4",
+        "1",
+        "11",
+        "13",
+        "3"
+      ],
+      "out": [
+        "4",
+        "1",
+        "11",
+        "13",
+        "3"
+      ],
+      "p": 6,
+      "t": "2026-11-14T21:33:39.803Z",
+      "type": "sub"
+    },
+    {
+      "clock": null,
+      "grp": "mwgxaruybpto0",
+      "id": "mwgxaruybpto0",
+      "made": true,
+      "ms": 1794692033674,
+      "on": [
+        "0",
+        "15",
+        "23",
+        "32",
+        "10"
+      ],
+      "p": 6,
+      "player": null,
+      "pts": 3,
+      "t": "2026-11-14T21:33:53.674Z",
+      "team": "them",
+      "type": "shot"
+    },
+    {
+      "clock": null,
+      "grp": "mwgxaykm6767s",
+      "id": "mwgxaykm6767s",
+      "made": true,
+      "ms": 1794692042374,
+      "on": [
+        "0",
+        "15",
+        "23",
+        "32",
+        "10"
+      ],
+      "p": 6,
+      "player": "10",
+      "pts": 2,
+      "t": "2026-11-14T21:34:02.374Z",
+      "team": "us",
+      "type": "shot",
+      "x": 27.2,
+      "y": 4.8
+    },
+    {
+      "clock": null,
+      "grp": "mwgxb51isarq5",
+      "id": "mwgxb51isarq5",
+      "ms": 1794692050758,
+      "on": [
+        "0",
+        "15",
+        "23",
+        "32",
+        "10"
+      ],
+      "p": 6,
+      "player": null,
+      "t": "2026-11-14T21:34:10.758Z",
+      "team": "them",
+      "type": "to"
+    },
+    {
+      "clock": null,
+      "grp": "mwgxbanz9q4uf",
+      "id": "mwgxbanz9q4uf",
+      "ms": 1794692058047,
+      "on": [
+        "0",
+        "15",
+        "23",
+        "32",
+        "10"
+      ],
+      "p": 6,
+      "player": "23",
+      "t": "2026-11-14T21:34:18.047Z",
+      "team": "us",
+      "type": "to"
+    },
+    {
+      "clock": null,
+      "grp": "mwgxbd2ml848x",
+      "id": "mwgxbd2ml848x",
+      "made": true,
+      "ms": 1794692061166,
+      "on": [
+        "0",
+        "15",
+        "23",
+        "32",
+        "10"
+      ],
+      "p": 6,
+      "player": null,
+      "pts": 2,
+      "t": "2026-11-14T21:34:21.166Z",
+      "team": "them",
+      "type": "shot"
+    },
+    {
+      "clock": null,
+      "grp": "mwgxbwga657gq",
+      "id": "mwgxbwga657gq",
+      "made": true,
+      "ms": 1794692086282,
+      "on": [
+        "0",
+        "15",
+        "23",
+        "32",
+        "10"
+      ],
+      "p": 6,
+      "player": "0",
+      "pts": 1,
+      "t": "2026-11-14T21:34:46.282Z",
+      "team": "us",
+      "type": "shot"
+    },
+    {
+      "clock": null,
+      "grp": "mwgxc0e9onkdk",
+      "id": "mwgxc0e9onkdk",
+      "made": true,
+      "ms": 1794692091393,
+      "on": [
+        "0",
+        "15",
+        "23",
+        "32",
+        "10"
+      ],
+      "p": 6,
+      "player": "0",
+      "pts": 1,
+      "t": "2026-11-14T21:34:51.393Z",
+      "team": "us",
+      "type": "shot"
+    },
+    {
+      "clock": null,
+      "grp": "mwgxc669wldb2",
+      "id": "mwgxc669wldb2",
+      "made": false,
+      "ms": 1794692098881,
+      "on": [
+        "0",
+        "15",
+        "23",
+        "32",
+        "10"
+      ],
+      "p": 6,
+      "player": null,
+      "pts": 2,
+      "t": "2026-11-14T21:34:58.881Z",
+      "team": "them",
+      "type": "shot"
+    },
+    {
+      "clock": null,
+      "grp": "mwgxc669wldb2",
+      "id": "mwgxc70r86l1j",
+      "ms": 1794692099979,
+      "off": false,
+      "on": [
+        "0",
+        "15",
+        "23",
+        "32",
+        "10"
+      ],
+      "p": 6,
+      "player": "10",
+      "ref": "mwgxc669wldb2",
+      "t": "2026-11-14T21:34:59.979Z",
+      "team": "us",
+      "type": "reb"
+    },
+    {
+      "clock": null,
+      "grp": "mwgxcct396jpj",
+      "id": "mwgxcct396jpj",
+      "made": false,
+      "ms": 1794692107480,
+      "on": [
+        "0",
+        "15",
+        "23",
+        "32",
+        "10"
+      ],
+      "p": 6,
+      "player": "15",
+      "pts": 3,
+      "t": "2026-11-14T21:35:07.480Z",
+      "team": "us",
+      "type": "shot",
+      "x": 39.8,
+      "y": 20.4
+    },
+    {
+      "clock": null,
+      "grp": "mwgxcct396jpj",
+      "id": "mwgxcgwxt5aca",
+      "ms": 1794692112801,
+      "off": true,
+      "on": [
+        "0",
+        "15",
+        "23",
+        "32",
+        "10"
+      ],
+      "p": 6,
+      "player": "32",
+      "ref": "mwgxcct396jpj",
+      "t": "2026-11-14T21:35:12.801Z",
+      "team": "us",
+      "type": "reb"
+    },
+    {
+      "clock": null,
+      "grp": "mwgxclbn9yuw8",
+      "id": "mwgxclbn9yuw8",
+      "made": true,
+      "ms": 1794692118515,
+      "on": [
+        "0",
+        "15",
+        "23",
+        "32",
+        "10"
+      ],
+      "p": 6,
+      "player": "32",
+      "pts": 1,
+      "t": "2026-11-14T21:35:18.515Z",
+      "team": "us",
+      "type": "shot"
+    },
+    {
+      "clock": null,
+      "grp": "mwgxcu762tvfs",
+      "id": "mwgxcu762tvfs",
+      "made": true,
+      "ms": 1794692130018,
+      "on": [
+        "0",
+        "15",
+        "23",
+        "32",
+        "10"
+      ],
+      "p": 6,
+      "player": "32",
+      "pts": 1,
+      "t": "2026-11-14T21:35:30.018Z",
+      "team": "us",
+      "type": "shot"
+    },
+    {
+      "clock": null,
+      "grp": "mwgxcxhb6ninz",
+      "id": "mwgxcxhb6ninz",
+      "made": false,
+      "ms": 1794692134271,
+      "on": [
+        "0",
+        "15",
+        "23",
+        "32",
+        "10"
+      ],
+      "p": 6,
+      "player": null,
+      "pts": 3,
+      "t": "2026-11-14T21:35:34.271Z",
+      "team": "them",
+      "type": "shot"
+    },
+    {
+      "clock": null,
+      "grp": "mwgxd48bjvbb0",
+      "id": "mwgxd48bjvbb0",
+      "ms": 1794692143019,
+      "on": [
+        "0",
+        "15",
+        "23",
+        "32",
+        "10"
+      ],
+      "p": 6,
+      "player": "32",
+      "t": "2026-11-14T21:35:43.019Z",
+      "team": "us",
+      "type": "to"
+    },
+    {
+      "clock": null,
+      "grp": "mwgxd9clu5vae",
+      "id": "mwgxd9clu5vae",
+      "in": [
+        "2"
+      ],
+      "ms": 1794692149653,
+      "on": [
+        "0",
+        "15",
+        "23",
+        "32",
+        "10"
+      ],
+      "out": [
+        "32"
+      ],
+      "p": 6,
+      "t": "2026-11-14T21:35:49.653Z",
+      "type": "sub"
+    },
+    {
+      "clock": null,
+      "grp": "mwgxdcmpwzykx",
+      "id": "mwgxdcmpwzykx",
+      "made": false,
+      "ms": 1794692153905,
+      "on": [
+        "0",
+        "15",
+        "23",
+        "10",
+        "2"
+      ],
+      "p": 6,
+      "player": null,
+      "pts": 3,
+      "t": "2026-11-14T21:35:53.905Z",
+      "team": "them",
+      "type": "shot"
+    },
+    {
+      "clock": null,
+      "grp": "mwgxdpvnayapo",
+      "id": "mwgxdpvnayapo",
+      "made": true,
+      "ms": 1794692171075,
+      "on": [
+        "0",
+        "15",
+        "23",
+        "10",
+        "2"
+      ],
+      "p": 6,
+      "player": null,
+      "pts": 3,
+      "t": "2026-11-14T21:36:11.075Z",
+      "team": "them",
+      "type": "shot"
+    },
+    {
+      "clock": null,
+      "grp": "mwgxdwdg8odgq",
+      "id": "mwgxdwdg8odgq",
+      "made": false,
+      "ms": 1794692179492,
+      "on": [
+        "0",
+        "15",
+        "23",
+        "10",
+        "2"
+      ],
+      "p": 6,
+      "player": "10",
+      "pts": 2,
+      "t": "2026-11-14T21:36:19.492Z",
+      "team": "us",
+      "type": "shot",
+      "x": 28.2,
+      "y": 8.9
+    },
+    {
+      "clock": null,
+      "grp": "mwgxdwdg8odgq",
+      "id": "mwgxdxiobacmn",
+      "ms": 1794692180976,
+      "off": false,
+      "on": [
+        "0",
+        "15",
+        "23",
+        "10",
+        "2"
+      ],
+      "p": 6,
+      "player": null,
+      "ref": "mwgxdwdg8odgq",
+      "t": "2026-11-14T21:36:20.976Z",
+      "team": "them",
+      "type": "reb"
+    },
+    {
+      "clock": null,
+      "grp": "mwgxe0rdaeu3i",
+      "id": "mwgxe0rdaeu3i",
+      "ms": 1794692185177,
+      "on": [
+        "0",
+        "15",
+        "23",
+        "10",
+        "2"
+      ],
+      "p": 6,
+      "player": "2",
+      "t": "2026-11-14T21:36:25.177Z",
+      "team": "us",
+      "type": "stl"
+    },
+    {
+      "clock": null,
+      "grp": "mwgxe0rdaeu3i",
+      "id": "mwgxe0rfd9vho",
+      "ms": 1794692185179,
+      "on": [
+        "0",
+        "15",
+        "23",
+        "10",
+        "2"
+      ],
+      "p": 6,
+      "player": null,
+      "ref": "mwgxe0rdaeu3i",
+      "t": "2026-11-14T21:36:25.179Z",
+      "team": "them",
+      "type": "to"
+    },
+    {
+      "clock": null,
+      "grp": "mwgxe4dy0pqj4",
+      "id": "mwgxe4dy0pqj4",
+      "made": false,
+      "ms": 1794692189878,
+      "on": [
+        "0",
+        "15",
+        "23",
+        "10",
+        "2"
+      ],
+      "p": 6,
+      "player": "10",
+      "pts": 2,
+      "t": "2026-11-14T21:36:29.878Z",
+      "team": "us",
+      "type": "shot",
+      "x": 22.2,
+      "y": 6.8
+    },
+    {
+      "clock": null,
+      "grp": "mwgxe4dy0pqj4",
+      "id": "mwgxe974sbj0g",
+      "ms": 1794692196112,
+      "off": true,
+      "on": [
+        "0",
+        "15",
+        "23",
+        "10",
+        "2"
+      ],
+      "p": 6,
+      "player": "10",
+      "ref": "mwgxe4dy0pqj4",
+      "t": "2026-11-14T21:36:36.112Z",
+      "team": "us",
+      "type": "reb"
+    },
+    {
+      "clock": null,
+      "grp": "mwgxefep6g994",
+      "id": "mwgxefep6g994",
+      "made": true,
+      "ms": 1794692204161,
+      "on": [
+        "0",
+        "15",
+        "23",
+        "10",
+        "2"
+      ],
+      "p": 6,
+      "player": "10",
+      "pts": 2,
+      "t": "2026-11-14T21:36:44.161Z",
+      "team": "us",
+      "type": "shot",
+      "x": 27.5,
+      "y": 5.6
+    },
+    {
+      "clock": null,
+      "grp": "mwgxel2hcwujn",
+      "id": "mwgxel2hcwujn",
+      "made": true,
+      "ms": 1794692211497,
+      "on": [
+        "0",
+        "15",
+        "23",
+        "10",
+        "2"
+      ],
+      "p": 6,
+      "player": "10",
+      "pts": 1,
+      "t": "2026-11-14T21:36:51.497Z",
+      "team": "us",
+      "type": "shot"
+    },
+    {
+      "clock": null,
+      "grp": "mwgxeo10zg2oh",
+      "id": "mwgxeo10zg2oh",
+      "made": true,
+      "ms": 1794692215333,
+      "on": [
+        "0",
+        "15",
+        "23",
+        "10",
+        "2"
+      ],
+      "p": 6,
+      "player": null,
+      "pts": 2,
+      "t": "2026-11-14T21:36:55.332Z",
+      "team": "them",
+      "type": "shot"
+    },
+    {
+      "clock": null,
+      "grp": "mwgxf6uft02zo",
+      "id": "mwgxf6uft02zo",
+      "in": [
+        "1"
+      ],
+      "ms": 1794692239719,
+      "on": [
+        "0",
+        "15",
+        "23",
+        "10",
+        "2"
+      ],
+      "out": [
+        "23"
+      ],
+      "p": 6,
+      "t": "2026-11-14T21:37:19.719Z",
+      "type": "sub"
+    },
+    {
+      "clock": null,
+      "grp": "mwgxfbohmveny",
+      "id": "mwgxfbohmveny",
+      "made": true,
+      "ms": 1794692245985,
+      "on": [
+        "0",
+        "15",
+        "10",
+        "2",
+        "1"
+      ],
+      "p": 6,
+      "player": "15",
+      "pts": 3,
+      "t": "2026-11-14T21:37:25.985Z",
+      "team": "us",
+      "type": "shot",
+      "x": 2.7,
+      "y": 4.5
+    },
+    {
+      "clock": null,
+      "grp": "mwgxfbohmveny",
+      "id": "mwgxfdc8hhu5l",
+      "ms": 1794692248136,
+      "on": [
+        "0",
+        "15",
+        "10",
+        "2",
+        "1"
+      ],
+      "p": 6,
+      "player": "0",
+      "ref": "mwgxfbohmveny",
+      "t": "2026-11-14T21:37:28.136Z",
+      "team": "us",
+      "type": "ast"
+    },
+    {
+      "clock": null,
+      "grp": "mwgxfn2d0cjan",
+      "id": "mwgxfn2d0cjan",
+      "made": false,
+      "ms": 1794692260741,
+      "on": [
+        "0",
+        "15",
+        "10",
+        "2",
+        "1"
+      ],
+      "p": 6,
+      "player": null,
+      "pts": 3,
+      "t": "2026-11-14T21:37:40.741Z",
+      "team": "them",
+      "type": "shot"
+    },
+    {
+      "clock": null,
+      "grp": "mwgxfn2d0cjan",
+      "id": "mwgxfojnsbb61",
+      "ms": 1794692262659,
+      "off": false,
+      "on": [
+        "0",
+        "15",
+        "10",
+        "2",
+        "1"
+      ],
+      "p": 6,
+      "player": "15",
+      "ref": "mwgxfn2d0cjan",
+      "t": "2026-11-14T21:37:42.659Z",
+      "team": "us",
+      "type": "reb"
+    },
+    {
+      "clock": null,
+      "grp": "mwgxfuo0na9pd",
+      "id": "mwgxfuo0na9pd",
+      "made": false,
+      "ms": 1794692270592,
+      "on": [
+        "0",
+        "15",
+        "10",
+        "2",
+        "1"
+      ],
+      "p": 6,
+      "player": "0",
+      "pts": 3,
+      "t": "2026-11-14T21:37:50.592Z",
+      "team": "us",
+      "type": "shot",
+      "x": 37.6,
+      "y": 23.5
+    },
+    {
+      "clock": null,
+      "grp": "mwgxfuo0na9pd",
+      "id": "mwgxfwgs84qmi",
+      "ms": 1794692272924,
+      "off": false,
+      "on": [
+        "0",
+        "15",
+        "10",
+        "2",
+        "1"
+      ],
+      "p": 6,
+      "player": null,
+      "ref": "mwgxfuo0na9pd",
+      "t": "2026-11-14T21:37:52.924Z",
+      "team": "them",
+      "type": "reb"
+    },
+    {
+      "clock": null,
+      "grp": "mwgxg1322174z",
+      "id": "mwgxg1322174z",
+      "ms": 1794692278910,
+      "on": [
+        "0",
+        "15",
+        "10",
+        "2",
+        "1"
+      ],
+      "p": 6,
+      "player": "10",
+      "t": "2026-11-14T21:37:58.910Z",
+      "team": "us",
+      "type": "stl"
+    },
+    {
+      "clock": null,
+      "grp": "mwgxg1322174z",
+      "id": "mwgxg134sw5pq",
+      "ms": 1794692278912,
+      "on": [
+        "0",
+        "15",
+        "10",
+        "2",
+        "1"
+      ],
+      "p": 6,
+      "player": null,
+      "ref": "mwgxg1322174z",
+      "t": "2026-11-14T21:37:58.912Z",
+      "team": "them",
+      "type": "to"
+    },
+    {
+      "clock": null,
+      "grp": "mwgxg5ubc6njn",
+      "id": "mwgxg5ubc6njn",
+      "made": true,
+      "ms": 1794692285075,
+      "on": [
+        "0",
+        "15",
+        "10",
+        "2",
+        "1"
+      ],
+      "p": 6,
+      "player": "1",
+      "pts": 3,
+      "t": "2026-11-14T21:38:05.075Z",
+      "team": "us",
+      "type": "shot",
+      "x": 6.2,
+      "y": 15.1
+    },
+    {
+      "clock": null,
+      "grp": "mwgxg5ubc6njn",
+      "id": "mwgxg7qf34q9n",
+      "ms": 1794692287527,
+      "on": [
+        "0",
+        "15",
+        "10",
+        "2",
+        "1"
+      ],
+      "p": 6,
+      "player": "2",
+      "ref": "mwgxg5ubc6njn",
+      "t": "2026-11-14T21:38:07.527Z",
+      "team": "us",
+      "type": "ast"
+    },
+    {
+      "clock": null,
+      "grp": "mwgxgauz0xhzc",
+      "id": "mwgxgauz0xhzc",
+      "made": true,
+      "ms": 1794692291580,
+      "on": [
+        "0",
+        "15",
+        "10",
+        "2",
+        "1"
+      ],
+      "p": 6,
+      "player": null,
+      "pts": 2,
+      "t": "2026-11-14T21:38:11.580Z",
+      "team": "them",
+      "type": "shot"
+    },
+    {
+      "clock": null,
+      "grp": "mwgxgh4wmw5qn",
+      "id": "mwgxgh4wmw5qn",
+      "made": true,
+      "ms": 1794692299712,
+      "on": [
+        "0",
+        "15",
+        "10",
+        "2",
+        "1"
+      ],
+      "p": 6,
+      "player": null,
+      "pts": 1,
+      "t": "2026-11-14T21:38:19.712Z",
+      "team": "them",
+      "type": "shot"
+    },
+    {
+      "clock": null,
+      "grp": "mwgxgo5piewiq",
+      "id": "mwgxgo5piewiq",
+      "made": false,
+      "ms": 1794692308813,
+      "on": [
+        "0",
+        "15",
+        "10",
+        "2",
+        "1"
+      ],
+      "p": 6,
+      "player": "0",
+      "pts": 2,
+      "t": "2026-11-14T21:38:28.813Z",
+      "team": "us",
+      "type": "shot",
+      "x": 27.4,
+      "y": 6.2
+    },
+    {
+      "clock": null,
+      "grp": "mwgxgo5piewiq",
+      "id": "mwgxgq523c3ad",
+      "ms": 1794692311383,
+      "off": true,
+      "on": [
+        "0",
+        "15",
+        "10",
+        "2",
+        "1"
+      ],
+      "p": 6,
+      "player": "2",
+      "ref": "mwgxgo5piewiq",
+      "t": "2026-11-14T21:38:31.382Z",
+      "team": "us",
+      "type": "reb"
+    },
+    {
+      "clock": null,
+      "grp": "mwgxgsxyuazgs",
+      "id": "mwgxgsxyuazgs",
+      "made": true,
+      "ms": 1794692315014,
+      "on": [
+        "0",
+        "15",
+        "10",
+        "2",
+        "1"
+      ],
+      "p": 6,
+      "player": "2",
+      "pts": 2,
+      "t": "2026-11-14T21:38:35.014Z",
+      "team": "us",
+      "type": "shot",
+      "x": 22.5,
+      "y": 5.2
+    },
+    {
+      "clock": null,
+      "grp": "mwgxgxzgoof2l",
+      "id": "mwgxgxzgoof2l",
+      "made": false,
+      "ms": 1794692321548,
+      "on": [
+        "0",
+        "15",
+        "10",
+        "2",
+        "1"
+      ],
+      "p": 6,
+      "player": null,
+      "pts": 2,
+      "t": "2026-11-14T21:38:41.548Z",
+      "team": "them",
+      "type": "shot"
+    },
+    {
+      "clock": null,
+      "grp": "mwgxgxzgoof2l",
+      "id": "mwgxgyjwb1qtt",
+      "ms": 1794692322284,
+      "off": false,
+      "on": [
+        "0",
+        "15",
+        "10",
+        "2",
+        "1"
+      ],
+      "p": 6,
+      "player": "15",
+      "ref": "mwgxgxzgoof2l",
+      "t": "2026-11-14T21:38:42.284Z",
+      "team": "us",
+      "type": "reb"
+    },
+    {
+      "clock": null,
+      "grp": "mwgxh2cgg36ca",
+      "id": "mwgxh2cgg36ca",
+      "made": false,
+      "ms": 1794692327200,
+      "on": [
+        "0",
+        "15",
+        "10",
+        "2",
+        "1"
+      ],
+      "p": 6,
+      "player": "2",
+      "pts": 2,
+      "t": "2026-11-14T21:38:47.200Z",
+      "team": "us",
+      "type": "shot",
+      "x": 27.2,
+      "y": 6.3
+    },
+    {
+      "clock": null,
+      "grp": "mwgxh2cgg36ca",
+      "id": "mwgxh5f67etpc",
+      "ms": 1794692331186,
+      "off": true,
+      "on": [
+        "0",
+        "15",
+        "10",
+        "2",
+        "1"
+      ],
+      "p": 6,
+      "player": "2",
+      "ref": "mwgxh2cgg36ca",
+      "t": "2026-11-14T21:38:51.186Z",
+      "team": "us",
+      "type": "reb"
+    },
+    {
+      "clock": null,
+      "grp": "mwgxh772ovx18",
+      "id": "mwgxh772ovx18",
+      "made": false,
+      "ms": 1794692333486,
+      "on": [
+        "0",
+        "15",
+        "10",
+        "2",
+        "1"
+      ],
+      "p": 6,
+      "player": "2",
+      "pts": 2,
+      "t": "2026-11-14T21:38:53.486Z",
+      "team": "us",
+      "type": "shot",
+      "x": 26.4,
+      "y": 6.5
+    },
+    {
+      "action": "end",
+      "clock": null,
+      "grp": "mwgxhago549nf",
+      "id": "mwgxhago549nf",
+      "ms": 1794692337720,
+      "on": [
+        "0",
+        "15",
+        "10",
+        "2",
+        "1"
+      ],
+      "p": 6,
+      "period": 6,
+      "t": "2026-11-14T21:38:57.720Z",
+      "type": "period"
+    },
+    {
+      "clock": null,
+      "grp": "mwgxhagq8f2yl",
+      "id": "mwgxhagq8f2yl",
+      "ms": 1794692337722,
+      "on": [
+        "0",
+        "15",
+        "10",
+        "2",
+        "1"
+      ],
+      "p": 6,
+      "t": "2026-11-14T21:38:57.722Z",
+      "type": "final"
+    }
+  ],
+  "format": "titans-stat-book",
+  "id": "2026-11-14-ala-wf-mr9i",
+  "qlen": 8,
+  "roster": [
+    {
+      "name": "Tristan",
+      "num": "13"
+    },
+    {
+      "name": "Dennis",
+      "num": "2"
+    },
+    {
+      "name": "Hayden",
+      "num": "15"
+    },
+    {
+      "name": "Diggy",
+      "num": "4"
+    },
+    {
+      "name": "Ryan",
+      "num": "3"
+    },
+    {
+      "name": "Amari",
+      "num": "0"
+    },
+    {
+      "name": "Jayvion",
+      "num": "32"
+    },
+    {
+      "name": "Isaac",
+      "num": "10"
+    },
+    {
+      "name": "Kaleb",
+      "num": "24"
+    },
+    {
+      "name": "Dice",
+      "num": "12"
+    },
+    {
+      "name": "Brendan",
+      "num": "1"
+    },
+    {
+      "name": "Achilles",
+      "num": "23"
+    },
+    {
+      "name": "David",
+      "num": "11"
+    },
+    {
+      "name": "David",
+      "num": "44"
+    }
+  ],
+  "starters": [
+    "13",
+    "2",
+    "15",
+    "4",
+    "3"
+  ],
+  "them": "ALA WF",
+  "updated": 1794692337722,
+  "us": "Marcos",
+  "version": 1
+}

@@ -1,0 +1,1143 @@
+<title>Titans Stat Book</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* Layout: a gym scoreboard band on top, five big on-court tiles plus the opponent, thumb-reach controls, tab bar at the bottom. */
+:root{
+  --bg:#eef1f4; --surface:#ffffff; --surface-2:#e3e8ee; --ink:#12161c; --muted:#5b6672; --line:#d3d9e0;
+  --accent:#1f4fd1; --accent-ink:#ffffff; --make:#1b8a4c; --miss:#c2412d; --warn:#b7791f;
+  --board:#0b0f14; --board-ink:#e9edf2; --digit:#ffb547; --board-muted:#8a96a3;
+  --court:#e6cc98; --court-line:#6e4f22; --paint:rgba(31,79,209,.16);
+  --display:"Barlow Condensed","Arial Narrow","Helvetica Neue",Arial,sans-serif;
+  --body:"Barlow",-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0e1217; --surface:#171d25; --surface-2:#212934; --ink:#eef2f6; --muted:#93a0ad; --line:#2b3440;
+  --accent:#6f9bff; --accent-ink:#0b1020; --make:#3fbf78; --miss:#f0715c; --warn:#e8b04a;
+  --board:#05080b; --board-ink:#e9edf2; --digit:#ffb547; --board-muted:#8a96a3;
+  --court:#3b2f1d; --court-line:#d8c39a; --paint:rgba(111,155,255,.18); color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0e1217; --surface:#171d25; --surface-2:#212934; --ink:#eef2f6; --muted:#93a0ad; --line:#2b3440;
+  --accent:#6f9bff; --accent-ink:#0b1020; --make:#3fbf78; --miss:#f0715c; --warn:#e8b04a;
+  --board:#05080b; --board-ink:#e9edf2; --digit:#ffb547; --board-muted:#8a96a3;
+  --court:#3b2f1d; --court-line:#d8c39a; --paint:rgba(111,155,255,.18); color-scheme:dark}
+[hidden]{display:none!important}
+html,body{height:100%}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:16px;-webkit-tap-highlight-color:transparent;overscroll-behavior:none}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--board)}
+*{box-sizing:border-box}
+button{font:inherit;color:inherit;border:0;background:none;cursor:pointer;touch-action:manipulation}
+button:focus-visible,input:focus-visible,textarea:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.wrap{padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+#app{padding-bottom:calc(76px + env(safe-area-inset-bottom,0px))}
+
+/* scoreboard */
+.board{background:var(--board);color:var(--board-ink);position:sticky;top:env(safe-area-inset-top,0px);z-index:5}
+.board .wrap{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:8px;padding-block:10px 12px}
+.side{display:flex;flex-direction:column;align-items:center;min-width:0}
+.tname{font-family:var(--display);font-weight:600;letter-spacing:.08em;text-transform:uppercase;font-size:13px;color:var(--board-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.digits{font-family:var(--display);font-weight:700;font-size:56px;line-height:1;color:var(--digit);font-variant-numeric:tabular-nums;text-shadow:0 0 18px rgba(255,181,71,.25)}
+.tf{font-size:12px;color:var(--board-muted);font-variant-numeric:tabular-nums;display:flex;gap:6px;align-items:center}
+.bonus{font-family:var(--display);font-weight:700;letter-spacing:.08em;font-size:11px;color:var(--board);background:var(--digit);border-radius:3px;padding:1px 5px}
+.mid{display:flex;flex-direction:column;align-items:center;gap:4px}
+.per{font-family:var(--display);font-weight:700;font-size:18px;letter-spacing:.06em;color:var(--board-ink)}
+.clock{font-family:var(--display);font-weight:700;font-size:30px;line-height:1;font-variant-numeric:tabular-nums;color:var(--board-ink);padding:4px 10px;border-radius:6px;border:1px solid #2a3542;min-width:92px}
+.clock.run{color:#5ee08f;border-color:#2f6b47}
+.clock.off{font-size:13px;color:var(--board-muted);padding:7px 10px;font-family:var(--body);font-weight:500}
+.setclock{font-size:11px;color:var(--board-muted);text-decoration:underline;padding:2px 6px}
+.sync{font-size:11px;color:var(--board-muted);text-align:center;padding-bottom:6px}
+.sync b{font-weight:600;color:var(--board-ink)}
+
+/* live */
+.live{display:flex;flex-direction:column;gap:12px;padding-block:12px}
+.cta{width:100%;background:var(--accent);color:var(--accent-ink);font-family:var(--display);font-weight:700;font-size:22px;letter-spacing:.04em;text-transform:uppercase;padding:14px;border-radius:10px}
+.final{text-align:center;font-family:var(--display);font-weight:700;font-size:22px;letter-spacing:.08em;color:var(--muted);padding:8px;border:2px dashed var(--line);border-radius:10px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.tile{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px;text-align:left;display:flex;flex-direction:column;justify-content:center;gap:4px;min-height:72px;min-width:0}
+.tile:active{transform:scale(.98);background:var(--surface-2)}
+.tile .top{display:flex;align-items:baseline;gap:7px;min-width:0}
+.tile .num{font-family:var(--display);font-weight:700;font-size:24px;line-height:1;flex:none}
+.tile .nm{font-weight:600;font-size:17px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.act .pt{display:flex;align-items:baseline;justify-content:center;gap:5px;min-width:0}
+.act .pt span{font-family:var(--body);font-weight:600;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.tile .ln{font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums}
+.tile .ln .f4{color:var(--warn);font-weight:700}.tile .ln .f5{color:var(--miss);font-weight:700}
+.tile.opp{grid-column:1/-1;flex-direction:row;align-items:center;justify-content:space-between;min-height:64px;background:var(--surface-2)}
+.tile.opp .num{font-size:24px;letter-spacing:.04em;text-transform:uppercase}
+.bar{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
+.bar button{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px 4px;font-weight:600;font-size:15px}
+.bar button:disabled{opacity:.4}
+.recent{display:flex;flex-direction:column;border-top:1px solid var(--line)}
+.recent .row{display:flex;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px solid var(--line);font-size:14px}
+.recent .row span:last-child{color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap}
+.label{font-family:var(--display);font-weight:600;font-size:13px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+
+/* sheet */
+#sheetWrap{position:fixed;inset:0;z-index:20;display:flex;flex-direction:column;justify-content:flex-end}
+.scrim{position:absolute;inset:0;background:rgba(5,8,12,.55)}
+.sheet{position:relative;background:var(--bg);border-radius:16px 16px 0 0;max-height:88%;overflow-y:auto;padding-block:14px calc(16px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:12px}
+.sheet h2{margin:0;font-family:var(--display);font-weight:700;font-size:26px;line-height:1.1;text-wrap:balance}
+.sheet .sub{color:var(--muted);font-size:14px;margin-top:-6px}
+.acts{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.acts.four{grid-template-columns:repeat(4,1fr)}
+.acts.two-acts{grid-template-columns:1fr 1fr}
+.act.big{padding:28px 4px;font-size:28px}
+.ftdots{display:flex;gap:10px;justify-content:center}
+.ftd{width:40px;height:40px;border-radius:50%;border:2px solid var(--line);display:flex;align-items:center;justify-content:center;font-family:var(--display);font-weight:700;font-size:20px;color:var(--muted)}
+.ftd.make{border-color:var(--make);color:var(--make)}.ftd.miss{border-color:var(--miss);color:var(--miss)}
+th.sort{cursor:pointer;user-select:none;-webkit-user-select:none}
+th.sort.on{color:var(--accent)}
+td.lu{white-space:normal;min-width:170px;max-width:240px;line-height:1.3;font-size:13px}
+.opppanel .acts.four{gap:6px}.opppanel .acts.four .act{padding:12px 2px;font-size:18px}
+.lastline{min-height:42px;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 12px;border-radius:10px;background:var(--surface-2);font-size:14px;font-weight:600}
+.lastline span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lastline .muted{color:var(--muted);font-weight:500}
+.lastline button{color:var(--accent);font-weight:700;padding:4px 6px;flex:none}
+.redit-box{border:1px solid var(--accent);border-radius:10px;padding:10px;display:flex;flex-direction:column;gap:6px;background:var(--surface)}
+.rerow2{display:flex;justify-content:space-between;align-items:center}
+.rproblems{border:1px solid var(--miss);color:var(--miss);border-radius:10px;padding:10px 12px;font-size:14px;line-height:1.5}
+.grow{display:grid;grid-template-columns:1fr auto auto;gap:8px;align-items:center}
+.grow .btn{min-width:0}
+.gx{color:var(--miss);font-weight:700;padding:10px 12px}
+.addp{display:grid;grid-template-columns:64px 1fr auto;gap:8px}
+.addp input{font:inherit;padding:10px;border-radius:8px;border:1px solid var(--line);background:var(--surface);color:var(--ink);min-width:0;width:100%}
+.addp .act{padding:10px 16px;font-size:18px}
+.courtwrap{max-width:440px;width:100%;margin:0 auto;touch-action:manipulation}
+.courtsvg{display:block}
+#court{cursor:crosshair}
+.courtsvg .floor{fill:var(--court)}
+.courtsvg .paint{fill:var(--paint)}
+.courtsvg .cl{stroke:var(--court-line);stroke-width:0.25}
+.courtsvg .rim{stroke:var(--miss);stroke-width:0.3}
+.courtsvg .dot{stroke:var(--surface);stroke-width:0.3}
+.courtsvg .dot.make{fill:var(--make)}.courtsvg .dot.miss{fill:var(--miss)}
+.courtsvg .xmiss line{stroke:var(--miss);stroke-width:0.4;stroke-linecap:round}
+.seg{display:flex;flex-wrap:wrap;gap:6px}
+.segb{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:8px 12px;font-weight:600;font-size:14px}
+.segb[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+#chart-player{font:inherit;padding:10px 12px;border-radius:8px;border:1px solid var(--line);background:var(--surface);color:var(--ink);max-width:100%}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.stat{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:8px 10px;display:flex;flex-direction:column;gap:1px;font-variant-numeric:tabular-nums}
+.stat b{font-family:var(--display);font-weight:700;font-size:26px;line-height:1.1}
+.stat span:last-child{color:var(--muted);font-size:13px}
+.acts.five{grid-template-columns:repeat(5,1fr);gap:6px}
+.acts.five .act{padding:12px 2px;font-size:18px}
+.opppanel{background:var(--surface-2);border:1px solid var(--line);border-radius:12px;padding:10px;display:flex;flex-direction:column;gap:8px}
+.opphead{display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap}
+.opphead .ln{font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums}
+.act{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px 4px;font-family:var(--display);font-weight:700;font-size:21px;letter-spacing:.02em;min-width:0}
+.act small{display:block;font-family:var(--body);font-weight:500;font-size:12px;color:var(--muted);letter-spacing:0}
+.act.make{border-color:var(--make);color:var(--make)}
+.act.miss{border-color:var(--miss);color:var(--miss)}
+.act.wide{grid-column:1/-1}
+.act.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.act.danger{border-color:var(--miss);color:var(--miss)}
+.act.sel-out{background:var(--miss);border-color:var(--miss);color:#fff}
+.act.sel-in{background:var(--make);border-color:var(--make);color:#fff}
+.act:disabled{opacity:.4}
+.cancel{padding:12px;color:var(--muted);font-weight:600}
+.inrow{display:flex;gap:8px;align-items:center;justify-content:center}
+.inrow input{width:84px;font:700 34px var(--display);text-align:center;padding:6px;border-radius:8px;border:1px solid var(--line);background:var(--surface);color:var(--ink)}
+
+/* tabs */
+.tabs{position:fixed;left:0;right:0;bottom:0;z-index:6;background:var(--surface);border-top:1px solid var(--line);display:grid;grid-template-columns:repeat(5,1fr);padding-bottom:env(safe-area-inset-bottom,0px);padding-left:env(safe-area-inset-left,0px);padding-right:env(safe-area-inset-right,0px)}
+.tabs button{padding:12px 0 14px;font-family:var(--display);font-weight:600;font-size:15px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.tabs button[aria-current="page"]{color:var(--accent);box-shadow:inset 0 3px 0 var(--accent)}
+
+/* box + plays + game */
+.page{display:flex;flex-direction:column;gap:14px;padding-block:14px}
+.page h1{margin:0;font-family:var(--display);font-weight:700;font-size:28px;text-wrap:balance}
+.scroll{overflow-x:auto;border:1px solid var(--line);border-radius:10px;background:var(--surface)}
+table{border-collapse:collapse;font-variant-numeric:tabular-nums;font-size:14px;width:100%}
+th,td{padding:8px 7px;text-align:right;white-space:nowrap;border-bottom:1px solid var(--line)}
+th{font-family:var(--display);font-weight:600;letter-spacing:.06em;font-size:13px;color:var(--muted);text-transform:uppercase}
+th:first-child,td:first-child{text-align:left;position:sticky;left:0;background:var(--surface)}
+tr.tot td{font-weight:700;border-bottom:0}
+tr.opp td{color:var(--muted)}
+td.dim{color:var(--muted)}
+.qline td,.qline th{text-align:center}
+.plays .row{display:grid;grid-template-columns:62px 1fr auto auto;gap:8px;align-items:center;padding:9px 0;border-bottom:1px solid var(--line);font-size:14px}
+.plays .when{color:var(--muted);font-variant-numeric:tabular-nums;font-size:13px}
+.plays .sc{font-variant-numeric:tabular-nums;color:var(--muted)}
+.plays .x{color:var(--miss);font-weight:700;padding:4px 8px}
+.plays .row.sys{color:var(--muted)}
+.del{background:var(--miss);color:#fff;border-radius:6px;padding:4px 8px;font-size:13px;font-weight:600}
+.field{display:flex;flex-direction:column;gap:6px}
+.field input,.field textarea{font:inherit;padding:10px 12px;border-radius:8px;border:1px solid var(--line);background:var(--surface);color:var(--ink);width:100%}
+.field textarea{min-height:180px;font-variant-numeric:tabular-nums;line-height:1.5}
+.hint{font-size:13px;color:var(--muted);line-height:1.45;max-width:62ch}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:8px 12px;font-weight:600;font-size:14px}
+.chip[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:13px 14px;font-weight:600;text-align:left;display:flex;justify-content:space-between;gap:10px;align-items:center}
+.btn small{color:var(--muted);font-weight:500}
+.list{display:flex;flex-direction:column;gap:8px}
+textarea.out{min-height:160px;font:12px ui-monospace,Menlo,monospace}
+#toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(86px + env(safe-area-inset-bottom,0px));z-index:30;background:var(--ink);color:var(--bg);padding:10px 14px;border-radius:999px;font-size:14px;font-weight:600;max-width:calc(100% - 32px);display:flex;gap:12px;align-items:center;box-shadow:0 6px 20px rgba(0,0,0,.25)}
+#toast button{color:var(--digit);font-weight:700}
+@media (prefers-reduced-motion:reduce){.tile:active{transform:none}}
+@media (min-width:700px){.grid{grid-template-columns:repeat(3,1fr)}.tile.opp{grid-column:auto;flex-direction:column;align-items:flex-start}.live,.page{max-width:900px;margin:0 auto;width:100%}}
+</style>
+
+<div id="app"></div>
+<div id="sheetWrap" hidden><div class="scrim" data-act="close"></div><div id="sheet" class="sheet wrap" role="dialog" aria-modal="true"></div></div>
+<div id="toast" hidden></div>
+
+<script>
+(function(){
+"use strict";
+const LS = "titans-stat-book/v1";
+const BONUS_AT = 5;              // NFHS: two shots from the 5th team foul of a quarter
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+
+const TEAM = "Marcos Varsity";
+// Standing roster (Nov 2026). Display names are what the coach calls them; 98 and 99 are placeholders until jerseys are known.
+const STANDING_ROSTER = ["0 Amari", "2 Dennis", "3 Ryan", "4 Diggy", "10 Isaac", "11 David", "12 Rocha", "13 Tristan", "15 Hayden", "23 Jhakiem", "24 Kaleb", "96 Brendan", "97 Achilles", "98 Jayvion", "99 Young"].join("\n");
+let S = loadLocal() || { games:{}, currentId:null, rosterText:STANDING_ROSTER, us:TEAM, qlen:8 };
+if (!S.v2) { if (!S.us || /arcadia|scrimmage/i.test(S.us)) S.us = TEAM; S.v2 = true; }
+if (!S.v4) { S.rosterText = STANDING_ROSTER; S.us = TEAM; S.v3 = S.v4 = true; }
+let view = G() ? "live" : "setup";
+let setup = null;          // setup draft
+let pendingDelete = null;  // play id awaiting confirm
+let db = null, syncState = "local", lastSync = null;
+
+function G(){ return S.games[S.currentId] || null; }
+function loadLocal(){ try { const r = localStorage.getItem(LS); return r ? JSON.parse(r) : null; } catch(e){ return null; } }
+function persist(g){
+  if (g) g.updated = Date.now();
+  try { localStorage.setItem(LS, JSON.stringify(S)); } catch(e){}
+  if (g) queueSync(g.id);
+}
+
+/* ---------- cloud copy (so the game survives a dead phone, and Claude can read it) ---------- */
+const dirty = new Set(); let writing = false, syncTimer = null;
+const deleted = new Set(); let pendingGameDelete = null;
+function pickCurrent(){
+  if (S.games[S.currentId]) return;
+  const newest = Object.values(S.games).sort((a, b) => (b.updated || 0) - (a.updated || 0))[0];
+  S.currentId = newest ? newest.id : null;
+  if (!newest) view = "setup";
+}
+function dropDeleted(){
+  let changed = false;
+  deleted.forEach(id => { if (S.games[id]) { delete S.games[id]; changed = true; } dirty.delete(id); });
+  if (changed) { pickCurrent(); try { localStorage.setItem(LS, JSON.stringify(S)); } catch(e){} }
+  return changed;
+}
+async function deleteGame(id){
+  deleted.add(id); dropDeleted(); pendingGameDelete = null; render();
+  if (!db) return;
+  try { await db.doc("meta/deleted").set({ ids:[...deleted] }); await db.doc("games/" + id).delete(); } catch(e){}
+}
+function queueSync(id){ dirty.add(id); clearTimeout(syncTimer); syncTimer = setTimeout(flush, 1200); }
+async function flush(){
+  if (!db || writing || !dirty.size) { paintSync(); return; }
+  writing = true;
+  const id = [...dirty][0]; dirty.delete(id);
+  const g = deleted.has(id) ? null : S.games[id];
+  try {
+    if (g) await db.doc("games/" + id).set(JSON.parse(JSON.stringify(g)));
+    syncState = "ok"; lastSync = new Date();
+  } catch(e){ dirty.add(id); syncState = "err"; }
+  writing = false; paintSync();
+  if (dirty.size) setTimeout(flush, syncState === "err" ? 8000 : 300);
+}
+function paintSync(){
+  const el = $("#sync"); if (!el) return;
+  if (!db) el.innerHTML = "Saved on this phone";
+  else if (syncState === "err") el.innerHTML = "No signal: saved on this phone, cloud copy will catch up";
+  else if (dirty.size || writing) el.innerHTML = "Saving to cloud…";
+  else if (lastSync) el.innerHTML = "Saved on phone and cloud <b>" + lastSync.toLocaleTimeString([], {hour:"numeric", minute:"2-digit"}) + "</b>";
+  else el.innerHTML = "Saved on this phone";
+}
+(async function initDb(){
+  try { db = (window.claude && window.claude.use) ? await window.claude.use("db") : null; } catch(e){ db = null; }
+  if (!db) { paintSync(); return; }
+  try {
+    try { const ds = await db.doc("meta/deleted").get(); if (ds.exists) (ds.data().ids || []).forEach(id => deleted.add(id)); } catch(e){}
+    let changed = dropDeleted();
+    const snap = await db.collection("games").get();
+    snap.docs.forEach(d => {
+      const cg = d.data(); if (!cg || !cg.id || deleted.has(cg.id)) return;
+      const lg = S.games[cg.id];
+      if (!lg || (cg.updated || 0) > (lg.updated || 0)) { S.games[cg.id] = cg; changed = true; }
+      else if ((lg.updated || 0) > (cg.updated || 0)) dirty.add(lg.id);
+    });
+    Object.keys(S.games).forEach(id => { if (!deleted.has(id) && !snap.docs.some(d => d.id === id)) dirty.add(id); });
+    if (changed) {
+      if (!G()) { pickCurrent(); if (G()) view = "live"; }
+      try { localStorage.setItem(LS, JSON.stringify(S)); } catch(e){}
+      render();
+    }
+    syncState = "ok"; lastSync = new Date();
+  } catch(e){ syncState = "err"; }
+  flush();
+})();
+
+/* ---------- roster ---------- */
+function parseRoster(text){
+  const out = [], seen = {};
+  out.problems = [];
+  String(text || "").split(/\n/).forEach(raw => {
+    const line = raw.trim(); if (!line) return;
+    let num, name, m = line.match(/^#?(\d{1,2})\b[\s,.\-–:]*(.*)$/);
+    if (m) { num = m[1]; name = m[2].trim(); }
+    else {
+      m = line.match(/^(.*?)[\s,#]+(\d{1,2})$/);
+      if (!m) { out.problems.push('"' + line + '" has no jersey number'); return; }
+      num = m[2]; name = m[1].trim();
+    }
+    if (seen[num] != null) { out.problems.push('"' + line + '" uses #' + num + ", which " + (seen[num] || "another player") + " already has"); return; }
+    seen[num] = name; out.push({ num, name });
+  });
+  return out;
+}
+function pname(g, num){ const p = g.roster.find(r => r.num === num); return p && p.name ? p.name : ""; }
+function plabel(g, num){ const n = pname(g, num); return "#" + num + (n ? " " + n : ""); }
+
+/* ---------- derived game state ---------- */
+function onCourt(g){
+  let on = [...g.starters];
+  for (const e of g.events) if (e.type === "sub") on = on.filter(n => !e.out.includes(n)).concat(e.in);
+  return on;
+}
+function periodState(g){
+  let p = 0, live = false, final = false;
+  for (const e of g.events) {
+    if (e.type === "period") { if (e.action === "start") { p = e.period; live = true; } else live = false; }
+    if (e.type === "final") { final = true; live = false; }
+  }
+  return { p, live, final };
+}
+const pLabel = p => p <= 0 ? "PRE" : p <= 4 ? "Q" + p : (p === 5 ? "OT" : "OT" + (p - 4));
+function clockRem(g){ const c = g.clock; return c.run ? Math.max(0, c.rem - (Date.now() - c.at) / 1000) : c.rem; }
+function fmtClock(s){ s = Math.max(0, s); if (s < 60) return (Math.floor(s * 10) / 10).toFixed(1); const m = Math.floor(s / 60), r = Math.floor(s % 60); return m + ":" + String(r).padStart(2, "0"); }
+function fmtClockInt(s){ if (s == null) return ""; const m = Math.floor(s / 60), r = Math.round(s % 60); return m + ":" + String(r).padStart(2, "0"); }
+
+function blankLine(){ return { pts:0, fgm:0, fga:0, tpm:0, tpa:0, ftm:0, fta:0, oreb:0, dreb:0, ast:0, stl:0, blk:0, to:0, pf:0, pm:0 }; }
+function compute(g, evs){
+  const P = {}; g.roster.forEach(r => P[r.num] = blankLine());
+  const T = { us: blankLine(), them: blankLine() };
+  const byQ = { us:{}, them:{} }, fouls = { us:{}, them:{} };
+  const scoreAfter = {}; let us = 0, them = 0;
+  for (const e of (evs || g.events)) {
+    const side = T[e.team]; const pl = (e.team === "us" && e.player != null) ? (P[e.player] || (P[e.player] = blankLine())) : null;
+    const inc = (k, v = 1) => { if (side) side[k] += v; if (pl) pl[k] += v; };
+    if (e.type === "shot") {
+      if (e.pts === 1) { inc("fta"); if (e.made) inc("ftm"); }
+      else { inc("fga"); if (e.pts === 3) inc("tpa"); if (e.made) { inc("fgm"); if (e.pts === 3) inc("tpm"); } }
+      if (e.made) {
+        inc("pts", e.pts);
+        byQ[e.team][e.p] = (byQ[e.team][e.p] || 0) + e.pts;
+        if (e.team === "us") us += e.pts; else them += e.pts;
+        (e.on || []).forEach(n => { (P[n] || (P[n] = blankLine())).pm += e.team === "us" ? e.pts : -e.pts; });
+      }
+    } else if (e.type === "reb") inc(e.off ? "oreb" : "dreb");
+    else if (e.type === "ast") inc("ast");
+    else if (e.type === "stl") inc("stl");
+    else if (e.type === "blk") inc("blk");
+    else if (e.type === "to") inc("to");
+    else if (e.type === "foul") { inc("pf"); fouls[e.team][e.p] = (fouls[e.team][e.p] || 0) + 1; }
+    scoreAfter[e.id] = [us, them];
+  }
+  return { P, T, byQ, fouls, us, them, scoreAfter };
+}
+
+/* ---------- logging ---------- */
+const STAT_TYPES = ["shot", "reb", "ast", "stl", "blk", "to", "foul"];
+function addEvent(g, e, grp){
+  if (STAT_TYPES.includes(e.type)) {
+    const ps0 = periodState(g);
+    if (!ps0.live && !ps0.final) { startPeriod(g, ps0.p + 1); autoNote = pLabel(ps0.p + 1); }
+  }
+  const ps = periodState(g);
+  e.id = uid(); e.t = new Date().toISOString(); e.ms = Date.now();
+  e.p = ps.p; e.clock = g.clockUsed ? Math.round(clockRem(g) * 10) / 10 : null;
+  e.on = onCourt(g); e.grp = grp || e.id;
+  g.events.push(e); persist(g); return e;
+}
+function describe(g, e){
+  const who = e.team === "us" ? (e.player != null ? plabel(g, e.player) : g.us) : g.them;
+  switch (e.type) {
+    case "shot": return who + (e.made ? " made " : " missed ") + (e.pts === 1 ? "free throw" : e.pts);
+    case "reb": return who + (e.off ? " offensive" : " defensive") + " rebound";
+    case "ast": return who + " assist";
+    case "stl": return who + " steal";
+    case "blk": return who + " block";
+    case "to": return who + " turnover";
+    case "foul": return who + (e.kind === "offensive" ? " offensive foul" : e.kind === "shooting" ? " shooting foul" : " foul");
+    case "timeout": return (e.team === "us" ? g.us : g.them) + (e.kind === "30" ? " 30-second timeout" : e.kind === "full" ? " full timeout" : " timeout");
+    case "sub": return "Sub: in " + e.in.map(n => "#" + n).join(", ") + (e.out.length ? " / out " + e.out.map(n => "#" + n).join(", ") : "");
+    case "period": return (e.action === "start" ? "Start " : "End ") + pLabel(e.period) + (e.period === 1 && e.action === "start" ? " (tip-off)" : "");
+    case "final": return "Final";
+  }
+  return e.type;
+}
+let lastMsg = null, autoNote = null;
+function lastHtml(){
+  return lastMsg ? "<span>" + esc(lastMsg.msg) + "</span>" + (lastMsg.undo ? '<button data-act="undo">Undo</button>' : "") : '<span class="muted">Tap a player to log a play</span>';
+}
+function toast(msg, undo){
+  if (autoNote) { msg = autoNote + " started · " + msg; autoNote = null; }
+  const slot = $("#lastline");
+  if (slot && view === "live") { lastMsg = { msg, undo }; slot.innerHTML = lastHtml(); return; }
+  const t = $("#toast"); t.innerHTML = "<span>" + esc(msg) + "</span>" + (undo ? '<button data-act="undo">Undo</button>' : "");
+  t.hidden = false; clearTimeout(toast._t); toast._t = setTimeout(() => t.hidden = true, 3200);
+}
+function buzz(){ try { navigator.vibrate && navigator.vibrate(12); } catch(e){} }
+
+/* ---------- sheets ---------- */
+function openSheet(html){ $("#sheet").innerHTML = html; $("#sheetWrap").hidden = false; $("#sheet").scrollTop = 0; }
+function closeSheet(){ $("#sheetWrap").hidden = true; $("#sheet").innerHTML = ""; }
+
+function playerTile(g, num, act, extra = ""){
+  const n = pname(g, num);
+  return '<button class="act" data-act="' + act + '" data-n="' + esc(num) + '"' + extra + '><span class="pt">#' + esc(num) + (n ? "<span>" + esc(n) + "</span>" : "") + "</span></button>";
+}
+function sheetPlayer(num){
+  const g = G();
+  openSheet(
+    "<h2>" + esc(plabel(g, num)) + "</h2>" +
+    '<div class="label">Shots</div>' +
+    '<div class="acts four">' +
+      '<button class="act make" data-act="log" data-k="m2" data-n="' + num + '">2 ✓<small>made 2</small></button>' +
+      '<button class="act make" data-act="log" data-k="m3" data-n="' + num + '">3 ✓<small>made 3</small></button>' +
+      '<button class="act miss" data-act="log" data-k="x2" data-n="' + num + '">2 ✗<small>missed 2</small></button>' +
+      '<button class="act miss" data-act="log" data-k="x3" data-n="' + num + '">3 ✗<small>missed 3</small></button>' +
+      '<button class="act wide" data-act="ftgo" data-team="us" data-n="' + num + '">Free throws</button>' +
+    "</div>" +
+    '<div class="label">Everything else</div>' +
+    '<div class="acts four">' +
+      '<button class="act" data-act="log" data-k="oreb" data-n="' + num + '">OREB</button>' +
+      '<button class="act" data-act="log" data-k="dreb" data-n="' + num + '">DREB</button>' +
+      '<button class="act" data-act="log" data-k="ast" data-n="' + num + '">AST</button>' +
+      '<button class="act" data-act="log" data-k="stl" data-n="' + num + '">STL</button>' +
+      '<button class="act" data-act="log" data-k="blk" data-n="' + num + '">BLK</button>' +
+      '<button class="act" data-act="log" data-k="to" data-n="' + num + '">TO</button>' +
+      '<button class="act" data-act="log" data-k="foul" data-n="' + num + '">FOUL</button>' +
+      '<button class="act" data-act="close">✕</button>' +
+    "</div>"
+  );
+}
+function sheetOpp(){
+  const g = G();
+  openSheet(
+    "<h2>" + esc(g.them) + "</h2>" +
+    '<div class="label">Shots</div>' +
+    '<div class="acts">' +
+      '<button class="act make" data-act="olog" data-k="m2">2 ✓<small>made 2</small></button>' +
+      '<button class="act make" data-act="olog" data-k="m3">3 ✓<small>made 3</small></button>' +
+      '<button class="act make" data-act="olog" data-k="mft">FT ✓<small>made FT</small></button>' +
+      '<button class="act miss" data-act="olog" data-k="x2">2 ✗<small>missed 2</small></button>' +
+      '<button class="act miss" data-act="olog" data-k="x3">3 ✗<small>missed 3</small></button>' +
+      '<button class="act miss" data-act="olog" data-k="xft">FT ✗<small>missed FT</small></button>' +
+    "</div>" +
+    '<div class="label">Everything else</div>' +
+    '<div class="acts four">' +
+      '<button class="act" data-act="olog" data-k="oreb">OREB</button>' +
+      '<button class="act" data-act="olog" data-k="dreb">DREB</button>' +
+      '<button class="act" data-act="olog" data-k="to">TO</button>' +
+      '<button class="act" data-act="olog" data-k="foul">FOUL</button>' +
+    "</div>" +
+    '<button class="cancel" data-act="close">Cancel</button>'
+  );
+}
+function sheetAssist(shot){
+  const g = G(); const mates = onCourt(g).filter(n => n !== shot.player);
+  openSheet("<h2>Assisted by?</h2><div class='sub'>" + esc(describe(g, shot)) + "</div>" +
+    '<div class="acts">' + mates.map(n => playerTile(g, n, "assist", ' data-ref="' + shot.id + '"')).join("") +
+    '<button class="act wide" data-act="close">No assist</button></div>');
+}
+function sheetRebound(miss){
+  const g = G(); const ours = miss.team === "us";
+  openSheet("<h2>Rebound?</h2><div class='sub'>" + esc(describe(g, miss)) + "</div>" +
+    '<div class="acts">' + onCourt(g).map(n => playerTile(g, n, "reb", ' data-ref="' + miss.id + '"')).join("") +
+    '<button class="act" data-act="reb" data-n="" data-ref="' + miss.id + '">' + esc(g.them).slice(0, 10) + '<small>' + (ours ? "def. rebound" : "off. rebound") + '</small></button>' +
+    '<button class="act wide" data-act="close">No rebound / dead ball</button></div>');
+}
+function sheetSteal(to){
+  const g = G();
+  openSheet("<h2>Stolen by?</h2><div class='sub'>" + esc(g.them) + " turnover</div>" +
+    '<div class="acts">' + onCourt(g).map(n => playerTile(g, n, "steal", ' data-ref="' + to.id + '"')).join("") +
+    '<button class="act wide" data-act="close">No steal</button></div>');
+}
+/* ---------- free throws: how many, then who, then each shot ---------- */
+let ft = null;
+const FT_COUNTS = [["1", "1"], ["2", "2"], ["3", "3"], ["1+1", "1-and-1"]];
+function ftTotal(){ return ft.n === "1+1" ? (ft.made.length && !ft.made[0] ? 1 : 2) : +ft.n; }
+function ftLabel(){ return ft.n === "1+1" ? "1-and-1" : ft.n + " free throw" + (ft.n === "1" ? "" : "s"); }
+function ftWho(g){ return ft.team === "us" ? plabel(g, ft.shooter) : g.them; }
+function ftStart(o){ ft = Object.assign({ team:null, shooter:null, n:null, made:[], grp:null, ref:null }, o); ftNext(); }
+function ftNext(){
+  if (ft.n == null) return sheetFtCount();
+  if (ft.team == null || (ft.team === "us" && ft.shooter == null)) return sheetFtWho();
+  sheetFtShot();
+}
+function sheetFtCount(){
+  const g = G();
+  const title = ft.shooter != null ? plabel(g, ft.shooter) : ft.team === "them" ? g.them : "Free throws";
+  openSheet("<h2>" + esc(title) + "</h2><div class='sub'>How many free throws?</div>" +
+    '<div class="acts four">' + FT_COUNTS.map(([v, l]) => '<button class="act" data-act="ftn" data-v="' + v + '">' + l + "</button>").join("") + "</div>" +
+    '<button class="cancel" data-act="close">Cancel</button>');
+}
+function sheetFtWho(){
+  const g = G();
+  openSheet("<h2>Who's shooting?</h2><div class='sub'>" + esc(ftLabel()) + "</div>" +
+    '<div class="acts">' + sortNums(onCourt(g)).map(n => playerTile(g, n, "ftwho")).join("") +
+    (ft.team == null ? '<button class="act" data-act="ftwho" data-n="">' + esc(g.them).slice(0, 10) + "<small>team</small></button>" : "") +
+    '</div><button class="cancel" data-act="close">Cancel</button>');
+}
+function sheetFtShot(){
+  const g = G(); const total = ftTotal(), i = ft.made.length;
+  const dots = Array.from({ length: total }, (_, k) => k < i ? '<span class="ftd ' + (ft.made[k] ? "make" : "miss") + '">' + (ft.made[k] ? "✓" : "✗") + "</span>" : '<span class="ftd">' + (k + 1) + "</span>").join("");
+  openSheet("<h2>" + esc(ftWho(g)) + "</h2><div class='sub'>Free throw " + (i + 1) + " of " + total + (ft.n === "1+1" ? " (1-and-1)" : "") + "</div>" +
+    '<div class="ftdots">' + dots + "</div>" +
+    '<div class="acts two-acts"><button class="act make big" data-act="ftshot" data-v="1">Made ✓</button><button class="act miss big" data-act="ftshot" data-v="0">Missed ✗</button></div>' +
+    '<button class="cancel" data-act="close">Stop here</button>');
+}
+function sheetFoulAfter(foul){
+  const g = G(); const c = compute(g);
+  const tf = c.fouls[foul.team][foul.p] || 0;
+  const shoot = foul.team === "us" ? "them" : "us", shootName = shoot === "us" ? g.us : g.them;
+  const bonus = tf >= BONUS_AT;
+  const who = foul.team === "us" ? plabel(g, foul.player) : g.them;
+  const pf = foul.team === "us" ? (c.P[foul.player] || blankLine()).pf : null;
+  openSheet("<h2>Foul: " + esc(who) + "</h2>" +
+    "<div class='sub'>" + (pf != null ? "Personal foul " + pf + (pf >= 5 ? " (fouled out)" : "") + " · " : "") + "Team foul " + tf + " this quarter" + (bonus ? " · " + esc(shootName) + " in the bonus" : "") + "</div>" +
+    '<div class="label">Free throws for ' + esc(shootName) + "</div>" +
+    '<div class="acts four">' + FT_COUNTS.map(([v, l]) => '<button class="act' + (bonus && v === "2" ? " primary" : "") + '" data-act="foulft" data-v="' + v + '" data-ref="' + foul.id + '">' + l + "</button>").join("") + "</div>" +
+    '<div class="acts two-acts"><button class="act" data-act="close">No free throws</button><button class="act" data-act="fouloff" data-ref="' + foul.id + '">Offensive<small>also a turnover</small></button></div>');
+}
+
+/* ---------- ordering: numbers sort as numbers; the top 8 come off the bench first ---------- */
+const TOP8_DEFAULT = ["amari", "ryan", "diggy", "dennis", "isaac", "tristan", "hayden", "rocha"];
+if (!Array.isArray(S.top8)) S.top8 = TOP8_DEFAULT.slice();
+const numSort = (a, b) => (parseInt(a, 10) - parseInt(b, 10)) || String(a).localeCompare(String(b));
+function sortNums(arr){ return arr.slice().sort(numSort); }
+function isTop8(g, n){ const nm = pname(g, n).trim().toLowerCase(); return !!nm && S.top8.includes(nm); }
+
+let subOut = new Set(), subIn = new Set();
+function sheetSub(){
+  const g = G(); const on = sortNums(onCourt(g)); const rest = g.roster.map(r => r.num).filter(n => !on.includes(n));
+  const bench = sortNums(rest.filter(n => isTop8(g, n))).concat(sortNums(rest.filter(n => !isTop8(g, n))));
+  const after = on.length - subOut.size + subIn.size;
+  const ok = (subOut.size || subIn.size) && after <= 5 && after >= 1;
+  const tile = (n, set, cls, act) => '<button class="act' + (set.has(n) ? " " + cls : "") + '" data-act="' + act + '" data-n="' + n + '"><span class="pt">#' + n + (pname(g, n) ? "<span>" + esc(pname(g, n)) + "</span>" : "") + "</span></button>";
+  openSheet("<h2>Substitution</h2><div class='sub'>Tap who is coming out, then who is going in.</div>" +
+    '<div class="label">On the floor: tap to take out</div><div class="acts">' + on.map(n => tile(n, subOut, "sel-out", "subout")).join("") + "</div>" +
+    '<div class="label">Bench: tap to put in</div><div class="acts">' + (bench.length ? bench.map(n => tile(n, subIn, "sel-in", "subin")).join("") : "<span class='hint'>Nobody on the bench.</span>") + "</div>" +
+    '<button class="act primary wide" data-act="subgo"' + (ok ? "" : " disabled") + '>' + (ok ? "Sub " + subOut.size + " out, " + subIn.size + " in" + (after !== 5 ? " (" + after + " on floor)" : "") : "Pick players") + "</button>" +
+    '<div class="label">Forgot someone? Add a player</div>' + addPlayerForm() +
+    '<button class="cancel" data-act="close">Cancel</button>');
+}
+function sheetPeriod(){
+  const g = G(); const ps = periodState(g);
+  let html = "";
+  if (ps.live) {
+    const next = ps.p + 1;
+    html = "<h2>End " + pLabel(ps.p) + "?</h2>" +
+      '<div class="acts">' +
+      '<button class="act primary wide" data-act="periodgo" data-mode="next">End ' + pLabel(ps.p) + ", start " + pLabel(next) + "</button>" +
+      '<button class="act wide" data-act="periodgo" data-mode="end">End ' + pLabel(ps.p) + " (start " + pLabel(next) + " later)</button>" +
+      (ps.p >= 4 ? '<button class="act danger wide" data-act="periodgo" data-mode="final">End game: Final</button>' : "") +
+      "</div>";
+  } else {
+    html = "<h2>Start " + pLabel(ps.p + 1) + "?</h2>" +
+      '<div class="acts"><button class="act primary wide" data-act="periodgo" data-mode="start">Start ' + pLabel(ps.p + 1) + "</button>" +
+      (ps.p >= 4 ? '<button class="act danger wide" data-act="periodgo" data-mode="final">End game: Final</button>' : "") + "</div>";
+  }
+  openSheet(html + '<div class="hint">Tip: start each quarter right at the whistle. Those times line the stats up with the film.</div><button class="cancel" data-act="close">Cancel</button>');
+}
+function sheetClock(){
+  const g = G(); const r = Math.round(clockRem(g));
+  openSheet("<h2>Set game clock</h2>" +
+    '<div class="inrow"><input id="cm" type="number" inputmode="numeric" min="0" max="20" value="' + Math.floor(r / 60) + '" aria-label="Minutes"><span style="font:700 34px var(--display)">:</span><input id="cs" type="number" inputmode="numeric" min="0" max="59" value="' + (r % 60) + '" aria-label="Seconds"></div>' +
+    '<div class="acts"><button class="act primary wide" data-act="clockset">Set clock</button>' +
+    '<button class="act wide" data-act="clockoff">' + (g.clockUsed ? "Stop using the clock" : "Close") + "</button></div>" +
+    '<div class="hint">The clock is optional. Every stat is stamped with the time of day either way, which is what lines up with the film.</div>');
+}
+// NFHS: 3 full and 2 thirty-second timeouts a game, plus one full per overtime
+function timeoutsLeft(g, team, kind){
+  const used = g.events.filter(e => e.type === "timeout" && e.team === team && e.kind === kind).length;
+  const allow = kind === "full" ? 3 + Math.max(0, periodState(g).p - 4) : 2;
+  return allow - used;
+}
+function sheetTimeout(){
+  const g = G();
+  const btn = (team, kind, label) => { const left = timeoutsLeft(g, team, kind);
+    return '<button class="act" data-act="tout" data-team="' + team + '" data-kind="' + kind + '"' + (left <= 0 ? " disabled" : "") + ">" + label + "<small>" + Math.max(0, left) + " left</small></button>"; };
+  const row = team => '<div class="label">' + esc(team === "us" ? g.us : g.them) + '</div><div class="acts two-acts">' + btn(team, "full", "Full") + btn(team, "30", "30") + "</div>";
+  openSheet("<h2>Timeout</h2>" + row("us") + row("them") + '<div class="hint">3 full and 2 thirty-second timeouts a game, plus one full per overtime. Delete one on the Plays tab if it was tapped by mistake.</div><button class="cancel" data-act="close">Cancel</button>');
+}
+
+/* ---------- shot spot: half court, basket at the top, feet from the left sideline (x) and the baseline (y) ---------- */
+const RIM = { x:25, y:5.25 }, ARC = 19.75, VB = { x:-1, y:-1, w:52, h:37 };
+function courtSvg(marks){
+  const L = 'class="cl"';
+  const open = marks == null
+    ? '<svg id="court" class="courtsvg" data-act="spot" viewBox="' + VB.x + " " + VB.y + " " + VB.w + " " + VB.h + '" width="100%" role="img" aria-label="Half court: tap where the shot came from">'
+    : '<svg class="courtsvg" viewBox="' + VB.x + " " + VB.y + " " + VB.w + " " + VB.h + '" width="100%" role="img" aria-label="Shot chart">';
+  return open +
+    '<rect x="0" y="0" width="50" height="40" class="floor"/>' +
+    '<rect x="19" y="0" width="12" height="19" class="paint"/>' +
+    '<rect x="19" y="0" width="12" height="19" fill="none" ' + L + '/>' +
+    '<path d="M19 19 A6 6 0 0 0 31 19" fill="none" ' + L + '/>' +
+    '<path d="M' + (25 - ARC) + ' 0 L' + (25 - ARC) + " " + RIM.y + " A" + ARC + " " + ARC + " 0 0 0 " + (25 + ARC) + " " + RIM.y + " L" + (25 + ARC) + ' 0" fill="none" ' + L + '/>' +
+    '<line x1="22" y1="4" x2="28" y2="4" ' + L + ' stroke-width="0.4"/>' +
+    '<circle cx="25" cy="5.25" r="0.75" fill="none" class="rim"/>' +
+    '<rect x="0" y="0" width="50" height="40" fill="none" ' + L + '/>' +
+    (marks || "") + "</svg>";
+}
+function shotMark(e){
+  if (e.made) return '<circle cx="' + e.x + '" cy="' + e.y + '" r="0.85" class="dot make"/>';
+  const d = 0.7;
+  return '<g class="xmiss"><line x1="' + (e.x - d) + '" y1="' + (e.y - d) + '" x2="' + (e.x + d) + '" y2="' + (e.y + d) + '"/><line x1="' + (e.x - d) + '" y1="' + (e.y + d) + '" x2="' + (e.x + d) + '" y2="' + (e.y - d) + '"/></g>';
+}
+let chartPeriod = "game", chartPlayer = "all";
+const PERIOD_SETS = { game:null, h1:[1, 2], h2:[3, 4], 1:[1], 2:[2], 3:[3], 4:[4], ot:"ot" };
+let boxPeriod = "game";
+function inSel(sel, p){
+  const s = PERIOD_SETS[sel];
+  if (s == null) return true;
+  if (s === "ot") return p >= 5;
+  return s.includes(p);
+}
+function inPeriod(p){ return inSel(chartPeriod, p); }
+function segHtml(sel, act, ps){
+  const segs = [["game", "Game"], ["h1", "1st half"], ["h2", "2nd half"], ["1", "Q1"], ["2", "Q2"], ["3", "Q3"], ["4", "Q4"]];
+  if (ps.p >= 5) segs.push(["ot", "OT"]);
+  return '<div class="seg">' + segs.map(([v, l]) => '<button class="segb" data-act="' + act + '" data-v="' + v + '" aria-pressed="' + (String(sel) === v) + '">' + l + "</button>").join("") + "</div>";
+}
+let editNum = null;
+function syncRosterText(g){ S.rosterText = g.roster.map(r => r.num + (r.name ? " " + r.name : "")).join("\n"); }
+function usedInGame(g, n){
+  return g.starters.includes(n) || g.events.some(e => e.player === n || (e.on || []).includes(n) || (e.in || []).includes(n) || (e.out || []).includes(n));
+}
+function remapNum(g, a, b){
+  const sw = x => x === a ? b : x;
+  g.roster.forEach(r => { if (r.num === a) r.num = b; });
+  g.starters = g.starters.map(sw);
+  g.events.forEach(e => {
+    if (e.player === a) e.player = b;
+    if (e.on) e.on = e.on.map(sw);
+    if (e.in) e.in = e.in.map(sw);
+    if (e.out) e.out = e.out.map(sw);
+  });
+}
+function rosterEditor(g){
+  const on = onCourt(g);
+  return '<div class="list">' + g.roster.slice().sort((a, b) => numSort(a.num, b.num)).map(r => {
+    if (editNum === r.num) return '<div class="redit-box"><div class="addp"><input id="re-num" inputmode="numeric" maxlength="3" value="' + esc(r.num) + '" aria-label="Jersey number"><input id="re-name" value="' + esc(r.name) + '" placeholder="Name" aria-label="Name" autocomplete="off"><button class="act" data-act="resave" data-n="' + esc(r.num) + '">Save</button></div>' +
+      '<button class="chip" data-act="top8" data-n="' + esc(r.num) + '" aria-pressed="' + isTop8(g, r.num) + '">Top 8: first off the bench</button>' +
+      '<div class="rerow2"><button class="gx" data-act="reremove" data-n="' + esc(r.num) + '">Remove from roster</button><button class="cancel" data-act="recancel">Cancel</button></div><div class="hint" id="re-msg"></div></div>';
+    return '<button class="btn" data-act="reedit" data-n="' + esc(r.num) + '"><span>#' + esc(r.num) + (r.name ? " " + esc(r.name) : "") + "</span><small>" + (isTop8(g, r.num) ? "Top 8 · " : "") + (on.includes(r.num) ? "on the floor · " : "") + "Edit</small></button>";
+  }).join("") + "</div>";
+}
+function addPlayerForm(){
+  return '<div class="addp"><input id="ap-num" inputmode="numeric" maxlength="3" placeholder="#" aria-label="Jersey number"><input id="ap-name" placeholder="Name" aria-label="Name" autocomplete="off"><button class="act" data-act="addplayer">Add</button></div><div class="hint" id="ap-msg"></div>';
+}
+function renderShots(g){
+  const c = compute(g), ps = periodState(g);
+  const fgs = g.events.filter(e => e.type === "shot" && e.team === "us" && e.pts !== 1 && inPeriod(e.p) && (chartPlayer === "all" || e.player === chartPlayer));
+  const spotted = fgs.filter(e => e.x != null);
+  const n = (arr, pts) => { const a = arr.filter(e => pts == null || e.pts === pts); const m = a.filter(e => e.made).length; return { m, a:a.length, pct: a.length ? Math.round(m / a.length * 100) + "%" : "–" }; };
+  const fg = n(fgs), two = n(fgs, 2), three = n(fgs, 3);
+  const shooters = g.roster.filter(r => g.events.some(e => e.type === "shot" && e.team === "us" && e.pts !== 1 && e.player === r.num));
+  const sel = '<select id="chart-player" aria-label="Player"><option value="all">Whole team</option>' +
+    shooters.map(r => '<option value="' + esc(r.num) + '"' + (chartPlayer === r.num ? " selected" : "") + ">#" + esc(r.num) + (r.name ? " " + esc(r.name) : "") + "</option>").join("") + "</select>";
+  const stat = (label, s) => '<div class="stat"><span class="label">' + label + '</span><b>' + s.m + "-" + s.a + "</b><span>" + s.pct + "</span></div>";
+  return board(g, c, ps) + '<main class="page wrap"><h1>Shot chart</h1>' +
+    segHtml(chartPeriod, "chartp", ps) + sel +
+    '<div class="stats">' + stat("FG", fg) + stat("2PT", two) + stat("3PT", three) + "</div>" +
+    '<div class="courtwrap">' + courtSvg(spotted.map(shotMark).join("")) + "</div>" +
+    '<div class="hint">● made &nbsp; ✕ missed. ' + (fgs.length - spotted.length ? (fgs.length - spotted.length) + " shot" + (fgs.length - spotted.length === 1 ? " has" : "s have") + " no spot marked (skipped) and count above but are not on the court. " : "") + "Free throws are not on the chart.</div></main>";
+}
+let spotFor = null;
+function sheetSpot(shot){
+  const g = G(); spotFor = shot.id;
+  openSheet("<h2>" + esc(plabel(g, shot.player)) + (shot.made ? " made " : " missed ") + shot.pts + "</h2><div class='sub'>Tap where the shot came from</div>" +
+    '<div class="courtwrap">' + courtSvg() + "</div>" +
+    '<button class="act wide" data-act="spotskip">Skip</button>');
+}
+function afterSpot(shot){ if (shot.made) sheetAssist(shot); else sheetRebound(shot); }
+
+/* ---------- actions ---------- */
+function logUs(k, num){
+  const g = G(); let e;
+  const shot = (pts, made) => addEvent(g, { type:"shot", team:"us", player:num, pts, made });
+  closeSheet(); buzz();
+  switch (k) {
+    case "m2": e = shot(2, true); sheetSpot(e); break;
+    case "m3": e = shot(3, true); sheetSpot(e); break;
+    case "mft": e = shot(1, true); break;
+    case "x2": e = shot(2, false); sheetSpot(e); break;
+    case "x3": e = shot(3, false); sheetSpot(e); break;
+    case "xft": e = shot(1, false); sheetRebound(e); break;
+    case "oreb": e = addEvent(g, { type:"reb", team:"us", player:num, off:true }); break;
+    case "dreb": e = addEvent(g, { type:"reb", team:"us", player:num, off:false }); break;
+    case "ast": e = addEvent(g, { type:"ast", team:"us", player:num }); break;
+    case "stl": e = addEvent(g, { type:"stl", team:"us", player:num });
+      addEvent(g, { type:"to", team:"them", player:null, ref:e.id }, e.grp); break;
+    case "blk": e = addEvent(g, { type:"blk", team:"us", player:num });
+      { const m = addEvent(g, { type:"shot", team:"them", player:null, pts:2, made:false, ref:e.id }, e.grp); sheetRebound(m); } break;
+    case "to": e = addEvent(g, { type:"to", team:"us", player:num }); break;
+    case "foul": e = addEvent(g, { type:"foul", team:"us", player:num }); sheetFoulAfter(e);
+      { const pf = compute(g).P[num].pf; if (pf >= 5) { render(); toast(plabel(g, num) + " has 5 fouls: fouled out", true); return; } } break;
+  }
+  render(); toast(describe(g, e), true);
+}
+function logThem(k){
+  const g = G(); let e;
+  const shot = (pts, made) => addEvent(g, { type:"shot", team:"them", player:null, pts, made });
+  closeSheet(); buzz();
+  switch (k) {
+    case "m2": e = shot(2, true); break;
+    case "m3": e = shot(3, true); break;
+    case "mft": e = shot(1, true); break;
+    case "x2": e = shot(2, false); sheetRebound(e); break;
+    case "x3": e = shot(3, false); sheetRebound(e); break;
+    case "xft": e = shot(1, false); sheetRebound(e); break;
+    case "oreb": e = addEvent(g, { type:"reb", team:"them", player:null, off:true }); break;
+    case "dreb": e = addEvent(g, { type:"reb", team:"them", player:null, off:false }); break;
+    case "to": e = addEvent(g, { type:"to", team:"them", player:null }); sheetSteal(e); break;
+    case "foul": e = addEvent(g, { type:"foul", team:"them", player:null }); sheetFoulAfter(e); break;
+  }
+  render(); toast(describe(g, e), true);
+}
+function findEvent(g, id){ return g.events.find(e => e.id === id); }
+function undo(){
+  const g = G(); if (!g || !g.events.length) return;
+  const grp = g.events[g.events.length - 1].grp;
+  const gone = g.events.filter(e => e.grp === grp);
+  g.events = g.events.filter(e => e.grp !== grp);
+  persist(g); closeSheet(); render();
+  toast("Undid: " + describe(g, gone[0]));
+}
+function deletePlay(id){
+  const g = G(); const kill = new Set([id]);
+  g.events.forEach(e => { if (e.ref === id) kill.add(e.id); });
+  g.events = g.events.filter(e => !kill.has(e.id));
+  pendingDelete = null; persist(g); render();
+}
+function startPeriod(g, p){
+  g.clock = { rem: (p <= 4 ? g.qlen : 4) * 60, run:false, at:0 };
+  addEvent(g, { type:"period", action:"start", period:p });
+  // addEvent stamped p from the state before this event; fix it to the new period
+  g.events[g.events.length - 1].p = p; persist(g);
+}
+
+document.addEventListener("click", ev => {
+  const b = ev.target.closest("[data-act]"); if (!b) return;
+  const a = b.dataset.act, g = G();
+  requestWake();
+  switch (a) {
+    case "close": closeSheet(); break;
+    case "ftgo": closeSheet(); ftStart({ team: b.dataset.team || null, shooter: b.dataset.n || null }); break;
+    case "ftn": if (ft) { ft.n = b.dataset.v; ftNext(); } break;
+    case "ftwho": if (ft) { if (b.dataset.n === "") ft.team = "them"; else { ft.team = "us"; ft.shooter = b.dataset.n; } ftNext(); } break;
+    case "ftshot": { if (!ft) break; const made = b.dataset.v === "1";
+      const e = addEvent(g, { type:"shot", team:ft.team, player: ft.team === "us" ? ft.shooter : null, pts:1, made, ref:ft.ref }, ft.grp || undefined);
+      if (!ft.grp) ft.grp = e.grp;
+      ft.made.push(made); buzz(); render();
+      if (ft.made.length >= ftTotal()) {
+        const who = ftWho(g), m = ft.made.filter(Boolean).length, a = ft.made.length; ft = null;
+        if (made) closeSheet(); else sheetRebound(e);
+        toast(who + " " + m + " of " + a + " free throw" + (a === 1 ? "" : "s"), true);
+      } else sheetFtShot();
+      break; }
+    case "foulft": { const foul = findEvent(g, b.dataset.ref); if (!foul) break; foul.kind = "shooting"; persist(g);
+      ftStart({ team: foul.team === "us" ? "them" : "us", n: b.dataset.v, grp: foul.grp, ref: foul.id }); break; }
+    case "fouloff": { const foul = findEvent(g, b.dataset.ref); if (!foul) break; foul.kind = "offensive";
+      addEvent(g, { type:"to", team:foul.team, player:foul.player, ref:foul.id }, foul.grp);
+      closeSheet(); render(); toast(describe(g, foul) + " · turnover", true); break; }
+    case "boxmode": boxMode = b.dataset.v; render(); break;
+    case "sort": { const st = sortState[boxMode], k = b.dataset.k;
+      if (st.k !== k) { st.k = k; st.d = 1; } else { st.d = (st.d + 1) % 3; if (!st.d) st.k = null; }
+      render(); break; }
+    case "top8": { const n = b.dataset.n, nm = pname(g, n).trim().toLowerCase(), msg = $("#re-msg");
+      if (!nm) { if (msg) msg.textContent = "Give #" + n + " a name first."; break; }
+      S.top8 = S.top8.includes(nm) ? S.top8.filter(x => x !== nm) : S.top8.concat([nm]);
+      persist(null); render(); break; }
+    case "chartp": chartPeriod = b.dataset.v; render(); break;
+    case "boxp": boxPeriod = b.dataset.v; render(); break;
+    case "reedit": editNum = b.dataset.n; render(); { const i = $("#re-name"); if (i) i.focus(); } break;
+    case "recancel": editNum = null; render(); break;
+    case "resave": {
+      const old = b.dataset.n, num = ($("#re-num").value || "").trim().replace(/^#/, ""), name = ($("#re-name").value || "").trim(), msg = $("#re-msg");
+      if (!/^\d{1,2}$/.test(num)) { msg.textContent = "Enter a jersey number (0-99)."; break; }
+      if (num !== old && g.roster.some(r => r.num === num)) { msg.textContent = "#" + num + " is already on the roster."; break; }
+      g.roster.find(r => r.num === old).name = name;
+      if (num !== old) remapNum(g, old, num);
+      editNum = null; syncRosterText(g); persist(g); render();
+      toast("Saved " + plabel(g, num) + (num !== old ? " (was #" + old + "; their stats moved with them)" : ""));
+      break; }
+    case "reremove": {
+      const n = b.dataset.n, msg = $("#re-msg");
+      if (usedInGame(g, n)) { msg.textContent = "#" + n + " has been on the floor or has stats in this game, so removing would lose them. Change the name or number instead."; break; }
+      g.roster = g.roster.filter(r => r.num !== n);
+      editNum = null; syncRosterText(g); persist(g); render(); toast("Removed #" + n);
+      break; }
+    case "askgdel": pendingGameDelete = b.dataset.id; render(); break;
+    case "nogdel": pendingGameDelete = null; render(); break;
+    case "dogdel": deleteGame(b.dataset.id); break;
+    case "addplayer": {
+      const num = ($("#ap-num").value || "").trim().replace(/^#/, ""), name = ($("#ap-name").value || "").trim(), msg = $("#ap-msg");
+      if (!/^\d{1,2}$/.test(num)) { msg.textContent = "Enter a jersey number (0-99)."; break; }
+      if (g.roster.some(r => r.num === num)) { msg.textContent = "#" + num + " is already on the roster."; break; }
+      g.roster.push({ num, name });
+      syncRosterText(g);
+      persist(g);
+      if (!$("#sheetWrap").hidden) sheetSub(); else { render(); toast("Added " + plabel(g, num)); }
+      break; }
+    case "tab": view = b.dataset.v; pendingDelete = null; render(); window.scrollTo(0, 0); break;
+    case "player": sheetPlayer(b.dataset.n); break;
+    case "opp": sheetOpp(); break;
+    case "log": logUs(b.dataset.k, b.dataset.n); break;
+    case "olog": logThem(b.dataset.k); break;
+    case "assist": { const shot = findEvent(g, b.dataset.ref); closeSheet(); addEvent(g, { type:"ast", team:"us", player:b.dataset.n, ref:shot.id }, shot.grp); render(); toast("Assist " + plabel(g, b.dataset.n), true); break; }
+    case "reb": { const miss = findEvent(g, b.dataset.ref); const us = b.dataset.n !== ""; closeSheet();
+      const e = addEvent(g, { type:"reb", team: us ? "us" : "them", player: us ? b.dataset.n : null, off: (us ? "us" : "them") === miss.team, ref:miss.id }, miss.grp);
+      render(); toast(describe(g, e), true); break; }
+    case "steal": { const to = findEvent(g, b.dataset.ref); closeSheet(); addEvent(g, { type:"stl", team:"us", player:b.dataset.n, ref:to.id }, to.grp); render(); toast("Steal " + plabel(g, b.dataset.n), true); break; }
+    case "undo": undo(); break;
+    case "sub": subOut = new Set(); subIn = new Set(); sheetSub(); break;
+    case "subout": subOut.has(b.dataset.n) ? subOut.delete(b.dataset.n) : subOut.add(b.dataset.n); sheetSub(); break;
+    case "subin": subIn.has(b.dataset.n) ? subIn.delete(b.dataset.n) : subIn.add(b.dataset.n); sheetSub(); break;
+    case "subgo": { const e = addEvent(g, { type:"sub", out:[...subOut], in:[...subIn] }); closeSheet(); render(); toast(describe(g, e), true); break; }
+    case "timeout": sheetTimeout(); break;
+    case "tout": { if (g.clock.run) { g.clock.rem = clockRem(g); g.clock.run = false; } const e = addEvent(g, { type:"timeout", team:b.dataset.team, kind:b.dataset.kind }); closeSheet(); render(); toast(describe(g, e), true); break; }
+    case "spot": { const shot = spotFor && findEvent(g, spotFor); if (!shot || shot.x != null) break;
+      const r = b.getBoundingClientRect();
+      const x = Math.max(0, Math.min(50, VB.x + (ev.clientX - r.left) / r.width * VB.w));
+      const y = Math.max(0, Math.min(40, VB.y + (ev.clientY - r.top) / r.height * VB.h));
+      shot.x = Math.round(x * 10) / 10; shot.y = Math.round(y * 10) / 10; persist(g);
+      const dot = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+      dot.setAttribute("cx", shot.x); dot.setAttribute("cy", shot.y); dot.setAttribute("r", "1.1"); dot.setAttribute("class", shot.made ? "dot make" : "dot miss");
+      b.appendChild(dot); buzz();
+      setTimeout(() => { if (spotFor === shot.id) { spotFor = null; closeSheet(); afterSpot(shot); } }, 320);
+      break; }
+    case "spotskip": { const shot = spotFor && findEvent(g, spotFor); spotFor = null; closeSheet(); if (shot) afterSpot(shot); break; }
+    case "period": sheetPeriod(); break;
+    case "tip": startPeriod(g, 1); render(); toast("Tip-off logged " + new Date().toLocaleTimeString([], {hour:"numeric", minute:"2-digit", second:"2-digit"})); break;
+    case "periodgo": { const ps = periodState(g); const m = b.dataset.mode;
+      if (g.clock.run) { g.clock.rem = clockRem(g); g.clock.run = false; }
+      if (ps.live) addEvent(g, { type:"period", action:"end", period:ps.p });
+      if (m === "next" || m === "start") startPeriod(g, ps.p + 1);
+      if (m === "final") addEvent(g, { type:"final" });
+      closeSheet(); render(); break; }
+    case "clock": if (!g.clock.run) { g.clock.at = Date.now(); g.clock.run = true; g.clockUsed = true; } else { g.clock.rem = clockRem(g); g.clock.run = false; } persist(g); render(); break;
+    case "setclock": sheetClock(); break;
+    case "clockset": { const m = +$("#cm").value || 0, s = +$("#cs").value || 0; g.clock = { rem: Math.max(0, m * 60 + s), run:false, at:0 }; g.clockUsed = true; persist(g); closeSheet(); render(); break; }
+    case "clockoff": if (g.clockUsed) { g.clockUsed = false; g.clock.run = false; persist(g); } closeSheet(); render(); break;
+    case "askdel": pendingDelete = b.dataset.id; render(); break;
+    case "dodel": deletePlay(b.dataset.id); break;
+    case "nodel": pendingDelete = null; render(); break;
+    case "starter": { const n = b.dataset.n; setup.starters.has(n) ? setup.starters.delete(n) : (setup.starters.size < 5 && setup.starters.add(n)); renderStarters(); break; }
+    case "create": createGame(); break;
+    case "newgame": setup = null; view = "setup"; render(); break;
+    case "cancelsetup": view = G() ? "game" : "setup"; render(); break;
+    case "open": S.currentId = b.dataset.id; persist(null); view = "live"; render(); break;
+    case "dl": exportFile(b.dataset.kind); break;
+    case "copy": { const ta = $("#out"); try { navigator.clipboard.writeText(ta.value).then(() => toast("Copied"), () => { ta.select(); toast("Selected: press copy"); }); } catch(e){ ta.select(); } break; }
+  }
+});
+
+/* ---------- setup ---------- */
+function createGame(){
+  const us = $("#f-us").value.trim() || TEAM, them = $("#f-them").value.trim() || "Opponent";
+  const qlen = Math.max(1, Math.min(20, +$("#f-q").value || 8));
+  const rosterText = $("#f-roster").value; const roster = parseRoster(rosterText);
+  const starters = [...setup.starters].filter(n => roster.some(r => r.num === n));
+  if (roster.problems.length) { toast(roster.problems.length + " roster line" + (roster.problems.length === 1 ? " needs" : "s need") + " fixing (see the red note)"); return; }
+  if (roster.length < 1) { toast("Add at least one player"); return; }
+  if (starters.length !== 5 && roster.length >= 5) { toast("Pick 5 starters (" + starters.length + " picked)"); return; }
+  const id = new Date().toISOString().slice(0, 10) + "-" + them.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") + "-" + uid().slice(-4);
+  const g = { id, format:"titans-stat-book", version:1, created:new Date().toISOString(), date:new Date().toISOString().slice(0, 10),
+    us, them, qlen, roster, starters: starters.length ? starters : roster.slice(0, 5).map(r => r.num), events:[], clock:{ rem:qlen * 60, run:false, at:0 }, clockUsed:false };
+  S.games[id] = g; S.currentId = id; S.rosterText = rosterText; S.us = us; S.qlen = qlen;
+  persist(g); view = "live"; render();
+}
+function renderStarters(){
+  const el = $("#starters"); if (!el) return;
+  const roster = parseRoster($("#f-roster").value);
+  [...setup.starters].forEach(n => { if (!roster.some(r => r.num === n)) setup.starters.delete(n); });
+  el.innerHTML = roster.length ? roster.map(r => '<button class="chip" data-act="starter" data-n="' + esc(r.num) + '" aria-pressed="' + setup.starters.has(r.num) + '">#' + esc(r.num) + (r.name ? " " + esc(r.name) : "") + "</button>").join("") : "<span class='hint'>Players show up here as you type them.</span>";
+  $("#scount").textContent = setup.starters.size + " of 5";
+  const rc = $("#rcount"); if (rc) rc.textContent = roster.length + " player" + (roster.length === 1 ? "" : "s");
+  const pm = $("#rproblems");
+  if (pm) { pm.hidden = !roster.problems.length; pm.innerHTML = roster.problems.length ? "<b>Not added yet:</b><br>" + roster.problems.map(esc).join("<br>") + "<br>Give each player a number of their own, then they will show up." : ""; }
+}
+
+/* ---------- export ---------- */
+function exportData(g){
+  const c = compute(g); const tip = g.events.find(e => e.type === "period" && e.action === "start" && e.period === 1);
+  const events = g.events.map((e, i) => ({
+    seq: i + 1, id: e.id, time: e.t, sec_since_tip: tip ? Math.round((e.ms - tip.ms) / 100) / 10 : null,
+    period: e.p, clock: e.clock, team: e.type === "sub" || e.type === "period" || e.type === "final" ? null : e.team,
+    player: e.player ?? null, name: e.player != null ? pname(g, e.player) : null,
+    type: e.type, pts: e.type === "shot" ? e.pts : null, made: e.type === "shot" ? e.made : null,
+    off: e.type === "reb" ? e.off : null, action: e.action ?? null, sub_in: e.in ?? null, sub_out: e.out ?? null,
+    timeout_kind: e.type === "timeout" ? (e.kind || null) : null,
+    x_ft: e.x ?? null, y_ft: e.y ?? null, dist_ft: e.x != null ? Math.round(Math.hypot(e.x - RIM.x, e.y - RIM.y) * 10) / 10 : null,
+    ref: e.ref ?? null, group: e.grp, on_court: e.on, score_us: c.scoreAfter[e.id][0], score_them: c.scoreAfter[e.id][1],
+    text: describe(g, e)
+  }));
+  const st = stintStats(g, "game");
+  const players = g.roster.map(r => Object.assign({ num:r.num, name:r.name }, c.P[r.num], { reb: c.P[r.num].oreb + c.P[r.num].dreb }));
+  const lineups = st.lineups.map(l => ({ lineup: l.nums.join(" "), names: l.nums.map(n => pname(g, n)).join(" / "),
+    pts: l.pts, opp: l.opp, plus_minus: l.pm, fgm:l.fgm, fga:l.fga, tpm:l.tpm, tpa:l.tpa, ftm:l.ftm, fta:l.fta,
+    oreb:l.oreb, dreb:l.dreb, reb:l.oreb + l.dreb, ast:l.ast, stl:l.stl, blk:l.blk, to:l.to, pf:l.pf }));
+  return { format:"titans-stat-book", version:1, exported:new Date().toISOString(), lineups,
+    shot_coords:"feet on a half court: x_ft from the left sideline facing the basket (0-50), y_ft from the baseline; rim at x 25, y 5.25; NFHS arc 19.75 ft",
+    game:{ id:g.id, date:g.date, us:g.us, them:g.them, quarter_minutes:g.qlen, roster:g.roster, starters:g.starters, tip_off:tip ? tip.t : null, final_score:{ us:c.us, them:c.them }, score_by_period:c.byQ },
+    box:{ players, team_us:Object.assign({}, c.T.us, { reb:c.T.us.oreb + c.T.us.dreb }), team_them:Object.assign({}, c.T.them, { reb:c.T.them.oreb + c.T.them.dreb }) },
+    events };
+}
+const csvCell = v => { if (v == null) return ""; const s = Array.isArray(v) ? v.join(" ") : String(v); return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
+const toCsv = (cols, rows) => [cols.join(",")].concat(rows.map(r => cols.map(k => csvCell(r[k])).join(","))).join("\n") + "\n";
+async function exportFile(kind){
+  const g = G(); const d = exportData(g); const base = g.id;
+  let filename, data;
+  if (kind === "json") { filename = base + ".json"; data = JSON.stringify(d, null, 2); }
+  else if (kind === "box") {
+    const cols = ["num","name","pts","fgm","fga","tpm","tpa","ftm","fta","oreb","dreb","reb","ast","stl","blk","to","pf","pm"];
+    const rows = d.box.players.concat([Object.assign({ num:"", name:"TEAM " + g.us }, d.box.team_us), Object.assign({ num:"", name:"TEAM " + g.them }, d.box.team_them)]);
+    filename = base + "-box.csv"; data = toCsv(cols, rows);
+  } else if (kind === "lineups") {
+    const cols = ["lineup","names","pts","opp","plus_minus","fgm","fga","tpm","tpa","ftm","fta","oreb","dreb","reb","ast","stl","blk","to","pf"];
+    filename = base + "-lineups.csv"; data = toCsv(cols, d.lineups);
+  } else {
+    const cols = ["seq","time","sec_since_tip","period","clock","team","player","name","type","pts","made","off","x_ft","y_ft","dist_ft","timeout_kind","score_us","score_them","on_court","text"];
+    filename = base + "-plays.csv"; data = toCsv(cols, d.events);
+  }
+  let dl = null;
+  try { dl = (window.claude && window.claude.use) ? await window.claude.use("downloads") : null; } catch(e){ dl = null; }
+  if (dl) {
+    try { await dl.save({ filename, data }); toast("Saved " + filename); return; }
+    catch(e){ if (e && e.code === "declined") return; }
+  }
+  const box = $("#fallback");
+  box.hidden = false; box.innerHTML = '<div class="label">' + esc(filename) + '</div><textarea class="out" id="out" readonly>' + esc(data) + '</textarea><button class="btn" data-act="copy">Copy to clipboard</button>';
+}
+
+/* ---------- render ---------- */
+function tabs(){
+  const t = (v, l) => '<button data-act="tab" data-v="' + v + '"' + (view === v ? ' aria-current="page"' : "") + ">" + l + "</button>";
+  return '<nav class="tabs">' + t("live", "Live") + t("box", "Box") + t("shots", "Shots") + t("plays", "Plays") + t("game", "Game") + "</nav>";
+}
+function board(g, c, ps){
+  const fq = side => c.fouls[side][ps.p] || 0;
+  const clockHtml = g.clockUsed ? '<button class="clock' + (g.clock.run ? " run" : "") + '" id="clk" data-act="clock" aria-label="Start or stop clock">' + fmtClock(clockRem(g)) + "</button>" : '<button class="clock off" data-act="setclock">Clock off</button>';
+  return '<header class="board"><div class="wrap">' +
+    '<div class="side"><div class="tname">' + esc(g.us) + '</div><div class="digits">' + c.us + '</div><div class="tf">Fouls ' + fq("us") + (fq("them") >= BONUS_AT ? ' <span class="bonus">BONUS</span>' : "") + "</div></div>" +
+    '<div class="mid"><div class="per">' + (ps.final ? "FINAL" : pLabel(ps.p)) + "</div>" + clockHtml + (g.clockUsed ? '<button class="setclock" data-act="setclock">set</button>' : "") + "</div>" +
+    '<div class="side"><div class="tname">' + esc(g.them) + '</div><div class="digits">' + c.them + '</div><div class="tf">Fouls ' + fq("them") + (fq("us") >= BONUS_AT ? ' <span class="bonus">BONUS</span>' : "") + "</div></div>" +
+    '</div><div class="sync wrap" id="sync"></div></header>';
+}
+function whenLabel(g, e){
+  if (e.clock != null) return pLabel(e.p) + " " + fmtClockInt(e.clock);
+  return pLabel(e.p) + " " + new Date(e.ms).toLocaleTimeString([], { hour:"numeric", minute:"2-digit" });
+}
+function renderLive(g){
+  const c = compute(g), ps = periodState(g); const on = onCourt(g);
+  let top = "";
+  if (ps.final) top = '<div class="final">FINAL ' + c.us + "–" + c.them + "</div>";
+  else if (ps.p === 0) top = '<button class="cta" data-act="tip">Tip-off: start Q1</button>';
+  else if (!ps.live) top = '<button class="cta" data-act="period">Start ' + pLabel(ps.p + 1) + "</button>";
+  const tiles = sortNums(on).map(n => { const l = c.P[n] || blankLine(); const fc = l.pf >= 5 ? "f5" : l.pf >= 4 ? "f4" : "";
+    return '<button class="tile" data-act="player" data-n="' + esc(n) + '"><span class="top"><span class="num">#' + esc(n) + '</span><span class="nm">' + esc(pname(g, n)) + '</span></span><span class="ln">' + l.pts + " pts · " + (l.oreb + l.dreb) + " reb · " + l.ast + ' ast · <span class="' + fc + '">' + l.pf + " F</span></span></button>"; }).join("");
+  const T = c.T.them; const ob = (k, label, cls = "") => '<button class="act' + cls + '" data-act="olog" data-k="' + k + '">' + label + "</button>";
+  const opp = '</div><section class="opppanel" aria-label="' + esc(g.them) + ' team stats"><div class="opphead"><span class="label">' + esc(g.them) + ' · team</span><span class="ln">' +
+    T.fgm + "-" + T.fga + " FG · " + T.ftm + "-" + T.fta + " FT · " + (T.oreb + T.dreb) + " reb · " + T.to + " TO</span></div>" +
+    '<div class="acts five">' +
+      ob("m2", "+2", " make") + ob("m3", "+3", " make") + ob("x2", "2 ✗", " miss") + ob("x3", "3 ✗", " miss") +
+      '<button class="act" data-act="ftgo" data-team="them">FT</button>' +
+    '</div><div class="acts four">' +
+      ob("oreb", "OREB") + ob("dreb", "DREB") + ob("to", "TO") + ob("foul", "FOUL") +
+    "</div></section><div>";
+  const recent = g.events.slice(-4).reverse().map(e => '<div class="row"><span>' + esc(describe(g, e)) + "</span><span>" + c.scoreAfter[e.id][0] + "–" + c.scoreAfter[e.id][1] + "</span></div>").join("");
+  return board(g, c, ps) + '<main class="live wrap">' + top +
+    '<div class="lastline" id="lastline" aria-live="polite">' + lastHtml() + "</div>" +
+    '<div class="grid">' + tiles + opp + "</div>" +
+    '<div class="bar"><button data-act="sub">Sub</button><button data-act="ftgo">FT</button><button data-act="timeout">Timeout</button><button data-act="undo"' + (g.events.length ? "" : " disabled") + '>Undo</button><button data-act="period"' + (ps.final ? " disabled" : "") + ">" + (ps.live ? "End " + pLabel(ps.p) : "Period") + "</button></div>" +
+    (recent ? '<div class="label">Last plays</div><div class="recent">' + recent + "</div>" : "") +
+    "</main>";
+}
+/* ---------- stints: who was on the floor, for how long, and what happened ---------- */
+const poss = t => t.fga - t.oreb + t.to + 0.44 * t.fta;
+// Each stat counts for the five who were on the floor when it happened (saved on every play), so lineup totals are exact counts.
+function stintStats(g, sel){
+  const L = {};
+  const key = arr => sortNums(arr).join("-");
+  const get = k => L[k] || (L[k] = { key:k, nums: k ? k.split("-") : [], n:0, us:blankLine(), them:blankLine() });
+  let on = [...g.starters];
+  for (const e of g.events) {
+    if (e.type === "sub") { on = on.filter(n => !e.out.includes(n)).concat(e.in); continue; }
+    if (!STAT_TYPES.includes(e.type) || !inSel(sel, e.p)) continue;
+    const lu = get(key(e.on || on)); const side = lu[e.team]; if (!side) continue;
+    lu.n++;
+    if (e.type === "shot") {
+      if (e.pts === 1) { side.fta++; if (e.made) side.ftm++; }
+      else { side.fga++; if (e.pts === 3) side.tpa++; if (e.made) { side.fgm++; if (e.pts === 3) side.tpm++; } }
+      if (e.made) side.pts += e.pts;
+    } else if (e.type === "reb") side[e.off ? "oreb" : "dreb"]++;
+    else if (e.type === "foul") side.pf++;
+    else side[e.type]++;
+  }
+  const lineups = Object.values(L).filter(l => l.nums.length && l.n > 0)
+    .map(l => Object.assign({ key:l.key, nums:l.nums, n:l.n }, l.us, { opp:l.them.pts, pm:l.us.pts - l.them.pts }))
+    .sort((a, b) => b.n - a.n);
+  return { lineups };
+}
+
+let boxMode = "players";
+const sortState = { players:{ k:null, d:0 }, lineups:{ k:null, d:0 } };   // d: 0 normal, 1 ascending, 2 descending
+function sortRows(rows, cols, st){
+  if (!st.k || !st.d) return rows;
+  const col = cols.find(c => c.k === st.k); if (!col || !col.v) return rows;
+  return rows.slice().sort((a, b) => {
+    const x = col.v(a), y = col.v(b);
+    if (x == null && y == null) return 0; if (x == null) return 1; if (y == null) return -1;
+    return st.d === 1 ? x - y : y - x;
+  });
+}
+function thead(cols, st){
+  return "<tr>" + cols.map(c => {
+    if (!c.v) return "<th>" + c.h + "</th>";
+    const on = st.k === c.k && st.d;
+    return '<th class="sort' + (on ? " on" : "") + '" data-act="sort" data-k="' + c.k + '" aria-sort="' + (on ? (st.d === 1 ? "ascending" : "descending") : "none") + '">' + c.h + (on ? (st.d === 1 ? " ▲" : " ▼") : "") + "</th>";
+  }).join("") + "</tr>";
+}
+const signed = v => v == null ? "–" : (v > 0 ? "+" : "") + Math.round(v);
+const PCOLS = [
+  { h:"Player", k:"label", f:r => r.label },
+  { h:"PTS", k:"pts", v:r => r.pts, f:r => "<b>" + r.pts + "</b>" },
+  { h:"FG", k:"fg", v:r => r.fgm + r.fga / 1000, f:r => r.fgm + "-" + r.fga },
+  { h:"3P", k:"tp", v:r => r.tpm + r.tpa / 1000, f:r => r.tpm + "-" + r.tpa },
+  { h:"FT", k:"ft", v:r => r.ftm + r.fta / 1000, f:r => r.ftm + "-" + r.fta },
+  { h:"OR", k:"oreb", v:r => r.oreb, f:r => r.oreb },
+  { h:"DR", k:"dreb", v:r => r.dreb, f:r => r.dreb },
+  { h:"REB", k:"reb", v:r => r.oreb + r.dreb, f:r => r.oreb + r.dreb },
+  { h:"AST", k:"ast", v:r => r.ast, f:r => r.ast },
+  { h:"STL", k:"stl", v:r => r.stl, f:r => r.stl },
+  { h:"BLK", k:"blk", v:r => r.blk, f:r => r.blk },
+  { h:"TO", k:"to", v:r => r.to, f:r => r.to },
+  { h:"PF", k:"pf", v:r => r.pf, f:r => r.pf },
+  { h:"+/-", k:"pm", v:r => r.pm, f:r => r.team ? "" : signed(r.pm) }
+];
+const LCOLS = [
+  { h:"Lineup", k:"label", f:r => r.label },
+  { h:"PTS", k:"pts", v:r => r.pts, f:r => "<b>" + r.pts + "</b>" },
+  { h:"OPP", k:"opp", v:r => r.opp, f:r => r.opp },
+  { h:"+/-", k:"pm", v:r => r.pm, f:r => "<b>" + signed(r.pm) + "</b>" }
+].concat(PCOLS.filter(c => ["fg", "tp", "ft", "oreb", "dreb", "reb", "ast", "stl", "blk", "to", "pf"].includes(c.k)));
+function lineupLabel(g, nums){ return nums.map(n => esc(pname(g, n) || "#" + n)).join(" · "); }
+function renderBox(g){
+  const full = compute(g), ps = periodState(g);
+  const c = boxPeriod === "game" ? full : compute(g, g.events.filter(e => inSel(boxPeriod, e.p)));
+  const st = stintStats(g, boxPeriod);
+  const periods = []; for (let p = 1; p <= Math.max(4, ps.p); p++) periods.push(p);
+  const ql = "<tr><th>Team</th>" + periods.map(p => "<th>" + pLabel(p) + "</th>").join("") + "<th>T</th></tr>" +
+    ["us", "them"].map(s => "<tr><td>" + esc(s === "us" ? g.us : g.them) + "</td>" + periods.map(p => "<td>" + (p <= ps.p ? (full.byQ[s][p] || 0) : "") + "</td>").join("") + "<td><b>" + (s === "us" ? full.us : full.them) + "</b></td></tr>").join("");
+  const tr = (cols, r, cls = "") => "<tr class='" + cls + "'>" + cols.map((col, i) => "<td" + (i === 0 && cls === "lu" ? " class='lu'" : "") + ">" + col.f(r) + "</td>").join("") + "</tr>";
+  let table, hint;
+  if (boxMode === "lineups") {
+    const rows = sortRows(st.lineups.map(l => Object.assign({ label: lineupLabel(g, l.nums) }, l)), LCOLS, sortState.lineups);
+    table = rows.length ? "<table>" + thead(LCOLS, sortState.lineups) + rows.map(r => tr(LCOLS, r, "lu")).join("") + "</table>" : "";
+    hint = rows.length ? "Every five-man group that played, most-used first. Each stat counts for the five who were on the floor when it happened, so these are exact. PTS and the shooting through PF are ours; OPP is what they scored against that five." : "No lineups yet. They fill in as you log plays.";
+  } else {
+    const on = onCourt(g);
+    const rows = sortRows(g.roster.map(r => Object.assign({ label: "#" + esc(r.num) + " " + esc(r.name) + (on.includes(r.num) && !ps.final ? " •" : "") }, c.P[r.num] || blankLine())), PCOLS, sortState.players);
+    table = "<table>" + thead(PCOLS, sortState.players) + rows.map(r => tr(PCOLS, r)).join("") +
+      tr(PCOLS, Object.assign({ label: esc(g.us), team:true }, c.T.us), "tot") + tr(PCOLS, Object.assign({ label: esc(g.them), team:true }, c.T.them), "tot opp") + "</table>";
+    hint = "• on the floor now. +/- is the score while the player was on the floor. Tap a column to sort it: once low to high, again high to low, a third time back to normal.";
+  }
+  const modeSeg = '<div class="seg">' + [["players", "Players"], ["lineups", "Lineups"]].map(([v, l]) => '<button class="segb" data-act="boxmode" data-v="' + v + '" aria-pressed="' + (boxMode === v) + '">' + l + "</button>").join("") + "</div>";
+  return board(g, full, ps) + '<main class="page wrap"><h1>Box score</h1>' +
+    '<div class="scroll"><table class="qline">' + ql + "</table></div>" +
+    modeSeg + segHtml(boxPeriod, "boxp", ps) +
+    (table ? '<div class="scroll">' + table + "</div>" : "") +
+    '<div class="hint">' + hint + "</div></main>";
+}
+function renderPlays(g){
+  const c = compute(g), ps = periodState(g);
+  const rows = g.events.slice().reverse().map(e => {
+    const sys = ["sub", "period", "final", "timeout"].includes(e.type);
+    const right = pendingDelete === e.id
+      ? '<button class="del" data-act="dodel" data-id="' + e.id + '">Delete</button><button class="x" data-act="nodel" aria-label="Keep">Keep</button>'
+      : '<span class="sc">' + c.scoreAfter[e.id][0] + "–" + c.scoreAfter[e.id][1] + '</span><button class="x" data-act="askdel" data-id="' + e.id + '" aria-label="Delete play">✕</button>';
+    return '<div class="row' + (sys ? " sys" : "") + '"><span class="when">' + esc(whenLabel(g, e)) + "</span><span>" + esc(describe(g, e)) + "</span>" + right + "</div>";
+  }).join("");
+  return board(g, c, ps) + '<main class="page wrap"><h1>Play by play</h1>' +
+    (rows ? '<div class="plays">' + rows + "</div>" : "<div class='hint'>Nothing logged yet. Plays show up here, newest first.</div>") +
+    '<div class="hint">✕ deletes one play (and its assist or rebound). Undo on the Live tab takes back the last whole play.</div></main>';
+}
+function renderGame(g){
+  const c = compute(g), ps = periodState(g);
+  const games = Object.values(S.games).sort((a, b) => (b.updated || 0) - (a.updated || 0));
+  return board(g, c, ps) + '<main class="page wrap"><h1>' + esc(g.us) + " vs " + esc(g.them) + "</h1>" +
+    '<div class="hint">' + esc(g.date) + " · " + g.events.length + " plays logged. Download after the game; the game file has every play stamped with the time of day, the quarter, the clock if you ran it, and who was on the floor.</div>" +
+    '<div class="label">Download</div><div class="list">' +
+      '<button class="btn" data-act="dl" data-kind="json">Game file for the film engine <small>.json</small></button>' +
+      '<button class="btn" data-act="dl" data-kind="box">Box score <small>.csv</small></button>' +
+      '<button class="btn" data-act="dl" data-kind="plays">Play by play <small>.csv</small></button>' +
+      '<button class="btn" data-act="dl" data-kind="lineups">Lineups <small>.csv</small></button>' +
+    '</div><div id="fallback" class="list" hidden></div>' +
+    '<div class="label">Roster (' + g.roster.length + ") · tap a player to edit</div>" + rosterEditor(g) +
+    '<div class="label">Add a player</div>' + addPlayerForm() +
+    '<div class="label">Games</div><div class="list">' +
+      games.map(x => '<div class="grow"><button class="btn" data-act="open" data-id="' + esc(x.id) + '">' + esc(x.us) + " vs " + esc(x.them) + "<small>" + esc(x.date) + " · " + x.events.length + " plays" + (x.id === g.id ? " · open" : "") + "</small></button>" +
+        (pendingGameDelete === x.id
+          ? '<button class="del" data-act="dogdel" data-id="' + esc(x.id) + '">Delete for good</button><button class="gx" data-act="nogdel">Keep</button>'
+          : '<button class="gx" data-act="askgdel" data-id="' + esc(x.id) + '" aria-label="Delete this game">✕</button>') + "</div>").join("") +
+      '<button class="btn" data-act="newgame">New game <small>+</small></button>' +
+    "</div></main>";
+}
+function renderSetup(){
+  if (!setup) setup = { starters: new Set() };
+  const hasGame = !!G();
+  return '<main class="page wrap" style="padding-top:20px"><h1>New game</h1>' +
+    '<div class="two"><label class="field"><span class="label">Us</span><input id="f-us" value="' + esc(S.us || TEAM) + '"></label>' +
+    '<label class="field"><span class="label">Opponent</span><input id="f-them" placeholder="Opponent"></label></div>' +
+    '<label class="field" style="max-width:180px"><span class="label">Quarter length (min)</span><input id="f-q" type="number" inputmode="numeric" value="' + (S.qlen || 8) + '"></label>' +
+    '<label class="field"><span class="label">Roster: one player per line, number then name · <span id="rcount"></span></span><textarea id="f-roster" placeholder="3 Jordan&#10;11 Mateo&#10;14 Chris">' + esc(S.rosterText || "") + "</textarea></label>" +
+    '<div class="rproblems" id="rproblems" role="alert" hidden></div>' +
+    '<div class="label">Starters <span id="scount"></span></div><div class="chips" id="starters"></div>' +
+    '<button class="cta" data-act="create">Start game</button>' +
+    (hasGame ? '<button class="cancel" data-act="cancelsetup">Back to the current game</button>' : "") +
+    '<div class="hint">The roster is remembered for next time. Names are optional; numbers are enough.</div></main>';
+}
+function render(){
+  const g = G();
+  if (view === "setup" || !g) {
+    $("#app").innerHTML = renderSetup();
+    renderStarters();
+    $("#f-roster").addEventListener("input", renderStarters);
+    return;
+  }
+  $("#app").innerHTML = (view === "box" ? renderBox(g) : view === "shots" ? renderShots(g) : view === "plays" ? renderPlays(g) : view === "game" ? renderGame(g) : renderLive(g)) + tabs();
+  paintSync();
+}
+
+document.addEventListener("change", ev => { if (ev.target && ev.target.id === "chart-player") { chartPlayer = ev.target.value; render(); } });
+
+/* clock tick: only repaint the digits */
+setInterval(() => {
+  const g = G(); if (!g || !g.clock || !g.clock.run) return;
+  const r = clockRem(g); const el = $("#clk"); if (el) el.textContent = fmtClock(r);
+  if (r <= 0) { g.clock.rem = 0; g.clock.run = false; persist(g); buzz(); render(); }
+}, 200);
+
+/* keep the screen awake during the game */
+let wake = null;
+async function requestWake(){ try { if (!wake && navigator.wakeLock) { wake = await navigator.wakeLock.request("screen"); wake.addEventListener("release", () => wake = null); } } catch(e){ wake = null; } }
+document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") requestWake(); });
+
+render();
+})();
+</script>

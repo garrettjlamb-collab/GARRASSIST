@@ -1,0 +1,210 @@
+{
+  "clock": {
+    "at": 0,
+    "rem": 480,
+    "run": false
+  },
+  "clockUsed": false,
+  "created": "2026-11-14T17:09:38.315Z",
+  "date": "2026-11-14",
+  "events": [
+    {
+      "action": "start",
+      "clock": null,
+      "grp": "mwgnv4rwuthm5",
+      "id": "mwgnv4rwuthm5",
+      "ms": 1794676187372,
+      "on": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5"
+      ],
+      "p": 1,
+      "period": 1,
+      "t": "2026-11-14T17:09:47.372Z",
+      "type": "period"
+    },
+    {
+      "clock": null,
+      "grp": "mwgnvk1tu0yc6",
+      "id": "mwgnvk1tu0yc6",
+      "made": false,
+      "ms": 1794676207169,
+      "on": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5"
+      ],
+      "p": 1,
+      "player": null,
+      "pts": 3,
+      "t": "2026-11-14T17:10:07.169Z",
+      "team": "them",
+      "type": "shot"
+    },
+    {
+      "clock": null,
+      "grp": "mwgnvk1tu0yc6",
+      "id": "mwgnvqcatlx2r",
+      "ms": 1794676215322,
+      "off": true,
+      "on": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5"
+      ],
+      "p": 1,
+      "player": null,
+      "ref": "mwgnvk1tu0yc6",
+      "t": "2026-11-14T17:10:15.322Z",
+      "team": "them",
+      "type": "reb"
+    },
+    {
+      "clock": null,
+      "grp": "mwgnvtye2e1no",
+      "id": "mwgnvtye2e1no",
+      "made": true,
+      "ms": 1794676220006,
+      "on": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5"
+      ],
+      "p": 1,
+      "player": null,
+      "pts": 1,
+      "t": "2026-11-14T17:10:20.006Z",
+      "team": "them",
+      "type": "shot"
+    },
+    {
+      "clock": null,
+      "grp": "mwgnwxhkrky90",
+      "id": "mwgnwxhkrky90",
+      "ms": 1794676271240,
+      "on": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5"
+      ],
+      "p": 1,
+      "player": "1",
+      "t": "2026-11-14T17:11:11.240Z",
+      "team": "us",
+      "type": "stl"
+    },
+    {
+      "clock": null,
+      "grp": "mwgnwxhkrky90",
+      "id": "mwgnwxhkz6fii",
+      "ms": 1794676271240,
+      "on": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5"
+      ],
+      "p": 1,
+      "player": null,
+      "ref": "mwgnwxhkrky90",
+      "t": "2026-11-14T17:11:11.240Z",
+      "team": "them",
+      "type": "to"
+    },
+    {
+      "clock": null,
+      "grp": "mwgnx6hs8ue33",
+      "id": "mwgnx6hs8ue33",
+      "ms": 1794676282912,
+      "on": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5"
+      ],
+      "p": 1,
+      "t": "2026-11-14T17:11:22.912Z",
+      "team": "us",
+      "type": "timeout"
+    },
+    {
+      "clock": null,
+      "grp": "mwgo3b8byhjxd",
+      "id": "mwgo3b8byhjxd",
+      "made": true,
+      "ms": 1794676568987,
+      "on": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5"
+      ],
+      "p": 1,
+      "player": "1",
+      "pts": 2,
+      "t": "2026-11-14T17:16:08.987Z",
+      "team": "us",
+      "type": "shot",
+      "x": 27.4,
+      "y": 5.8
+    }
+  ],
+  "format": "titans-stat-book",
+  "id": "2026-11-14-ala-wf-drdr",
+  "qlen": 8,
+  "roster": [
+    {
+      "name": "Dice",
+      "num": "1"
+    },
+    {
+      "name": "Achilles",
+      "num": "2"
+    },
+    {
+      "name": "JD",
+      "num": "3"
+    },
+    {
+      "name": "Dennis",
+      "num": "4"
+    },
+    {
+      "name": "Amari",
+      "num": "5"
+    },
+    {
+      "name": "Isaac",
+      "num": "6"
+    },
+    {
+      "name": "Tristan",
+      "num": "7"
+    }
+  ],
+  "starters": [
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+  ],
+  "them": "ALA WF",
+  "updated": 1794676569868,
+  "us": "Marcos",
+  "version": 1
+}

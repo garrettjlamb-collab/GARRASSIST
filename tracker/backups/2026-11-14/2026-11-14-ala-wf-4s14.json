@@ -1,0 +1,66 @@
+{
+  "clock": {
+    "at": 0,
+    "rem": 480,
+    "run": false
+  },
+  "clockUsed": false,
+  "created": "2026-11-14T19:04:01.150Z",
+  "date": "2026-11-14",
+  "events": [
+    {
+      "action": "start",
+      "clock": null,
+      "grp": "mwgry1xxzbc9s",
+      "id": "mwgry1xxzbc9s",
+      "ms": 1794683042133,
+      "on": [
+        "2",
+        "4",
+        "15",
+        "3",
+        "13"
+      ],
+      "p": 1,
+      "period": 1,
+      "t": "2026-11-14T19:04:02.133Z",
+      "type": "period"
+    }
+  ],
+  "format": "titans-stat-book",
+  "id": "2026-11-14-ala-wf-4s14",
+  "qlen": 8,
+  "roster": [
+    {
+      "name": "diggy",
+      "num": "4"
+    },
+    {
+      "name": "Dennis",
+      "num": "2"
+    },
+    {
+      "name": "Hayden",
+      "num": "15"
+    },
+    {
+      "name": "Ryan",
+      "num": "3"
+    },
+    {
+      "name": "Tristan",
+      "num": "13"
+    }
+  ],
+  "starters": [
+    "2",
+    "4",
+    "15",
+    "3",
+    "13"
+  ],
+  "them": "ALA wF",
+  "updated": 1794683042133,
+  "us": "Marcos",
+  "version": 1
+}
