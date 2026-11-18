@@ -270,7 +270,8 @@ function paintSync(){
     snap.docs.forEach(d => {
       const cg = d.data(); if (!cg || !cg.id || deleted.has(cg.id)) return;
       const lg = S.games[cg.id];
-      if (!lg || (cg.updated || 0) > (lg.updated || 0)) { S.games[cg.id] = cg; changed = true; }
+      // the cloud hands back frozen objects: copy before keeping it, or every play logged to it fails
+      if (!lg || (cg.updated || 0) > (lg.updated || 0)) { S.games[cg.id] = JSON.parse(JSON.stringify(cg)); changed = true; }
       else if ((lg.updated || 0) > (cg.updated || 0)) dirty.add(lg.id);
     });
     Object.keys(S.games).forEach(id => { if (!deleted.has(id) && !snap.docs.some(d => d.id === id)) dirty.add(id); });
