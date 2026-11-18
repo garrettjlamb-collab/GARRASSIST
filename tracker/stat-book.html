@@ -40,6 +40,11 @@ button:focus-visible,input:focus-visible,textarea:focus-visible{outline:3px soli
 .tname{font-family:var(--display);font-weight:600;letter-spacing:.08em;text-transform:uppercase;font-size:13px;color:var(--board-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
 .digits{font-family:var(--display);font-weight:700;font-size:56px;line-height:1;color:var(--digit);font-variant-numeric:tabular-nums;text-shadow:0 0 18px rgba(255,181,71,.25)}
 .tf{font-size:12px;color:var(--board-muted);font-variant-numeric:tabular-nums;display:flex;gap:6px;align-items:center}
+.touts{display:flex;gap:5px;justify-content:center;flex-wrap:wrap;min-height:22px;margin-top:5px}
+.tout{font-family:var(--display);font-weight:700;font-size:14px;letter-spacing:.04em;line-height:1;padding:3px 7px;border-radius:4px}
+.tout.t30{color:var(--digit);border:1px solid var(--digit)}
+.tout.tfull{color:var(--board);background:var(--board-ink);border:1px solid var(--board-ink)}
+.touts .none{font-size:11px;color:var(--board-muted);align-self:center}
 .bonus{font-family:var(--display);font-weight:700;letter-spacing:.08em;font-size:11px;color:var(--board);background:var(--digit);border-radius:3px;padding:1px 5px}
 .mid{display:flex;flex-direction:column;align-items:center;gap:4px}
 .per{font-family:var(--display);font-weight:700;font-size:18px;letter-spacing:.06em;color:var(--board-ink)}
@@ -934,10 +939,16 @@ function board(g, c, ps){
   const fq = side => c.fouls[side][ps.p] || 0;
   const clockHtml = g.clockUsed ? '<button class="clock' + (g.clock.run ? " run" : "") + '" id="clk" data-act="clock" aria-label="Start or stop clock">' + fmtClock(clockRem(g)) + "</button>" : '<button class="clock off" data-act="setclock">Clock off</button>';
   return '<header class="board"><div class="wrap">' +
-    '<div class="side"><div class="tname">' + esc(g.us) + '</div><div class="digits">' + c.us + '</div><div class="tf">Fouls ' + fq("us") + (fq("them") >= BONUS_AT ? ' <span class="bonus">BONUS</span>' : "") + "</div></div>" +
+    '<div class="side"><div class="tname">' + esc(g.us) + '</div><div class="digits">' + c.us + '</div><div class="tf">Fouls ' + fq("us") + (fq("them") >= BONUS_AT ? ' <span class="bonus">BONUS</span>' : "") + "</div>" + toutPills(g, "us") + "</div>" +
     '<div class="mid"><div class="per">' + (ps.final ? "FINAL" : pLabel(ps.p)) + "</div>" + clockHtml + (g.clockUsed ? '<button class="setclock" data-act="setclock">set</button>' : "") + "</div>" +
-    '<div class="side"><div class="tname">' + esc(g.them) + '</div><div class="digits">' + c.them + '</div><div class="tf">Fouls ' + fq("them") + (fq("us") >= BONUS_AT ? ' <span class="bonus">BONUS</span>' : "") + "</div></div>" +
+    '<div class="side"><div class="tname">' + esc(g.them) + '</div><div class="digits">' + c.them + '</div><div class="tf">Fouls ' + fq("them") + (fq("us") >= BONUS_AT ? ' <span class="bonus">BONUS</span>' : "") + "</div>" + toutPills(g, "them") + "</div>" +
     '</div><div class="sync wrap" id="sync"></div></header>';
+}
+// Timeouts left under the fouls: 30 30 FT FT FT, one pill per timeout still in hand; a used one disappears
+function toutPills(g, team){
+  const n30 = Math.max(0, timeoutsLeft(g, team, "30")), nFull = Math.max(0, timeoutsLeft(g, team, "full"));
+  const pills = '<span class="tout t30">30</span>'.repeat(n30) + '<span class="tout tfull">FT</span>'.repeat(nFull);
+  return '<div class="touts" aria-label="' + n30 + " thirty and " + nFull + ' full timeouts left">' + (pills || '<span class="none">No timeouts</span>') + "</div>";
 }
 function whenLabel(g, e){
   if (e.clock != null) return pLabel(e.p) + " " + fmtClockInt(e.clock);
