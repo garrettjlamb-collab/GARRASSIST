@@ -666,6 +666,26 @@ What the scrimmage film needed, now in the code:
   now found from the clock alone, P4 starting 28 s earlier than the hand marks had it.
 - **Shots the film never found stay "~"**: four of Ryan's six P1 shots had no card near them.
 
+## 2026-11-19: an away film with no scoreboard, on a camera that stopped (`film camstops`)
+
+The first live-logged game, Mingus Union away (2026-11-18, L 60-76 official), came as a Hudl download of a
+sideline camera: no overlay, 65 min of film for 85 min of game, paused at timeouts and breaks. With
+`--profile handheld` the film found 110 cards, only 24 of them shots, against 128 logged field goal attempts,
+so matching shots to cards could not work, and with no board there were no quarters to pair.
+
+`film camstops <game> <statbook>` (`film/interpret/camstops.py`) does it from two things the film does have:
+the 8 restarts (a frame jump many times the jumps around it) and the camera's left-right swing (phase
+correlation, 5/s), which follows the ball to one end. Per stretch, the offset that puts our logged shots at
+one end and theirs at the other wins; the ends must swap at halftime; offsets only fall (dynamic
+programming). On Mingus it found 9 stretches that tile the log exactly as its breaks say: Q1 end, two
+first-half timeouts, the half, a Mingus timeout he did not log, Q3 end, one Q4 timeout (the other was
+recorded through). Lane lined up by eye for Ryan's Q3 free throws within ~10 s of the logged taps; four
+random made-shot clips each show the play at our end and the camera swinging away 3-5 s after. 291 of 316
+plays placed (`how: "camera"`, +/-4 s, clips 10 s before and 8 after); 16 were logged while the camera was
+off (first ~50 s of Q4, the last timeout). `film game` runs it on its own for any profile with no scoreboard.
+It needs a LIVE log: a rewatch log has no real-time gaps to fit. `film camstops <game> --off` goes back to
+matching cards.
+
 ## What Garrett has asked for (requirements gathered in conversation)
 
 1. **Full box score eventually**, as automated as possible; he accepts reviewing some of it.

@@ -42,6 +42,7 @@ def shot_sides(gd: Path, events, frame_w: int) -> dict:
 SIDE_MARGIN = 0.05
 CLIP_TYPES = ("shot", "reb", "ast", "stl", "blk", "to", "foul")
 RESULT_FILE = "statbook.json"
+CAMSTOPS_FILE = "camstops.json"   # film camstops: a stopping camera's stretches and offsets
 
 
 def _clock(s: float | None) -> str:
@@ -72,6 +73,14 @@ def match_game(game_id: str, statbook_path: Path) -> dict:
         r = lookup(timeline, t)
         return None if r is None or r.clock_s is None or t - r.t > 3 else r.clock_s
 
+    stops = gd / CAMSTOPS_FILE
+    if stops.exists():                            # a stopping camera with no board: placed by stretch offsets
+        from film.interpret.camstops import Stretch
+        from film.interpret.statbook import place_by_stretches
+
+        stretches = [Stretch(**s) for s in json.loads(stops.read_text())["stretches"]]
+        placed, periods = place_by_stretches(book, stretches), []
+        return _write_result(gd, game_id, statbook_path, book, placed, periods, mode="camera")
     marks = load_quarters(gd)                     # the coach's quarter marks win over the scoreboard
     if marks:
         spans = {k: span for k, span in enumerate(marks, 1)}
@@ -83,6 +92,10 @@ def match_game(game_id: str, statbook_path: Path) -> dict:
         found = game_phases(timeline, quarter_length_s=length).quarters
         spans = {k: span for k, (_, span) in enumerate(sorted(found.items(), key=lambda kv: kv[1][0]), 1)} or None
     placed, periods = place_game(book, cards_from_events(events, sides, rejected), timeline, clock_at, film_spans=spans)
+    return _write_result(gd, game_id, statbook_path, book, placed, periods)
+
+
+def _write_result(gd: Path, game_id: str, statbook_path: Path, book, placed, periods, mode: str | None = None) -> dict:
     them = book.game.get("them") or "Opp"
     plays = []
     for x in placed:
@@ -92,6 +105,8 @@ def match_game(game_id: str, statbook_path: Path) -> dict:
     result = {"format": "film-statbook", "version": 1, "game_id": game_id, "statbook": str(statbook_path),
               "game": book.game, "roster": book.roster,
               "periods": [p.__dict__ for p in periods], "plays": plays}
+    if mode:
+        result["placed_by"] = mode
     (gd / RESULT_FILE).write_text(json.dumps(result, indent=1))
     out = gd / "export"
     out.mkdir(exist_ok=True)

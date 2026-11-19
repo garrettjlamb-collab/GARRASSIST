@@ -30,6 +30,7 @@ COMMANDS = [
     "film.commands.eval",
     "film.commands.title",
     "film.commands.statbook",
+    "film.commands.camstops",
     "film.commands.run",
     "film.commands.game",
 ]

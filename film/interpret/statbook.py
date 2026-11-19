@@ -611,6 +611,30 @@ def place_game(book: StatBook, cards: list[Card], timeline=None, clock_at=None,
     return out, results
 
 
+CAMERA_UNCERTAINTY_S = 4.0   # a play placed by a camera stretch's offset: within a few seconds (see camstops)
+
+
+def place_by_stretches(book: StatBook, stretches) -> list[Placed]:
+    """Every play at its logged time plus its camera stretch's offset (film/interpret/camstops.py).
+
+    A shot sits LOG_LAG_S before it was tapped in; a play logged while the camera was off is off the film."""
+    from film.interpret.camstops import LOG_LAG_S, film_time
+
+    timed = [p.ms for p in book.plays if p.ms is not None]
+    t0 = min(timed) if timed else 0.0
+    out = []
+    for p in book.plays:
+        if p.ms is None or p.type in ("period", "final"):
+            out.append(Placed(p, None, "none"))
+            continue
+        lag = LOG_LAG_S if p.type in ("shot", "reb", "ast", "blk", "stl") else 0.0
+        t, k = film_time(stretches, (p.ms - t0) / 1000.0 - lag)
+        out.append(Placed(p, t, "camera" if t is not None else "none",
+                          uncertainty_s=CAMERA_UNCERTAINTY_S if t is not None else None,
+                          film_period=p.period if t is not None else None))
+    return out
+
+
 def label(placed: Placed, roster: dict, them: str = "Opp") -> str:
     """What the play was, from the stat book. "~" marks a play placed by the time fit, not matched on film."""
     text = _label(placed, roster, them)
