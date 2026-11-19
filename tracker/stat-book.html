@@ -40,7 +40,8 @@ button:focus-visible,input:focus-visible,textarea:focus-visible{outline:3px soli
 .tname{font-family:var(--display);font-weight:600;letter-spacing:.08em;text-transform:uppercase;font-size:13px;color:var(--board-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
 .digits{font-family:var(--display);font-weight:700;font-size:56px;line-height:1;color:var(--digit);font-variant-numeric:tabular-nums;text-shadow:0 0 18px rgba(255,181,71,.25)}
 .tf{font-size:12px;color:var(--board-muted);font-variant-numeric:tabular-nums;display:flex;gap:6px;align-items:center}
-.touts{display:flex;gap:5px;justify-content:center;flex-wrap:wrap;min-height:22px;margin-top:5px}
+.touts{display:flex;flex-direction:column;align-items:center;gap:4px;min-height:22px;margin-top:5px}
+.trow{display:flex;gap:5px;justify-content:center}
 .tout{font-family:var(--display);font-weight:700;font-size:14px;letter-spacing:.04em;line-height:1;padding:3px 7px;border-radius:4px}
 .tout.t30{color:var(--digit);border:1px solid var(--digit)}
 .tout.tfull{color:var(--board);background:var(--board-ink);border:1px solid var(--board-ink)}
@@ -423,8 +424,8 @@ function sheetPlayer(num){
       '<button class="act" data-act="log" data-k="dreb" data-n="' + num + '">DREB</button>' +
       '<button class="act" data-act="log" data-k="ast" data-n="' + num + '">AST</button>' +
       '<button class="act" data-act="log" data-k="stl" data-n="' + num + '">STL</button>' +
-      '<button class="act" data-act="log" data-k="blk" data-n="' + num + '">BLK</button>' +
       '<button class="act" data-act="log" data-k="to" data-n="' + num + '">TO</button>' +
+      '<button class="act" data-act="log" data-k="blk" data-n="' + num + '">BLK</button>' +
       '<button class="act" data-act="log" data-k="foul" data-n="' + num + '">FOUL</button>' +
       '<button class="act" data-act="close">✕</button>' +
     "</div>"
@@ -504,7 +505,7 @@ function sheetFtShot(){
   openSheet("<h2>" + esc(ftWho(g)) + "</h2><div class='sub'>Free throw " + (i + 1) + " of " + total + (ft.n === "1+1" ? " (1-and-1)" : "") + "</div>" +
     '<div class="ftdots">' + dots + "</div>" +
     '<div class="acts two-acts"><button class="act make big" data-act="ftshot" data-v="1">Made ✓</button><button class="act miss big" data-act="ftshot" data-v="0">Missed ✗</button></div>' +
-    '<button class="cancel" data-act="close">Stop here</button>');
+    '<div class="acts two-acts"><button class="act" data-act="ftsub">Sub<small>then back to this free throw</small></button><button class="act" data-act="close">Stop here</button></div>');
 }
 function sheetFoulAfter(foul){
   const g = G(); const c = compute(g);
@@ -528,6 +529,7 @@ function sortNums(arr){ return arr.slice().sort(numSort); }
 function isTop8(g, n){ const nm = pname(g, n).trim().toLowerCase(); return !!nm && S.top8.includes(nm); }
 
 let subOut = new Set(), subIn = new Set();
+let subBackToFt = false;   // a sub opened from the free-throw screen returns to the same free throw
 function sheetSub(){
   const g = G(); const on = sortNums(onCourt(g)); const rest = g.roster.map(r => r.num).filter(n => !on.includes(n));
   const bench = sortNums(rest.filter(n => isTop8(g, n))).concat(sortNums(rest.filter(n => !isTop8(g, n))));
@@ -539,7 +541,7 @@ function sheetSub(){
     '<div class="label">Bench: tap to put in</div><div class="acts">' + (bench.length ? bench.map(n => tile(n, subIn, "sel-in", "subin")).join("") : "<span class='hint'>Nobody on the bench.</span>") + "</div>" +
     '<button class="act primary wide" data-act="subgo"' + (ok ? "" : " disabled") + '>' + (ok ? "Sub " + subOut.size + " out, " + subIn.size + " in" + (after !== 5 ? " (" + after + " on floor)" : "") : "Pick players") + "</button>" +
     '<div class="label">Forgot someone? Add a player</div>' + addPlayerForm() +
-    '<button class="cancel" data-act="close">Cancel</button>');
+    (subBackToFt && ft ? '<button class="cancel" data-act="subback">Back to the free throw</button>' : '<button class="cancel" data-act="close">Cancel</button>'));
 }
 function sheetPeriod(){
   const g = G(); const ps = periodState(g);
@@ -811,10 +813,14 @@ document.addEventListener("click", ev => {
       render(); toast(describe(g, e), true); break; }
     case "steal": { const to = findEvent(g, b.dataset.ref); closeSheet(); addEvent(g, { type:"stl", team:"us", player:b.dataset.n, ref:to.id }, to.grp); render(); toast("Steal " + plabel(g, b.dataset.n), true); break; }
     case "undo": undo(); break;
-    case "sub": subOut = new Set(); subIn = new Set(); sheetSub(); break;
+    case "sub": subOut = new Set(); subIn = new Set(); subBackToFt = false; sheetSub(); break;
+    case "ftsub": if (!ft) break; subOut = new Set(); subIn = new Set(); subBackToFt = true; sheetSub(); break;
+    case "subback": subBackToFt = false; if (ft) sheetFtShot(); else closeSheet(); break;
     case "subout": subOut.has(b.dataset.n) ? subOut.delete(b.dataset.n) : subOut.add(b.dataset.n); sheetSub(); break;
     case "subin": subIn.has(b.dataset.n) ? subIn.delete(b.dataset.n) : subIn.add(b.dataset.n); sheetSub(); break;
-    case "subgo": { const e = addEvent(g, { type:"sub", out:[...subOut], in:[...subIn] }); closeSheet(); render(); toast(describe(g, e), true); break; }
+    case "subgo": { const e = addEvent(g, { type:"sub", out:[...subOut], in:[...subIn] }); render(); toast(describe(g, e), true);
+      if (subBackToFt && ft) { subBackToFt = false; sheetFtShot(); } else closeSheet();
+      break; }
     case "timeout": sheetTimeout(); break;
     case "tout": { if (g.clock.run) { g.clock.rem = clockRem(g); g.clock.run = false; } const e = addEvent(g, { type:"timeout", team:b.dataset.team, kind:b.dataset.kind }); closeSheet(); render(); toast(describe(g, e), true); break; }
     case "spot": { const shot = spotFor && findEvent(g, spotFor); if (!shot || shot.x != null) break;
@@ -862,8 +868,10 @@ function createGame(){
   if (roster.problems.length) { toast(roster.problems.length + " roster line" + (roster.problems.length === 1 ? " needs" : "s need") + " fixing (see the red note)"); return; }
   if (roster.length < 1) { toast("Add at least one player"); return; }
   if (starters.length !== 5 && roster.length >= 5) { toast("Pick 5 starters (" + starters.length + " picked)"); return; }
-  const id = new Date().toISOString().slice(0, 10) + "-" + them.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") + "-" + uid().slice(-4);
-  const g = { id, format:"titans-stat-book", version:1, created:new Date().toISOString(), date:new Date().toISOString().slice(0, 10),
+  // the gym's date, not UTC's: a 7pm Arizona tip is already tomorrow in UTC
+  const now = new Date(), day = now.getFullYear() + "-" + String(now.getMonth() + 1).padStart(2, "0") + "-" + String(now.getDate()).padStart(2, "0");
+  const id = day + "-" + them.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") + "-" + uid().slice(-4);
+  const g = { id, format:"titans-stat-book", version:1, created:now.toISOString(), date:day,
     us, them, qlen, roster, starters: starters.length ? starters : roster.slice(0, 5).map(r => r.num), events:[], clock:{ rem:qlen * 60, run:false, at:0 }, clockUsed:false };
   S.games[id] = g; S.currentId = id; S.rosterText = rosterText; S.us = us; S.qlen = qlen;
   persist(g); view = "live"; render();
@@ -948,7 +956,8 @@ function board(g, c, ps){
 // Timeouts left under the fouls: 30 30 FT FT FT, one pill per timeout still in hand; a used one disappears
 function toutPills(g, team){
   const n30 = Math.max(0, timeoutsLeft(g, team, "30")), nFull = Math.max(0, timeoutsLeft(g, team, "full"));
-  const pills = '<span class="tout t30">30</span>'.repeat(n30) + '<span class="tout tfull">FT</span>'.repeat(nFull);
+  const pills = (n30 ? '<span class="trow">' + '<span class="tout t30">30</span>'.repeat(n30) + "</span>" : "") +
+    (nFull ? '<span class="trow">' + '<span class="tout tfull">FT</span>'.repeat(nFull) + "</span>" : "");
   return '<div class="touts" aria-label="' + n30 + " thirty and " + nFull + ' full timeouts left">' + (pills || '<span class="none">No timeouts</span>') + "</div>";
 }
 function whenLabel(g, e){
