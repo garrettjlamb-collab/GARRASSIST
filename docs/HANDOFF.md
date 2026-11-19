@@ -686,6 +686,14 @@ off (first ~50 s of Q4, the last timeout). `film game` runs it on its own for an
 It needs a LIVE log: a rewatch log has no real-time gaps to fit. `film camstops <game> --off` goes back to
 matching cards.
 
+**Reels at full quality (2026-11-19, his ask: "make sure it is like that for the future").** He asked why
+the reels looked bad: they were cut 640 wide at crf 28, redrawn through OpenCV's mp4v, then encoded again.
+Every reel (`film statbook` reels, `film game`, `film export`'s shot reel) now cuts each play once from the
+film at its own size (1920) with the label drawn on by ffmpeg in the same encode (`cut_labeled_clip`, crf
+22, ~5 Mbps like the Hudl download, ~11 MB per 18 s clip), then joins them with a stream copy
+(`concat_clips`). Do not go back to `build_reel` for anything he watches. Reels are ~8x bigger: check free
+disk before a full set (Mingus: ~4.5 GB).
+
 ## What Garrett has asked for (requirements gathered in conversation)
 
 1. **Full box score eventually**, as automated as possible; he accepts reviewing some of it.

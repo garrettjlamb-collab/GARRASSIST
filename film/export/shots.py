@@ -5,7 +5,8 @@ import json
 from pathlib import Path
 
 from film.common.paths import game_dir
-from film.export.clips import build_reel, clip_path
+from film.common.cloud import may_need_film
+from film.export.clips import concat_clips, cut_labeled_clip
 from film.interpret.events import load_events
 from film.review.decisions import apply_decisions, load_decisions
 
@@ -51,11 +52,22 @@ def _label(e: dict) -> str:
     return f"Q{e['quarter'] or '?'} {clock} {result}"
 
 
-def export_reel(game_id: str) -> Path | None:
+@may_need_film
+def export_reel(game_id: str, *, film, log=print) -> Path | None:
+    """Every confirmed shot in one reel at the film's own size (see film/export/clips.py, cut_labeled_clip)."""
+    import shutil
+    import tempfile
+
     gd = game_dir(game_id)
-    rows = [e for e in reviewed_shots(game_id, statuses=("confirmed",)) if clip_path(gd, e["id"]).exists()]
+    rows = [e for e in reviewed_shots(game_id, statuses=("confirmed",)) if e.get("clip")]
     if not rows:
         return None
     out = gd / "export"
     out.mkdir(exist_ok=True)
-    return build_reel([(clip_path(gd, e["id"]), _label(e)) for e in rows], out / f"{game_id}.reel.mp4")
+    work = Path(tempfile.mkdtemp(prefix="reel-"))
+    try:
+        paths = [cut_labeled_clip(film(), e["clip"]["start"], e["clip"]["end"], _label(e), work / f"{k:04d}.mp4")
+                 for k, e in enumerate(rows)]
+        return concat_clips(paths, out / f"{game_id}.reel.mp4")
+    finally:
+        shutil.rmtree(work, ignore_errors=True)
