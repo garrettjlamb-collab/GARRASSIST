@@ -106,9 +106,10 @@ select{font:inherit;font-size:15px;border:1px solid var(--line);border-radius:8p
 .courtsvg .xmiss line{stroke:var(--miss);stroke-width:0.4;stroke-linecap:round}
 
 /* plays sheet */
-#sheetWrap{position:fixed;inset:0;z-index:20;display:flex;flex-direction:column;justify-content:flex-end}
+#sheetWrap{position:fixed;inset:0;z-index:20;display:flex;flex-direction:column;justify-content:center;align-items:center;padding:16px}
 .scrim{position:absolute;inset:0;background:rgba(5,8,12,.5)}
-.sheet{position:relative;background:var(--bg);border-radius:16px 16px 0 0;max-height:88%;overflow-y:auto;padding-block:16px calc(18px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:12px;max-width:760px;width:100%;margin:0 auto}
+/* the plays pop-up sits in the middle of the screen; a long list scrolls inside it */
+.sheet{position:relative;background:var(--bg);border:1px solid var(--line);border-radius:16px;max-height:min(80dvh,820px);overflow-y:auto;overscroll-behavior:contain;padding-block:16px 18px;display:flex;flex-direction:column;gap:12px;max-width:760px;width:100%;box-shadow:0 18px 48px rgba(0,0,0,.35)}
 .sheet h2{margin:0;font-family:var(--display);font-weight:700;font-size:26px;line-height:1.1;text-wrap:balance}
 .sheet .sub{color:var(--muted);font-size:14px;margin-top:-6px}
 .sheet .close{position:absolute;top:10px;right:max(12px,env(safe-area-inset-right,0px));font-size:15px;font-weight:600;color:var(--muted);padding:8px}
@@ -231,7 +232,7 @@ const poss = s => s.fga - s.oreb + s.to + 0.44 * s.fta;
 const ppp = (pts, s) => { const p = poss(s); return p >= 1 ? pts / p : null; };
 const fmtPpp = v => v == null ? "–" : v.toFixed(2);
 const netOf = r => { const o = ppp(r.pts, r), d = ppp(r.opp, r.themS); return o == null || d == null ? null : o - d; };
-function aggregate(games){
+function aggregate(games, inPer){
   const P = {}, T = { us: blank(), them: blank() }, L = {};
   const playerInfo = {};
   for (const g of games) {
@@ -250,6 +251,7 @@ function aggregate(games){
     for (const e of g.events) {
       if (e.type === "sub") { (e.in || []).forEach(n => pl(n)); on = on.filter(n => !(e.out || []).includes(n)).concat(e.in || []); continue; }
       if (!STAT_TYPES.includes(e.type)) continue;
+      if (inPer && !inPer(e.p)) continue;
       const floor = e.on || on;
       floor.forEach(n => pl(n));
       const side = T[e.team]; if (!side) continue;
@@ -305,6 +307,7 @@ function playsFor(who, stat, games){
     for (const e of g.events) {
       if (e.type === "sub") { on = on.filter(n => !(e.out || []).includes(n)).concat(e.in || []); continue; }
       if (!STAT_PLAYS[stat](e)) continue;
+      if (who.per && !inPeriodSel(who.per, e.p)) continue;
       if (who.player) { if (e.team !== "us" || e.player == null || (keys[e.player] || {}).key !== who.player) continue; }
       if (who.team && e.team !== who.team) continue;
       if (who.lineup) { const k = (e.on || on).map(n => (keys[n] || { key:"#" + n }).key).sort().join("|"); if (k !== who.lineup) continue; }
@@ -460,12 +463,22 @@ function viewTeam(A){
     card(v(t.pf), "Their fouls", "Ours " + v(u.pf), { team:"them" }, "pf") +
     "</div>" + '<div class="hint">Possessions are estimated from shots, offensive rebounds, turnovers and free throws. Tap a card for its plays.</div>';
 }
-let minPlays = 10;
-function viewLineups(A){
-  const rows = A.lineups.filter(l => l.n >= minPlays).map(l => Object.assign({ who:{ lineup:l.key } }, l));
+let minPlays = 10, lineupPer = "game", lineupWith = "any";
+const PERIOD_SETS = { game:null, h1:[1, 2], h2:[3, 4], 1:[1], 2:[2], 3:[3], 4:[4], ot:"ot" };
+function inPeriodSel(sel, p){ const set = PERIOD_SETS[sel]; return set == null ? true : set === "ot" ? p >= 5 : set.includes(p); }
+function viewLineups(A0){
+  const A = lineupPer === "game" ? A0 : aggregate(selected(), p => inPeriodSel(lineupPer, p));
+  const people = A0.players.filter(p => p.gp).sort((a, b) => a.label.localeCompare(b.label));
+  if (lineupWith !== "any" && !people.some(p => p.key === lineupWith)) lineupWith = "any";
+  const rows = A.lineups.filter(l => l.n >= minPlays && (lineupWith === "any" || l.key.split("|").includes(lineupWith)))
+    .map(l => Object.assign({ who:{ lineup:l.key, per:lineupPer === "game" ? undefined : lineupPer } }, l));
   rows.sort((a, b) => b.n - a.n);
   const opts = [1, 10, 25, 50].map(n => '<option value="' + n + '"' + (n === minPlays ? " selected" : "") + ">" + (n === 1 ? "Every five" : n + "+ plays") + "</option>").join("");
-  return '<div class="spread"><span class="label">' + rows.length + " lineups</span><select id=\"minplays\" aria-label=\"Fewest plays to show\">" + opts + "</select></div>" +
+  const hasOT = selected().some(g => g.events.some(e => e.p >= 5));
+  const segs = [["game", "Game"], ["h1", "1st half"], ["h2", "2nd half"], ["1", "Q1"], ["2", "Q2"], ["3", "Q3"], ["4", "Q4"]].concat(hasOT ? [["ot", "OT"]] : []);
+  const perSeg = '<div class="row">' + segs.map(([v, l]) => '<button class="chip" data-act="lper" data-v="' + v + '" aria-pressed="' + (lineupPer === v) + '">' + l + "</button>").join("") + "</div>";
+  const withSel = '<select id="lwith" aria-label="Lineups with this player"><option value="any">Any player</option>' + people.map(p => '<option value="' + esc(p.key) + '"' + (p.key === lineupWith ? " selected" : "") + ">With " + esc(p.label) + "</option>").join("") + "</select>";
+  return perSeg + '<div class="spread"><span class="label">' + rows.length + " lineups</span><div class=\"row\">" + withSel + "<select id=\"minplays\" aria-label=\"Fewest plays to show\">" + opts + "</select></div></div>" +
     (rows.length ? table(LCOLS, rows, sortState.lineups, "lineups") : '<div class="empty"><b>No lineup with that many plays</b>Lower the minimum to see shorter stretches.</div>') +
     '<div class="hint">Each five is counted by the plays logged while they were on the floor, across the games counted. Tap a lineup for its plays. PTS and the shooting are ours; OPP is what the other team scored against them. Off is our points per possession with that five on the floor, Def is theirs, Net is the difference (estimated possessions; small samples swing a lot).</div>';
 }
@@ -651,6 +664,98 @@ function runSpan(sp, r){
   return pLabel(a.e.p) + (b.e.p !== a.e.p ? "–" + pLabel(b.e.p) : "") + " · " + scoreTxt(a.before) + " → " + scoreTxt(b.after);
 }
 
+/* ---------- minutes: who was on the floor, by the time of day the stat book stamped ---------- */
+// Each quarter's real length (whistle to whistle, as logged) is spread evenly over its game minutes, so game
+// minutes are an estimate: a stretch full of fouls and timeouts reads a little long. Real times are exact to the tap.
+function periodSpans(g){
+  const P = {};
+  for (const e of g.events) if (e.type === "period" && e.ms && e.period) { const d = P[e.period] || (P[e.period] = {}); d[e.action] = e.ms; }
+  const fin = (g.events.find(e => e.type === "final") || {}).ms;
+  const last = g.events.reduce((m, e) => Math.max(m, e.ms || 0), 0);
+  const ps = Object.keys(P).map(Number).sort((a, b) => a - b);
+  ps.forEach((p, i) => { if (!P[p].end) P[p].end = (P[ps[i + 1]] || {}).start || fin || last; });
+  return ps.filter(p => P[p].start && P[p].end > P[p].start).map(p => ({ p, start:P[p].start, end:P[p].end, len:(p <= 4 ? (g.qlen || 8) : 4) * 60 }));
+}
+function gameAt(spans, ms){
+  let off = 0;
+  for (const s of spans) {
+    if (ms <= s.start) return off;
+    if (ms < s.end) return off + (ms - s.start) / (s.end - s.start) * s.len;
+    off += s.len;
+  }
+  return off;
+}
+function stints(g){
+  const spans = periodSpans(g); if (!spans.length) return null;
+  const start = spans[0].start, end = spans[spans.length - 1].end;
+  const on = {}, out = {};
+  (g.starters || []).forEach(n => on[n] = start);
+  for (const e of g.events) {
+    if (e.type !== "sub" || !e.ms) continue;
+    (e.out || []).forEach(n => { if (on[n] != null) { (out[n] = out[n] || []).push([on[n], e.ms]); delete on[n]; } });
+    (e.in || []).forEach(n => { if (on[n] == null) on[n] = e.ms; });
+  }
+  Object.entries(on).forEach(([n, a]) => (out[n] = out[n] || []).push([a, end]));
+  const keys = rosterKeys(g);
+  const players = Object.entries(out).map(([num, ons]) => {
+    ons.sort((a, b) => a[0] - b[0]);
+    const segs = []; let cur = start;
+    ons.forEach(([a, b]) => { if (a > cur) segs.push({ on:false, a:cur, b:a }); segs.push({ on:true, a, b }); cur = b; });
+    if (cur < end) segs.push({ on:false, a:cur, b:end });
+    segs.forEach(s => { s.ga = gameAt(spans, s.a); s.gb = gameAt(spans, s.b); s.game = s.gb - s.ga; });
+    const k = keys[num] || { key:"#" + num, label:"#" + num };
+    return { num, key:k.key, label:k.label, segs, mins:segs.filter(s => s.on).reduce((t, s) => t + s.game, 0) / 60 };
+  }).sort((a, b) => b.mins - a.mins);
+  return { spans, players, total:spans.reduce((t, s) => t + s.len, 0) };
+}
+const clockOf = ms => new Date(ms).toLocaleTimeString([], { hour:"numeric", minute:"2-digit" });
+const clockShort = ms => clockOf(ms).replace(/\s?[AP]M$/i, "");
+const realMin = s => Math.round((s.b - s.a) / 6000) / 10;
+// "Q2 7:18" style game clock for an estimated elapsed time
+function gameClock(spans, secs){
+  let off = 0;
+  for (const s of spans) { if (secs <= off + s.len + 1e-6) { const left = Math.max(0, s.len - (secs - off)); return pLabel(s.p) + " " + Math.floor(left / 60) + ":" + String(Math.round(left % 60)).padStart(2, "0"); } off += s.len; }
+  return "";
+}
+function minutesSection(g){
+  const st = stints(g);
+  if (!st) return '<div class="empty slim">This game has no quarter starts logged, so there are no minutes to estimate.</div>';
+  const W = 340, L = 74, R = 6, rowH = 22, T = 18, H = T + st.players.length * rowH + 4;
+  const x = s => L + (W - L - R) * s / st.total;
+  let svg = "", off = 0;
+  st.spans.forEach(s => {
+    svg += '<text class="ax" x="' + x(off + s.len / 2) + '" y="11" text-anchor="middle">' + pLabel(s.p) + "</text>";
+    if (off > 0) svg += '<line class="gl" x1="' + x(off) + '" x2="' + x(off) + '" y1="' + (T - 4) + '" y2="' + H + '"/>';
+    off += s.len;
+  });
+  st.players.forEach((p, i) => {
+    const y = T + i * rowH;
+    svg += '<rect class="hit" x="0" y="' + y + '" width="' + W + '" height="' + rowH + '" data-act="stints" data-g="' + esc(g.id) + '" data-n="' + esc(p.num) + '"/>';
+    svg += '<text class="ax" x="0" y="' + (y + 14) + '" style="fill:var(--ink)">' + esc(p.label.length > 11 ? p.label.slice(0, 10) + "…" : p.label) + "</text>";
+    svg += '<line class="gl" x1="' + L + '" x2="' + (W - R) + '" y1="' + (y + 11) + '" y2="' + (y + 11) + '"/>';
+    p.segs.filter(s => s.on && s.game > 0).forEach(s => {
+      svg += '<rect x="' + x(s.ga) + '" y="' + (y + 5) + '" width="' + Math.max(1.5, x(s.gb) - x(s.ga)) + '" height="12" rx="2" style="fill:var(--s1)"/>';
+    });
+  });
+  const longestOut = p => p.segs.filter(s => !s.on && s.game > 0).sort((a, b) => b.game - a.game)[0];
+  const rows = st.players.map(p => {
+    const lo = longestOut(p);
+    return '<tr><td><button class="name" data-act="stints" data-g="' + esc(g.id) + '" data-n="' + esc(p.num) + '">' + esc(p.label) + "</button></td><td><span><b>" + p.mins.toFixed(1) + "</b></span></td><td><span>" + p.segs.filter(s => s.on).length + "</span></td><td><span>" +
+      (lo ? clockShort(lo.a) + "–" + clockShort(lo.b) + " · " + Math.round(realMin(lo)) + " (~" + Math.round(lo.game / 60) + ")" : "–") + "</span></td></tr>";
+  }).join("");
+  return '<div class="trend"><div class="legend"><span><i style="background:var(--s1)"></i>On the floor</span><span>Game time, estimated</span></div>' +
+    '<svg viewBox="0 0 ' + W + " " + H + '" width="100%" role="img" aria-label="Who was on the floor through the game">' + svg + "</svg></div>" +
+    '<div class="scroll"><table><tr><th>Player</th><th>Est. min</th><th>Stints</th><th>Longest out</th></tr>' + rows + "</table></div>" +
+    '<div class="hint">Longest out: the real times, then real minutes and (~game minutes). Real times come from when each sub was logged. Game minutes spread each quarter\'s real length evenly over its 8 minutes, so they are a guide, not the scorebook. Tap a player for every stretch on and off.</div>';
+}
+function sheetStints(gid, num){
+  const g = GAMES.find(x => x.id === gid); if (!g) return;
+  const st = stints(g); const p = st && st.players.find(x => x.num === num); if (!p) return;
+  const rows = p.segs.filter(s => s.b > s.a).map(s => '<div class="play"><span class="q">' + (s.on ? "On" : "Out") + "</span><span>" + clockOf(s.a) + "–" + clockOf(s.b) + " · " + realMin(s) + " real min · ~" + (s.game / 60).toFixed(1) + " game min" +
+    '<br><span class="pct">' + gameClock(st.spans, s.ga) + " → " + gameClock(st.spans, s.gb) + " (estimated)</span></span><span></span></div>").join("");
+  openSheet("<h2>" + esc(p.label) + " · minutes</h2>" + '<div class="sub">About ' + p.mins.toFixed(1) + " game minutes vs " + esc(g.them) + " · " + esc(g.date) + "</div>" + rows);
+}
+
 /* ---------- the post-game report ---------- */
 let reportId = null;
 function reportGame(){
@@ -728,7 +833,8 @@ function viewReport(){
   const heat = shots.length ? heatMap(shots.map(x => x.e), ctx) + zoneTable(shots.map(x => x.e), ctx) : '<div class="empty slim">No shot spots were marked in this game.</div>';
 
   return head + '<div class="sec">Leaders</div>' + leaders + '<div class="sec">By quarter</div>' + qt + '<div class="sec">Runs</div>' + runs +
-    '<div class="sec">Shooting and efficiency</div>' + eff + '<div class="sec">Lineups</div>' + lineups + '<div class="sec">Where our shots came from</div>' + heat;
+    '<div class="sec">Shooting and efficiency</div>' + eff + '<div class="sec">Minutes</div>' + minutesSection(g) +
+    '<div class="sec">Lineups</div>' + lineups + '<div class="sec">Where our shots came from</div>' + heat;
 }
 
 /* ---------- trends: game by game ---------- */
@@ -853,7 +959,7 @@ function showTip(hit){
   tip.style.left = left + "px"; tip.style.top = Math.max(4, hr.top - br.top - tip.offsetHeight + 8) + "px";
 }
 function hideTip(box){ const tip = box.querySelector(".tip"); if (tip) tip.remove(); box.querySelectorAll(".hit.on").forEach(x => x.classList.remove("on")); }
-document.addEventListener("mouseover", ev => { const h = ev.target.closest && ev.target.closest(".trend .hit"); if (h) showTip(h); });
+document.addEventListener("mouseover", ev => { const h = ev.target.closest && ev.target.closest(".trend .hit[data-tip]"); if (h) showTip(h); });
 document.addEventListener("mouseout", ev => { const box = ev.target.closest && ev.target.closest(".trend"); if (box && !box.contains(ev.relatedTarget)) hideTip(box); });
 
 function render(){
@@ -869,6 +975,7 @@ function render(){
     : tab === "report" ? viewReport() : tab === "trends" ? viewTrends() : tab === "team" ? viewTeam(A) : tab === "lineups" ? viewLineups(A) : tab === "shots" ? viewShots(A) : tab === "games" ? viewGames() : viewPlayers(A);
   $("#app").innerHTML = '<main class="inner">' + picker() + (pick.size ? controls() + body : "") + "</main>";
   const mp = $("#minplays"); if (mp) mp.addEventListener("change", ev => { minPlays = +ev.target.value; render(); });
+  const lw = $("#lwith"); if (lw) lw.addEventListener("change", ev => { lineupWith = ev.target.value; render(); });
   const sw = $("#shotwho"); if (sw) sw.addEventListener("change", ev => { shotWho = ev.target.value; render(); });
   const rg = $("#reportgame"); if (rg) rg.addEventListener("change", ev => { reportId = ev.target.value; render(); });
   const tw = $("#trendwho"); if (tw) tw.addEventListener("change", ev => { trendWho = ev.target.value; render(); });
@@ -938,14 +1045,16 @@ function sheetPlayer(key){
 
 /* ---------- events ---------- */
 document.addEventListener("click", ev => {
-  const hit = ev.target.closest(".trend .hit"); if (hit) { showTip(hit); return; }
+  const hit = ev.target.closest(".trend .hit[data-tip]"); if (hit) { showTip(hit); return; }
   const b = ev.target.closest("[data-act]"); if (!b) return;
   const act = b.dataset.act;
   if (act === "close") return closeSheet();
   if (act === "zone") { const c = b.dataset.ctx || (b.closest("[data-ctx]") || {}).dataset?.ctx; if (c) sheetZone(b.dataset.z, JSON.parse(c)); return; }
   if (act === "run") { sheetRun(b.dataset.g, b.dataset.side, +b.dataset.allow); return; }
+  if (act === "stints") { sheetStints(b.dataset.g, b.dataset.n); return; }
   if (act === "report") { reportId = b.dataset.id; tab = "report"; try { localStorage.setItem("hub/tab", tab); } catch (e) {} render(); window.scrollTo(0, 0); return; }
   if (act === "shotview") { shotView = b.dataset.v; render(); return; }
+  if (act === "lper") { lineupPer = b.dataset.v; render(); return; }
   if (act === "toggle") {
     const g = GAMES.find(x => x.id === b.dataset.id); if (!g) return;
     if (isScrim(g)) pick = pick.has(g.id) && pick.size === 1 ? new Set(seasonGames().map(x => x.id)) : new Set([g.id]);

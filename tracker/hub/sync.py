@@ -23,6 +23,8 @@ KEEP = ("id", "type", "team", "player", "made", "pts", "off", "p", "on", "in", "
 
 
 KINDS = Path(__file__).parent / "kinds.json"       # game id -> "scrimmage": kept in the hub, never in season totals
+# game id -> event id -> fields to change, so the hub matches the official book. The stat book is never edited.
+CORRECTIONS = Path(__file__).parent / "corrections.json"
 
 
 def local_date(game: dict) -> str | None:
@@ -36,9 +38,11 @@ def local_date(game: dict) -> str | None:
     return game.get("date")
 
 
-def slim(game: dict, kinds: dict | None = None) -> dict:
+def slim(game: dict, kinds: dict | None = None, fixes: dict | None = None) -> dict:
+    fix = (fixes or {}).get(game["id"], {})
     events = []
     for e in game["events"]:
+        e = dict(e, **{k: v for k, v in fix.get(e.get("id"), {}).items() if k != "why"})
         events.append({k: e[k] for k in KEEP if k in e and e[k] is not None})
     return {"id": game["id"], "date": local_date(game), "us": game.get("us"), "them": game.get("them"),
             "qlen": game.get("qlen"), "roster": game.get("roster", []), "starters": game.get("starters", []),
@@ -58,6 +62,7 @@ def main(argv=None) -> int:
     args = ap.parse_args(argv)
     args.out.mkdir(parents=True, exist_ok=True)
     kinds = json.loads(KINDS.read_text()) if KINDS.exists() else {}
+    fixes = json.loads(CORRECTIONS.read_text()) if CORRECTIONS.exists() else {}
     for path in sorted(args.games_dir.glob("*.json")):
         doc = json.loads(path.read_text())
         game = doc.get("data", doc)
@@ -65,12 +70,14 @@ def main(argv=None) -> int:
             print(f"skip  {game['id']} (test game)")
             continue
         out = args.out / f"{game['id']}.json"
-        text = json.dumps(slim(game, kinds), separators=(",", ":"))
+        text = json.dumps(slim(game, kinds, fixes), separators=(",", ":"))
         if len(text) > 250_000:
             print(f"error {game['id']}: {len(text)} bytes is over the store's 256 KiB document limit", file=sys.stderr)
             return 1
         out.write_text(text)
-        print(f"wrote {out}  {len(text)} bytes, {len(game['events'])} plays, {kinds.get(game['id'], 'game')}")
+        n_fix = len(fixes.get(game["id"], {}))
+        print(f"wrote {out}  {len(text)} bytes, {len(game['events'])} plays, {kinds.get(game['id'], 'game')}"
+              + (f", {n_fix} correction(s) to match the official book" if n_fix else ""))
     return 0
 
 
