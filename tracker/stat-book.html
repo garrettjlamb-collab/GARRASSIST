@@ -204,6 +204,11 @@ const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 
 const TEAM = "Marcos Varsity";
 // Standing roster (Nov 2026). Display names are what the coach calls them; 98 and 99 are placeholders until jerseys are known.
 const STANDING_ROSTER = ["0 Amari", "2 Dennis", "3 Ryan", "4 Diggy", "10 Isaac", "11 David", "12 Rocha", "13 Tristan", "15 Hayden", "23 Jhakiem", "24 Kaleb", "96 Brendan", "97 Achilles", "98 Jayvion", "99 Young"].join("\n");
+// Full names for MaxPreps, by jersey, used only while the roster still has the name the coach uses for that number
+const FULL_NAMES = { "0":["Amari","Amari Bush"], "2":["Dennis","Dennis Tolliver"], "3":["Ryan","Ryan Doyle"], "4":["Diggy","DeShawn Howard"],
+  "10":["Isaac","Isaac Arce"], "11":["David","David Ramirez-Tinoco"], "12":["Rocha","Isaiah Rocha"], "13":["Tristan","Tristan Greer"],
+  "15":["Hayden","Hayden Spirlong"], "23":["Jhakiem","Jhakiem Gipson"], "24":["Kaleb","Kaleb Shelby"] };
+function fullName(r){ const f = FULL_NAMES[r.num]; return f && String(r.name || "").trim().toLowerCase() === f[0].toLowerCase() ? f[1] : r.name; }
 let S = loadLocal() || { games:{}, currentId:null, rosterText:STANDING_ROSTER, us:TEAM, qlen:8 };
 if (!S.v2) { if (!S.us || /arcadia|scrimmage/i.test(S.us)) S.us = TEAM; S.v2 = true; }
 if (!S.v4) { S.rosterText = STANDING_ROSTER; S.us = TEAM; S.v3 = S.v4 = true; }
@@ -922,6 +927,19 @@ async function exportFile(kind){
     const cols = ["num","name","pts","fgm","fga","tpm","tpa","ftm","fta","oreb","dreb","reb","ast","stl","blk","to","pf","pm"];
     const rows = d.box.players.concat([Object.assign({ num:"", name:"TEAM " + g.us }, d.box.team_us), Object.assign({ num:"", name:"TEAM " + g.them }, d.box.team_them)]);
     filename = base + "-box.csv"; data = toCsv(cols, rows);
+  } else if (kind === "maxpreps") {
+    // MaxPreps' stat entry columns, in its order. Min, Defl, Chrg and TF are not tracked, so they stay blank.
+    const c = compute(g);
+    const played = new Set(g.starters);
+    g.events.forEach(e => { if (e.type === "sub") (e.in || []).forEach(n => played.add(n)); if (e.team === "us" && e.player != null) played.add(e.player); });
+    const cols = ["#","Name","Status","Min","Pts","2FG","2FGA","3FG","3FGA","FT","FTA","Off","Def","Reb","Ast","Blk","Stl","Defl","TO","Chrg","PF","TF"];
+    const line = (num, name, s, status) => status === "Did Not Play" ? { "#":num, Name:name, Status:status } : {
+      "#":num, Name:name, Status:status, Pts:s.pts, "2FG":s.fgm - s.tpm, "2FGA":s.fga - s.tpa, "3FG":s.tpm, "3FGA":s.tpa,
+      FT:s.ftm, FTA:s.fta, Off:s.oreb, Def:s.dreb, Reb:s.oreb + s.dreb, Ast:s.ast, Blk:s.blk, Stl:s.stl, TO:s.to, PF:s.pf };
+    const rows = g.roster.slice().sort((a, b) => numSort(a.num, b.num)).map(r =>
+      line(r.num, fullName(r), c.P[r.num] || blankLine(), played.has(r.num) ? "Played" : "Did Not Play"));
+    rows.push(line("", "TEAM TOTALS (check only, do not enter)", c.T.us, ""));
+    filename = "Max Preps Box Score - " + g.them + " " + g.date + ".csv"; data = toCsv(cols, rows);
   } else if (kind === "lineups") {
     const cols = ["lineup","names","pts","opp","plus_minus","fgm","fga","tpm","tpa","ftm","fta","oreb","dreb","reb","ast","stl","blk","to","pf"];
     filename = base + "-lineups.csv"; data = toCsv(cols, d.lineups);
@@ -1105,6 +1123,7 @@ function renderGame(g){
     '<div class="hint">' + esc(g.date) + " · " + g.events.length + " plays logged. Download after the game; the game file has every play stamped with the time of day, the quarter, the clock if you ran it, and who was on the floor.</div>" +
     '<div class="label">Download</div><div class="list">' +
       '<button class="btn" data-act="dl" data-kind="json">Game file for the film engine <small>.json</small></button>' +
+      '<button class="btn" data-act="dl" data-kind="maxpreps">Max Preps Box Score <small>.csv</small></button>' +
       '<button class="btn" data-act="dl" data-kind="box">Box score <small>.csv</small></button>' +
       '<button class="btn" data-act="dl" data-kind="plays">Play by play <small>.csv</small></button>' +
       '<button class="btn" data-act="dl" data-kind="lineups">Lineups <small>.csv</small></button>' +
