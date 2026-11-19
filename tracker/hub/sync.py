@@ -12,7 +12,11 @@ from __future__ import annotations
 import argparse
 import json
 import sys
+from datetime import datetime
 from pathlib import Path
+from zoneinfo import ZoneInfo
+
+GYM_TZ = ZoneInfo("America/Phoenix")   # games are played in Arizona; the stat book once stamped UTC dates
 
 KEEP = ("id", "type", "team", "player", "made", "pts", "off", "p", "on", "in", "out", "x", "y", "ref", "kind",
         "action", "period", "ms")
@@ -21,11 +25,22 @@ KEEP = ("id", "type", "team", "player", "made", "pts", "off", "p", "on", "in", "
 KINDS = Path(__file__).parent / "kinds.json"       # game id -> "scrimmage": kept in the hub, never in season totals
 
 
+def local_date(game: dict) -> str | None:
+    """The gym's date for a game: from its creation time in Arizona, else whatever the stat book wrote."""
+    created = game.get("created")
+    if created:
+        try:
+            return datetime.fromisoformat(created.replace("Z", "+00:00")).astimezone(GYM_TZ).date().isoformat()
+        except ValueError:
+            pass
+    return game.get("date")
+
+
 def slim(game: dict, kinds: dict | None = None) -> dict:
     events = []
     for e in game["events"]:
         events.append({k: e[k] for k in KEEP if k in e and e[k] is not None})
-    return {"id": game["id"], "date": game.get("date"), "us": game.get("us"), "them": game.get("them"),
+    return {"id": game["id"], "date": local_date(game), "us": game.get("us"), "them": game.get("them"),
             "qlen": game.get("qlen"), "roster": game.get("roster", []), "starters": game.get("starters", []),
             "updated": game.get("updated"), "kind": (kinds or {}).get(game["id"], "game"), "events": events}
 
