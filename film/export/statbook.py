@@ -11,7 +11,7 @@ from film.common.cloud import may_need_film
 from film.common.manifest import Manifest
 from film.common.paths import game_dir
 from film.common.ffmpeg import ffmpeg_exe
-from film.export.clips import build_reel, cut_clip
+from film.export.clips import cut_clip
 from film.interpret.events import load_events
 from film.interpret.quarters import load_quarters
 from film.interpret.statbook import Placed, cards_from_events, label, load_statbook, place_game
@@ -199,17 +199,34 @@ def cut_clips(game_id: str, plays: list[dict], force: bool = False, log=print, *
     return paths
 
 
-def reel(game_id: str, plays: list[dict], name: str, log=print, out: Path | None = None) -> Path:
+def reel_label(p: dict) -> str:
+    clock = _clock(p.get("clock_s"))
+    return f"Q{p['period']} {clock}  {p['label']}" if clock != "--" else f"Q{p['period']}  {p['label']}"
+
+
+@may_need_film
+def reel(game_id: str, plays: list[dict], name: str, log=print, out: Path | None = None, *, film) -> Path:
+    """The plays joined into one video at the film's own size, each labeled. Each clip is cut from the film
+    once, with its label drawn on in the same encode, and the reel joins them without encoding again."""
+    import shutil
+    import tempfile
+
+    from film.export.clips import concat_clips, cut_labeled_clip
+
     gd = game_dir(game_id)
-    paths = cut_clips(game_id, plays, log=log)
-    labels = [f"Q{p['period']} {_clock(p.get('clock_s'))}  {p['label']}" for p in plays]
     out = Path(out) if out else gd / "export" / f"{game_id}.{_slug(name)}.reel.mp4"
     out.parent.mkdir(parents=True, exist_ok=True)
-    raw = build_reel(list(zip(paths, labels)), out.with_suffix(".raw.mp4"))
-    # OpenCV writes mp4v at about 0.4 MB a second; H.264 is a seventh of that and plays on a phone
-    subprocess.run([ffmpeg_exe(), "-y", "-loglevel", "error", "-i", str(raw), "-c:v", "libx264", "-preset", "veryfast",
-                    "-crf", "26", "-movflags", "+faststart", str(out)], check=True)
-    raw.unlink()
+    work = Path(tempfile.mkdtemp(prefix="reel-"))
+    try:
+        paths = []
+        for k, p in enumerate(plays):
+            if not p.get("clip"):
+                continue
+            paths.append(cut_labeled_clip(film(), p["clip"]["start"], p["clip"]["end"], reel_label(p),
+                                          work / f"{k:04d}.mp4"))
+        concat_clips(paths, out)
+    finally:
+        shutil.rmtree(work, ignore_errors=True)
     return out
 
 

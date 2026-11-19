@@ -35,6 +35,48 @@ def cut_clip(source: Path, start: float, end: float, out_path: Path, width: int 
     return out_path
 
 
+REEL_WIDTH = 1920   # reels at the film's own size: 640 wide and three encodes is what made them look bad
+REEL_CRF = 22       # about the bitrate of a Hudl 1080p download (~5 Mbps): ~11 MB per 18 s clip
+
+
+def cut_labeled_clip(source: Path, start: float, end: float, label: str, out_path: Path,
+                     width: int = REEL_WIDTH, crf: int = REEL_CRF) -> Path:
+    """One play from the film with its label drawn on, in a single encode. Every clip gets the same codec
+    settings, so a reel joins them without encoding again (`concat_clips`)."""
+    out_path = Path(out_path)
+    text = out_path.with_suffix(".txt")
+    text.write_text(label)
+    draw = (f"drawtext=textfile='{text}':x=24:y=24:fontsize=h/24:fontcolor=white:borderw=3:bordercolor=black")
+    cmd = [ffmpeg_exe(), "-y", "-loglevel", "error", "-ss", f"{max(0.0, start):.3f}", "-i", str(source),
+           "-t", f"{max(0.1, end - start):.3f}", "-vf", f"scale='min({width},iw)':-2,{draw}", "-an",
+           "-c:v", "libx264", "-preset", "veryfast", "-crf", str(crf), "-pix_fmt", "yuv420p", "-r", "30",
+           "-movflags", "+faststart", str(out_path)]
+    result = subprocess.run(cmd, capture_output=True)
+    text.unlink(missing_ok=True)
+    if result.returncode != 0:
+        raise RuntimeError(f"ffmpeg failed cutting {source} {start:.2f}-{end:.2f}: "
+                           f"{result.stderr.decode(errors='replace').strip()}")
+    return out_path
+
+
+def concat_clips(paths: list[Path], out_path: Path) -> Path:
+    """Join clips cut by `cut_labeled_clip` into one video, copying the streams (no quality lost)."""
+    if not paths:
+        raise ValueError("no clips to build a reel from")
+    out_path = Path(out_path)
+    listing = out_path.with_suffix(".list.txt")
+    listing.write_text("".join("file '" + str(Path(p).resolve()).replace("'", "'\\''") + "'\n" for p in paths))
+    part = out_path.with_suffix(".part.mp4")
+    result = subprocess.run([ffmpeg_exe(), "-y", "-loglevel", "error", "-f", "concat", "-safe", "0", "-i", str(listing),
+                             "-c", "copy", "-movflags", "+faststart", str(part)], capture_output=True)
+    listing.unlink(missing_ok=True)
+    if result.returncode != 0:
+        part.unlink(missing_ok=True)
+        raise RuntimeError(f"ffmpeg failed joining {len(paths)} clips: {result.stderr.decode(errors='replace').strip()}")
+    os.replace(part, out_path)
+    return out_path
+
+
 def clip_path(game_dir_path: Path, event_id: str) -> Path:
     return Path(game_dir_path) / "clips" / f"{event_id}.mp4"
 
