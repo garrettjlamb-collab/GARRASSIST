@@ -53,7 +53,12 @@ button:focus-visible,input:focus-visible,textarea:focus-visible{outline:3px soli
 .clock.run{color:#5ee08f;border-color:#2f6b47}
 .clock.off{font-size:13px;color:var(--board-muted);padding:7px 10px;font-family:var(--body);font-weight:500}
 .setclock{font-size:11px;color:var(--board-muted);text-decoration:underline;padding:2px 6px}
-.sync{font-size:11px;color:var(--board-muted);text-align:center;padding-bottom:6px}
+.board .subline{display:flex;justify-content:space-between;align-items:baseline;gap:10px;padding-block:0 6px}
+.sync{font-size:11px;color:var(--board-muted);min-width:0}
+.runtag{flex:none;font-family:var(--display);font-weight:700;font-size:13px;letter-spacing:.06em;text-transform:uppercase;white-space:nowrap}
+.runtag b{font-variant-numeric:tabular-nums;font-size:15px}
+.runtag.us{color:#5ee08f}
+.runtag.them{color:#ff8a7a}
 .sync b{font-weight:600;color:var(--board-ink)}
 
 /* live */
@@ -335,6 +340,28 @@ const pLabel = p => p <= 0 ? "PRE" : p <= 4 ? "Q" + p : (p === 5 ? "OT" : "OT" +
 function clockRem(g){ const c = g.clock; return c.run ? Math.max(0, c.rem - (Date.now() - c.at) / 1000) : c.rem; }
 function fmtClock(s){ s = Math.max(0, s); if (s < 60) return (Math.floor(s * 10) / 10).toFixed(1); const m = Math.floor(s / 60), r = Math.floor(s % 60); return m + ":" + String(r).padStart(2, "0"); }
 function fmtClockInt(s){ if (s == null) return ""; const m = Math.floor(s / 60), r = Math.round(s % 60); return m + ":" + String(r).padStart(2, "0"); }
+
+// The run going on right now, for the scoreboard. A stretch ending at the latest basket, starting on one team's
+// basket, counts as a run when that team has 6+ with the other scoring nothing, or leads the stretch by 8+.
+// The other team answering with 4+ straight points (two baskets in a row) ends it. Biggest margin wins; on a tie,
+// the one where the other team scored less. Returns { side, us, them } (points in the run) or null.
+const RUN_UNANSWERED = 6, RUN_MARGIN = 8, RUN_BREAK = 4;
+function currentRun(evs){
+  const sp = evs.filter(e => e.type === "shot" && e.made && (e.team === "us" || e.team === "them"));
+  let best = null;
+  for (const side of ["us", "them"]) {
+    let mine = 0, theirs = 0, streak = 0;               // walk back from the latest basket
+    for (let i = sp.length - 1; i >= 0; i--) {
+      if (sp[i].team === side) { mine += sp[i].pts; streak = 0; }
+      else { theirs += sp[i].pts; streak += sp[i].pts; if (streak >= RUN_BREAK) break; continue; }
+      const ok = (theirs === 0 && mine >= RUN_UNANSWERED) || mine - theirs >= RUN_MARGIN;
+      if (ok && (!best || mine - theirs > best.mine - best.theirs || (mine - theirs === best.mine - best.theirs && theirs < best.theirs)))
+        best = { side, mine, theirs };
+    }
+  }
+  if (!best) return null;
+  return { side: best.side, us: best.side === "us" ? best.mine : best.theirs, them: best.side === "us" ? best.theirs : best.mine };
+}
 
 function blankLine(){ return { pts:0, fgm:0, fga:0, tpm:0, tpa:0, ftm:0, fta:0, oreb:0, dreb:0, ast:0, stl:0, blk:0, to:0, pf:0, pm:0 }; }
 function compute(g, evs){
@@ -974,7 +1001,12 @@ function board(g, c, ps){
     '<div class="side"><div class="tname">' + esc(g.us) + '</div><div class="digits">' + c.us + '</div><div class="tf">Fouls ' + fq("us") + (fq("them") >= BONUS_AT ? ' <span class="bonus">BONUS</span>' : "") + "</div>" + toutPills(g, "us") + "</div>" +
     '<div class="mid"><div class="per">' + (ps.final ? "FINAL" : pLabel(ps.p)) + "</div>" + clockHtml + (g.clockUsed ? '<button class="setclock" data-act="setclock">set</button>' : "") + "</div>" +
     '<div class="side"><div class="tname">' + esc(g.them) + '</div><div class="digits">' + c.them + '</div><div class="tf">Fouls ' + fq("them") + (fq("us") >= BONUS_AT ? ' <span class="bonus">BONUS</span>' : "") + "</div>" + toutPills(g, "them") + "</div>" +
-    '</div><div class="sync wrap" id="sync"></div></header>';
+    '</div><div class="subline wrap"><div class="sync" id="sync"></div>' + runTag(g) + "</div></header>";
+}
+// The run on the right of the save line, always our points first: a 16-2 run by them reads "Run 2–16"
+function runTag(g){
+  const r = currentRun(g.events);
+  return r ? '<div class="runtag ' + r.side + '">Run <b>' + r.us + "–" + r.them + "</b></div>" : "";
 }
 // Timeouts left under the fouls: 30 30 FT FT FT, one pill per timeout still in hand; a used one disappears
 function toutPills(g, team){
