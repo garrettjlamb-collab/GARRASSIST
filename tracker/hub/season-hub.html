@@ -275,7 +275,7 @@ function aggregate(games, inPer){
   }
   const players = Object.entries(P).map(([key, s]) => Object.assign({ key, label: playerInfo[key].label, nums:[...playerInfo[key].nums].sort(numSort) }, s));
   const lineups = Object.values(L).filter(l => l.members.length === 5).map(l => Object.assign(
-    { key:l.key, label:l.members.slice().sort().join(" · "), n:l.n, games:l.games.size }, l.us,
+    { key:l.key, label:l.members.slice().sort().join(" · "), n:l.n, games:l.games.size, gameIds:[...l.games] }, l.us,
     { opp:l.them.pts, pm:l.us.pts - l.them.pts, themS:l.them, poss:(poss(l.us) + poss(l.them)) / 2 }));
   return { players, T, lineups };
 }
@@ -310,7 +310,7 @@ function playsFor(who, stat, games){
       if (who.per && !inPeriodSel(who.per, e.p)) continue;
       if (who.player) { if (e.team !== "us" || e.player == null || (keys[e.player] || {}).key !== who.player) continue; }
       if (who.team && e.team !== who.team) continue;
-      if (who.lineup) { const k = (e.on || on).map(n => (keys[n] || { key:"#" + n }).key).sort().join("|"); if (k !== who.lineup) continue; }
+      if (who.lineup || who.lineups) { const k = (e.on || on).map(n => (keys[n] || { key:"#" + n }).key).sort().join("|"); if (who.lineup ? k !== who.lineup : !who.lineups.includes(k)) continue; }
       out.push({ g, e, keys });
     }
   }
@@ -463,23 +463,54 @@ function viewTeam(A){
     card(v(t.pf), "Their fouls", "Ours " + v(u.pf), { team:"them" }, "pf") +
     "</div>" + '<div class="hint">Possessions are estimated from shots, offensive rebounds, turnovers and free throws. Tap a card for its plays.</div>';
 }
-let minPlays = 10, lineupPer = "game", lineupWith = "any";
+let minPlays = 10, lineupPer = "game";
+// Lineups with these players: every one of them (need 0), or at least `need` of them ("2 bigs" = pick the
+// three bigs, at least 2). The total row adds up every matching five, short ones included.
+let lineupSel = [], lineupNeed = 0;
+function lineupMatches(key){
+  if (!lineupSel.length) return true;
+  const have = key.split("|"), n = lineupSel.filter(k => have.includes(k)).length;
+  return n >= (lineupNeed || lineupSel.length);
+}
+function sumLineups(ls){
+  const t = Object.assign(blank(), { n:0, opp:0, pm:0, themS:blank() });
+  const games = new Set();
+  for (const l of ls) {
+    Object.keys(blank()).forEach(k => { t[k] += l[k] || 0; t.themS[k] += l.themS[k] || 0; });
+    t.n += l.n; t.opp += l.opp; (l.gameIds || []).forEach(id => games.add(id));
+  }
+  t.pm = t.pts - t.opp; t.games = games.size; t.poss = (poss(t) + poss(t.themS)) / 2;
+  return t;
+}
 const PERIOD_SETS = { game:null, h1:[1, 2], h2:[3, 4], 1:[1], 2:[2], 3:[3], 4:[4], ot:"ot" };
 function inPeriodSel(sel, p){ const set = PERIOD_SETS[sel]; return set == null ? true : set === "ot" ? p >= 5 : set.includes(p); }
 function viewLineups(A0){
   const A = lineupPer === "game" ? A0 : aggregate(selected(), p => inPeriodSel(lineupPer, p));
   const people = A0.players.filter(p => p.gp).sort((a, b) => a.label.localeCompare(b.label));
-  if (lineupWith !== "any" && !people.some(p => p.key === lineupWith)) lineupWith = "any";
-  const rows = A.lineups.filter(l => l.n >= minPlays && (lineupWith === "any" || l.key.split("|").includes(lineupWith)))
-    .map(l => Object.assign({ who:{ lineup:l.key, per:lineupPer === "game" ? undefined : lineupPer } }, l));
+  lineupSel = lineupSel.filter(k => people.some(p => p.key === k));
+  if (lineupNeed >= lineupSel.length) lineupNeed = 0;
+  const per = lineupPer === "game" ? undefined : lineupPer;
+  const matching = A.lineups.filter(l => lineupMatches(l.key));
+  const rows = matching.filter(l => l.n >= minPlays).map(l => Object.assign({ who:{ lineup:l.key, per } }, l));
   rows.sort((a, b) => b.n - a.n);
   const opts = [1, 10, 25, 50].map(n => '<option value="' + n + '"' + (n === minPlays ? " selected" : "") + ">" + (n === 1 ? "Every five" : n + "+ plays") + "</option>").join("");
   const hasOT = selected().some(g => g.events.some(e => e.p >= 5));
   const segs = [["game", "Game"], ["h1", "1st half"], ["h2", "2nd half"], ["1", "Q1"], ["2", "Q2"], ["3", "Q3"], ["4", "Q4"]].concat(hasOT ? [["ot", "OT"]] : []);
   const perSeg = '<div class="row">' + segs.map(([v, l]) => '<button class="chip" data-act="lper" data-v="' + v + '" aria-pressed="' + (lineupPer === v) + '">' + l + "</button>").join("") + "</div>";
-  const withSel = '<select id="lwith" aria-label="Lineups with this player"><option value="any">Any player</option>' + people.map(p => '<option value="' + esc(p.key) + '"' + (p.key === lineupWith ? " selected" : "") + ">With " + esc(p.label) + "</option>").join("") + "</select>";
-  return perSeg + '<div class="spread"><span class="label">' + rows.length + " lineups</span><div class=\"row\">" + withSel + "<select id=\"minplays\" aria-label=\"Fewest plays to show\">" + opts + "</select></div></div>" +
-    (rows.length ? table(LCOLS, rows, sortState.lineups, "lineups") : '<div class="empty"><b>No lineup with that many plays</b>Lower the minimum to see shorter stretches.</div>') +
+  const k = lineupSel.length;
+  const withChips = '<div class="row"><span class="label">With</span>' + people.map(p => '<button class="chip" data-act="lwith" data-k="' + esc(p.key) + '" aria-pressed="' + lineupSel.includes(p.key) + '">' + esc(p.label) + "</button>").join("") +
+    (k ? '<button class="chip" data-act="lwithclear">Clear</button>' : "") + "</div>";
+  const needSel = k >= 2 ? '<select id="lneed" aria-label="How many of them on the floor"><option value="0"' + (lineupNeed ? "" : " selected") + ">All " + k + " of them</option>" +
+    Array.from({ length:k - 1 }, (_, i) => i + 1).reverse().map(n => '<option value="' + n + '"' + (lineupNeed === n ? " selected" : "") + ">At least " + n + " of them</option>").join("") + "</select>" : "";
+  let total = "";
+  if (k && matching.length) {
+    const t = Object.assign(sumLineups(matching), { who:{ lineups:matching.map(l => l.key), per } });
+    total = '<tr class="tot">' + LCOLS.map(c => "<td" + (c.k === "label" ? ' class="lu"' : "") + ">" +
+      (c.k === "label" ? "<span><b>All " + matching.length + " together</b></span>" : c.k === "games" ? "<span>" + t.games + "</span>" : c.f(t)) + "</td>").join("") + "</tr>";
+  }
+  const shown = rows.length + " lineups" + (k && matching.length > rows.length ? " (" + (matching.length - rows.length) + " shorter ones in the total)" : "");
+  return perSeg + withChips + '<div class="spread"><span class="label">' + shown + '</span><div class="row">' + needSel + "<select id=\"minplays\" aria-label=\"Fewest plays to show\">" + opts + "</select></div></div>" +
+    (rows.length || total ? table(LCOLS, rows, sortState.lineups, "lineups", total) : '<div class="empty"><b>No lineup with that many plays</b>Lower the minimum to see shorter stretches.</div>') +
     '<div class="hint">Each five is counted by the plays logged while they were on the floor, across the games counted. Tap a lineup for its plays. PTS and the shooting are ours; OPP is what the other team scored against them. Off is our points per possession with that five on the floor, Def is theirs, Net is the difference (estimated possessions; small samples swing a lot).</div>';
 }
 const RIM = { x:25, y:5.25 }, ARC = 19.75;
@@ -975,7 +1006,7 @@ function render(){
     : tab === "report" ? viewReport() : tab === "trends" ? viewTrends() : tab === "team" ? viewTeam(A) : tab === "lineups" ? viewLineups(A) : tab === "shots" ? viewShots(A) : tab === "games" ? viewGames() : viewPlayers(A);
   $("#app").innerHTML = '<main class="inner">' + picker() + (pick.size ? controls() + body : "") + "</main>";
   const mp = $("#minplays"); if (mp) mp.addEventListener("change", ev => { minPlays = +ev.target.value; render(); });
-  const lw = $("#lwith"); if (lw) lw.addEventListener("change", ev => { lineupWith = ev.target.value; render(); });
+  const ln = $("#lneed"); if (ln) ln.addEventListener("change", ev => { lineupNeed = +ev.target.value; render(); });
   const sw = $("#shotwho"); if (sw) sw.addEventListener("change", ev => { shotWho = ev.target.value; render(); });
   const rg = $("#reportgame"); if (rg) rg.addEventListener("change", ev => { reportId = ev.target.value; render(); });
   const tw = $("#trendwho"); if (tw) tw.addEventListener("change", ev => { trendWho = ev.target.value; render(); });
@@ -988,6 +1019,7 @@ function whoName(who, games){
   if (who.team) return who.team === "us" ? "Team" : "Opponents";
   if (who.player) { const p = aggregate(games).players.find(r => r.key === who.player); return p ? p.label : who.player; }
   if (who.lineup) { const l = aggregate(games).lineups.find(r => r.key === who.lineup); return l ? l.label : "Lineup"; }
+  if (who.lineups) return who.lineups.length + " lineups together";
   return "";
 }
 function sheetPlays(who, stat, gid){
@@ -1055,6 +1087,8 @@ document.addEventListener("click", ev => {
   if (act === "report") { reportId = b.dataset.id; tab = "report"; try { localStorage.setItem("hub/tab", tab); } catch (e) {} render(); window.scrollTo(0, 0); return; }
   if (act === "shotview") { shotView = b.dataset.v; render(); return; }
   if (act === "lper") { lineupPer = b.dataset.v; render(); return; }
+  if (act === "lwith") { const k = b.dataset.k; lineupSel = lineupSel.includes(k) ? lineupSel.filter(x => x !== k) : lineupSel.concat(k); render(); return; }
+  if (act === "lwithclear") { lineupSel = []; lineupNeed = 0; render(); return; }
   if (act === "toggle") {
     const g = GAMES.find(x => x.id === b.dataset.id); if (!g) return;
     if (isScrim(g)) pick = pick.has(g.id) && pick.size === 1 ? new Set(seasonGames().map(x => x.id)) : new Set([g.id]);

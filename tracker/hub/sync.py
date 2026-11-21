@@ -40,10 +40,23 @@ def local_date(game: dict) -> str | None:
 
 def slim(game: dict, kinds: dict | None = None, fixes: dict | None = None) -> dict:
     fix = (fixes or {}).get(game["id"], {})
+    # A play the stat book never logged: {"add:<new id>": {"after": <event id>, ...the play's fields, "why"}}
+    adds: dict[str, list[dict]] = {}
+    for key, f in fix.items():
+        if key.startswith("add:"):
+            play = {k: v for k, v in f.items() if k not in ("why", "after")}
+            adds.setdefault(f["after"], []).append(dict(play, id=key[4:]))
+    missing = set(adds) - {e.get("id") for e in game["events"]}
+    if missing:
+        raise SystemExit(f"{game['id']}: a correction adds a play after {sorted(missing)}, which is not in the game")
     events = []
     for e in game["events"]:
         e = dict(e, **{k: v for k, v in fix.get(e.get("id"), {}).items() if k != "why"})
         events.append({k: e[k] for k in KEEP if k in e and e[k] is not None})
+        for play in adds.get(e.get("id"), []):
+            # the added play happens with the same five on the floor and in the same period as the one before it
+            play = {"on": e.get("on"), "p": e.get("p"), "ms": e.get("ms"), **play}
+            events.append({k: play[k] for k in KEEP if k in play and play[k] is not None})
     return {"id": game["id"], "date": local_date(game), "us": game.get("us"), "them": game.get("them"),
             "qlen": game.get("qlen"), "roster": game.get("roster", []), "starters": game.get("starters", []),
             "updated": game.get("updated"), "kind": (kinds or {}).get(game["id"], "game"), "events": events}
