@@ -50,6 +50,7 @@ GAP_SLACK_FRACTION = 0.35
 LINK_PLAYS = 4              # a link may skip up to this many logged shots (no card on film) ...
 LINK_CARDS = 10             # ... and this many cards (not shots, or the other team's unlogged ones)
 RESTART_COST = 2.0
+LIVE_SPAN_PAD_S = 5.0      # a live period's film span is its logged span on the offset, this much either side
 LIVE_SHARE = 0.5           # this share of shots agreeing on one offset means the log was kept live
 
 FOLLOW_OFFSET_S = {"reb": REBOUND_AFTER_S, "ast": 0.0, "blk": 0.0, "stl": 0.0}
@@ -459,14 +460,40 @@ def _prune(pairs: list[tuple[float, float]]) -> list[tuple[float, float]]:
     return pairs
 
 
+AGREE_S = 6.0              # two periods whose best live offsets are this close were logged live on one clock
+AGREE_MIN_SHARE = 0.3      # ... as long as each has at least this share of its shots on that offset
+
+
+def agreed_offsets(plays: list[Play], cards: list[Card]) -> dict[int, float]:
+    """Logged period -> live offset, for every period whose own best offset another period agrees with.
+
+    One period on its own needs half its shots on cards to count as live (LIVE_SHARE). On a film that ran
+    through the game, every period finds the same offset, and two periods agreeing to a few seconds out of
+    hours of film is not chance: Shadow Mountain (2026-11-20) found 373-374 s in all four quarters with 41-54%
+    support, and three of them fell short of the bar alone. A film cut at the half gives two offsets, each
+    agreed by its own half."""
+    best: dict[int, tuple[float, float]] = {}
+    for lp in sorted({p.period for p in plays if p.period is not None}):
+        off, share = live_offset([p for p in plays if p.period == lp and p.is_shot], cards)
+        if off is not None and share >= AGREE_MIN_SHARE:
+            best[lp] = (off, share)
+    out = {}
+    for lp, (off, _) in best.items():
+        mates = [o for q, (o, _) in best.items() if q != lp and abs(o - off) <= AGREE_S]
+        if mates:
+            out[lp] = off
+    return out
+
+
 def match_period(shots: list[Play], cards: list[Card], log_span: tuple[float, float],
-                 film_span: tuple[float, float]) -> tuple[list[tuple[int, int, float]], TimeFit, PeriodResult]:
-    offset, share = live_offset(shots, cards)
+                 film_span: tuple[float, float], live_hint: float | None = None
+                 ) -> tuple[list[tuple[int, int, float]], TimeFit, PeriodResult]:
+    offset, share = (live_hint, 1.0) if live_hint is not None else live_offset(shots, cards)
     log_len = (log_span[1] - log_span[0]) / 1000.0
     film_len = film_span[1] - film_span[0]
     # live, the logged period lasts about as long as the film's; a rewatch skips and pauses
     same_length = film_len > 0 and 0.75 <= log_len / film_len <= 1.25
-    live = offset is not None and share >= LIVE_SHARE and same_length
+    live = live_hint is not None or (offset is not None and share >= LIVE_SHARE and same_length)
     cap, floor = (TIME_CAP, MIN_SIGMA_S) if live else (REWATCH_TIME_CAP, REWATCH_MIN_SIGMA_S)
     if live:
         mode = "live"
@@ -561,6 +588,7 @@ def place_game(book: StatBook, cards: list[Card], timeline=None, clock_at=None,
     spans = film_spans or film_period_spans(cards, timeline)
     log_periods = sorted({p.period for p in plays if p.period is not None})
     pairing = pair_periods(log_periods, spans)
+    hints = agreed_offsets(plays, cards)
     placed: dict[str, Placed] = {}
     results: list[PeriodResult] = []
     fits: dict[int, TimeFit] = {}
@@ -568,13 +596,20 @@ def place_game(book: StatBook, cards: list[Card], timeline=None, clock_at=None,
         fp = pairing.get(lp)
         in_period = [p for p in plays if p.period == lp]
         timed = [p.ms for p in in_period if p.ms is not None]
+        hint = hints.get(lp)
+        if hint is not None:
+            # logged live on the film's clock: the period is where the log says, whatever the board read
+            spans = dict(spans or {})
+            fp = lp if fp is None else fp
+            spans[fp] = (min(timed) / 1000 + hint - LIVE_SPAN_PAD_S, max(timed) / 1000 + hint + LIVE_SPAN_PAD_S)
+            pairing[lp] = fp
         if fp is None or fp not in spans or not timed:
             continue
         film_span = spans[fp]
         pc = [c for c in cards if film_span[0] - 5 <= c.t <= film_span[1] + 5]
         shots = [p for p in in_period if p.is_shot]
         log_span = (min(timed), max(timed))
-        matches, fit, res = match_period(shots, pc, log_span, film_span)
+        matches, fit, res = match_period(shots, pc, log_span, film_span, live_hint=hint)
         res.period = lp
         results.append(res)
         fits[lp] = fit

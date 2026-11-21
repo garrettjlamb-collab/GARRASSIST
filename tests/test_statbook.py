@@ -124,3 +124,42 @@ def test_loads_the_raw_game_and_the_export(tmp_path):
     assert book.plays[0].ms == 1794689713633.0
     placed, _ = place_game(book, [])
     assert label(placed[0], book.roster) == "Ryan 3PT missed"
+
+
+def _two_periods(seed, rewatch=False, missing=0.55):
+    """Two periods of `_game` on one film: the second starts 1200 s later in the film and in the log. With
+    over half the cards missing, a period alone falls short of LIVE_SHARE."""
+    a, ca = _game(seed, rewatch=rewatch, missing=missing)
+    b, cb = _game(seed + 100, rewatch=rewatch, missing=missing)
+    shift = 1200.0
+    plays = list(a.plays)
+    for p in b.plays:
+        plays.append(Play(seq=p.seq + 1000, id="b" + p.id, ms=p.ms + shift * 1000, period=2, type=p.type,
+                          team=p.team, made=p.made, pts=p.pts, ref=("b" + p.ref) if p.ref else None,
+                          action=p.action))
+    cards = list(ca) + [Card(id="b" + c.id, t=c.t + shift, period=2, made_prob=c.made_prob, strength=c.strength,
+                             side=c.side) for c in cb]
+    return StatBook(game={}, roster={}, plays=plays), sorted(cards, key=lambda c: c.t)
+
+
+def test_periods_that_agree_on_one_offset_are_live_even_when_the_board_misreads_them():
+    """Shadow Mountain 2026-11-20: all four quarters found the same offset (373-374 s), three fell short of
+    LIVE_SHARE alone, and the board's quarter spans were wrong, so their plays were left loose.
+    Measured 2026-11-20 over 8 seeds: 242 of 272 findable shots right (26 before agreement)."""
+    want = lambda pid: ("b" if pid.startswith("b") else "") + "c" + pid.lstrip("b")[1:]
+    right = findable = 0
+    for seed in range(8):
+        book, cards = _two_periods(seed)
+        wrong_spans = {1: (0.0, 600.0), 2: (1500.0, 1800.0)}      # the board cut both periods short
+        placed, results = place_game(book, cards, film_spans=wrong_spans)
+        assert [r.mode for r in results] == ["live", "live"], (seed, [r.mode for r in results])
+        right += sum(p.play.type == "shot" and p.card_id == want(p.play.id) for p in placed)
+        findable += sum(1 for p in book.plays if p.type == "shot" and any(c.id == want(p.id) for c in cards))
+    assert right >= 0.85 * findable, (right, findable)
+
+
+def test_a_rewatch_does_not_agree_with_itself_across_periods():
+    for seed in range(4):
+        book, cards = _two_periods(seed, rewatch=True, missing=0.1)
+        _, results = place_game(book, cards)
+        assert [r.mode for r in results] == ["rewatch", "rewatch"], seed
