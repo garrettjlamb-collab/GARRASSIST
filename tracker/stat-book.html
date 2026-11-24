@@ -162,6 +162,7 @@ td.lu{white-space:normal;min-width:170px;max-width:240px;line-height:1.3;font-si
 .page{display:flex;flex-direction:column;gap:14px;padding-block:14px}
 .page h1{margin:0;font-family:var(--display);font-weight:700;font-size:28px;text-wrap:balance}
 .scroll{overflow-x:auto;border:1px solid var(--line);border-radius:10px;background:var(--surface)}
+.defh{margin:22px 0 8px;font-size:20px}
 table{border-collapse:collapse;font-variant-numeric:tabular-nums;font-size:14px;width:100%}
 th,td{padding:8px 7px;text-align:right;white-space:nowrap;border-bottom:1px solid var(--line)}
 th{font-family:var(--display);font-weight:600;letter-spacing:.06em;font-size:13px;color:var(--muted);text-transform:uppercase}
@@ -1124,6 +1125,21 @@ const LCOLS = [
   { h:"+/-", k:"pm", v:r => r.pm, f:r => "<b>" + signed(r.pm) + "</b>" }
 ].concat(PCOLS.filter(c => ["fg", "tp", "ft", "oreb", "dreb", "reb", "ast", "stl", "blk", "to", "pf"].includes(c.k)));
 function lineupLabel(g, nums){ return nums.map(n => esc(pname(g, n) || "#" + n)).join(" · "); }
+// Their shooting and turnovers split by the defense we were in (each play carries it as e.def).
+function defenseSplit(g, sel){
+  const rows = {};
+  for (const e of g.events) {
+    if (e.team !== "them" || !inSel(sel, e.p)) continue;
+    const k = e.def || ""; const r = rows[k] || (rows[k] = { fgm:0, fga:0, to:0, pts:0 });
+    if (e.type === "shot") { if (e.pts > 1) { r.fga++; if (e.made) r.fgm++; } if (e.made) r.pts += e.pts; }
+    else if (e.type === "to") r.to++;
+  }
+  const keys = DEFENSES.filter(d => rows[d]).concat(rows[""] ? [""] : []);
+  if (!keys.length || (keys.length === 1 && keys[0] === "")) return "";
+  return '<h2 class="defh">Their offense by our defense</h2><div class="scroll"><table class="defsplit"><tr><th>Defense</th><th>Their FG</th><th>FG%</th><th>Their TO</th><th>Their PTS</th></tr>' +
+    keys.map(k => { const r = rows[k]; return "<tr><td>" + (k ? esc(k) : "<span class='hint'>Not set</span>") + "</td><td><b>" + r.fgm + "-" + r.fga + "</b></td><td>" + (r.fga ? Math.round(100 * r.fgm / r.fga) + "%" : "–") + "</td><td><b>" + r.to + "</b></td><td>" + r.pts + "</td></tr>"; }).join("") +
+    "</table></div>";
+}
 function renderBox(g){
   const full = compute(g), ps = periodState(g);
   const c = boxPeriod === "game" ? full : compute(g, g.events.filter(e => inSel(boxPeriod, e.p)));
@@ -1149,7 +1165,7 @@ function renderBox(g){
     '<div class="scroll"><table class="qline">' + ql + "</table></div>" +
     modeSeg + segHtml(boxPeriod, "boxp", ps) +
     '<div class="hint">' + hint + "</div>" +
-    (table ? '<div class="scroll boxscroll">' + table + "</div>" : "") + "</main>";
+    (table ? '<div class="scroll boxscroll">' + table + "</div>" : "") + defenseSplit(g, boxPeriod) + "</main>";
 }
 function renderPlays(g){
   const c = compute(g), ps = periodState(g);
