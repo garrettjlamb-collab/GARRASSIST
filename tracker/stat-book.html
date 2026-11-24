@@ -162,7 +162,11 @@ td.lu{white-space:normal;min-width:170px;max-width:240px;line-height:1.3;font-si
 .page{display:flex;flex-direction:column;gap:14px;padding-block:14px}
 .page h1{margin:0;font-family:var(--display);font-weight:700;font-size:28px;text-wrap:balance}
 .scroll{overflow-x:auto;border:1px solid var(--line);border-radius:10px;background:var(--surface)}
-.defh{margin:22px 0 8px;font-size:20px}
+.defh{margin:22px 0 8px;font-family:var(--display);font-weight:700;font-size:26px}
+.defsplit th{font-size:15px;padding:10px 8px}
+.defsplit td{font-size:22px;padding:14px 8px;font-family:var(--display);font-weight:600}
+.defsplit td:first-child{font-weight:700;font-size:24px}
+.defsplit td b{font-weight:700;font-size:26px}
 table{border-collapse:collapse;font-variant-numeric:tabular-nums;font-size:14px;width:100%}
 th,td{padding:8px 7px;text-align:right;white-space:nowrap;border-bottom:1px solid var(--line)}
 th{font-family:var(--display);font-weight:600;letter-spacing:.06em;font-size:13px;color:var(--muted);text-transform:uppercase}
@@ -811,7 +815,7 @@ document.addEventListener("click", ev => {
       closeSheet(); render(); toast(describe(g, foul) + " · turnover", true); break; }
     case "boxmode": boxMode = b.dataset.v; render(); break;
     case "sort": { const st = sortState[boxMode], k = b.dataset.k;
-      if (st.k !== k) { st.k = k; st.d = 1; } else { st.d = (st.d + 1) % 3; if (!st.d) st.k = null; }
+      if (st.k !== k) { st.k = k; st.d = 2; } else { st.d = st.d === 2 ? 1 : 0; if (!st.d) st.k = null; }
       render(); break; }
     case "top8": { const n = b.dataset.n, nm = pname(g, n).trim().toLowerCase(), msg = $("#re-msg");
       if (!nm) { if (msg) msg.textContent = "Give #" + n + " a name first."; break; }
@@ -1136,7 +1140,7 @@ function defenseSplit(g, sel){
   }
   const keys = DEFENSES.filter(d => rows[d]).concat(rows[""] ? [""] : []);
   if (!keys.length || (keys.length === 1 && keys[0] === "")) return "";
-  return '<h2 class="defh">Their offense by our defense</h2><div class="scroll"><table class="defsplit"><tr><th>Defense</th><th>Their FG</th><th>FG%</th><th>Their TO</th><th>Their PTS</th></tr>' +
+  return '<h2 class="defh">Their offense by our defense</h2><div class="scroll"><table class="defsplit"><tr><th>Defense</th><th>FG</th><th>FG%</th><th>TO</th><th>PTS</th></tr>' +
     keys.map(k => { const r = rows[k]; return "<tr><td>" + (k ? esc(k) : "<span class='hint'>Not set</span>") + "</td><td><b>" + r.fgm + "-" + r.fga + "</b></td><td>" + (r.fga ? Math.round(100 * r.fgm / r.fga) + "%" : "–") + "</td><td><b>" + r.to + "</b></td><td>" + r.pts + "</td></tr>"; }).join("") +
     "</table></div>";
 }
@@ -1155,10 +1159,10 @@ function renderBox(g){
     hint = rows.length ? "Every five-man group that played, most-used first. Each stat counts for the five who were on the floor when it happened, so these are exact. PTS and the shooting through PF are ours; OPP is what they scored against that five." : "No lineups yet. They fill in as you log plays.";
   } else {
     const on = onCourt(g);
-    const rows = sortRows(g.roster.map(r => Object.assign({ label: "#" + esc(r.num) + " " + esc(r.name) + (on.includes(r.num) && !ps.final ? " •" : "") }, c.P[r.num] || blankLine())), PCOLS, sortState.players);
+    const rows = sortRows(g.roster.filter(r => usedInGame(g, r.num)).map(r => Object.assign({ label: "#" + esc(r.num) + " " + esc(r.name) + (on.includes(r.num) && !ps.final ? " •" : "") }, c.P[r.num] || blankLine())), PCOLS, sortState.players);
     table = "<table>" + thead(PCOLS, sortState.players) + rows.map(r => tr(PCOLS, r)).join("") +
       tr(PCOLS, Object.assign({ label: esc(g.us), team:true }, c.T.us), "tot") + tr(PCOLS, Object.assign({ label: esc(g.them), team:true }, c.T.them), "tot opp") + "</table>";
-    hint = "• on the floor now. +/- is the score while the player was on the floor. Tap a column to sort it: once low to high, again high to low, a third time back to normal.";
+    hint = "• on the floor now. +/- is the score while the player was on the floor. Tap a column to sort it: once highest first, again lowest first, a third time back to normal. Players who haven't been in the game yet are left off.";
   }
   const modeSeg = '<div class="seg">' + [["players", "Players"], ["lineups", "Lineups"]].map(([v, l]) => '<button class="segb" data-act="boxmode" data-v="' + v + '" aria-pressed="' + (boxMode === v) + '">' + l + "</button>").join("") + "</div>";
   return board(g, full, ps) + '<main class="page wrap"><h1>Box score</h1>' +
