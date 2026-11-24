@@ -13,6 +13,8 @@ tell application "System Events"
 	set vals to {$vals}
 	repeat with i from 1 to count of vals
 		set v to item i of vals
+		keystroke "a" using command down
+		delay 0.1
 		if v is not "" then keystroke v
 		delay 0.2
 		if i < (count of vals) then
