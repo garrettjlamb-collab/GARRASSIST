@@ -19,7 +19,7 @@ from zoneinfo import ZoneInfo
 GYM_TZ = ZoneInfo("America/Phoenix")   # games are played in Arizona; the stat book once stamped UTC dates
 
 KEEP = ("id", "type", "team", "player", "made", "pts", "off", "p", "on", "in", "out", "x", "y", "ref", "kind",
-        "action", "period", "ms")
+        "action", "period", "ms", "def")
 
 
 KINDS = Path(__file__).parent / "kinds.json"       # game id -> "scrimmage": kept in the hub, never in season totals

@@ -75,6 +75,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible{outline:3px soli
 .act .pt span{font-family:var(--body);font-weight:600;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
 .tile .ln{font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums}
 .tile .ln .f4{color:var(--warn);font-weight:700}.tile .ln .f5{color:var(--miss);font-weight:700}
+.tile.deftile{background:var(--surface-2)}.tile .dv{font-family:var(--display);font-weight:700;font-size:26px;line-height:1.1}.tile .dv.unset{font-size:17px;color:var(--muted)}
 .tile.opp{grid-column:1/-1;flex-direction:row;align-items:center;justify-content:space-between;min-height:64px;background:var(--surface-2)}
 .tile.opp .num{font-size:24px;letter-spacing:.04em;text-transform:uppercase}
 .bar{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
@@ -403,6 +404,7 @@ function addEvent(g, e, grp){
   e.id = uid(); e.t = new Date().toISOString(); e.ms = Date.now();
   e.p = ps.p; e.clock = g.clockUsed ? Math.round(clockRem(g) * 10) / 10 : null;
   e.on = onCourt(g); e.grp = grp || e.id;
+  if (g.def) e.def = g.def;   // the defense we were in when it happened
   g.events.push(e); persist(g); return e;
 }
 function describe(g, e){
@@ -611,6 +613,12 @@ function timeoutsLeft(g, team, kind){
   const used = g.events.filter(e => e.type === "timeout" && e.team === team && e.kind === kind).length;
   const allow = kind === "full" ? 3 + Math.max(0, periodState(g).p - 4) : 2;
   return allow - used;
+}
+const DEFENSES = ["Man", "2-3", "3-2", "10", "22", "12"];
+function sheetDefense(){
+  const g = G();
+  openSheet("<h2>Our defense</h2><div class=\"acts\">" + DEFENSES.map(d => '<button class="act' + (g.def === d ? " sel-in" : "") + '" data-act="setdef" data-d="' + esc(d) + '">' + esc(d) + "</button>").join("") +
+    '</div><div class="hint">Every play from now on is saved with this defense, until you change it.</div><button class="cancel" data-act="close">Cancel</button>');
 }
 function sheetTimeout(){
   const g = G();
@@ -859,6 +867,8 @@ document.addEventListener("click", ev => {
       if (subBackToFt && ft) { subBackToFt = false; sheetFtShot(); } else closeSheet();
       break; }
     case "timeout": sheetTimeout(); break;
+    case "defense": sheetDefense(); break;
+    case "setdef": g.def = b.dataset.d; persist(g); closeSheet(); render(); toast("Defense: " + g.def, true); break;
     case "tout": { if (g.clock.run) { g.clock.rem = clockRem(g); g.clock.run = false; } const e = addEvent(g, { type:"timeout", team:b.dataset.team, kind:b.dataset.kind }); closeSheet(); render(); toast(describe(g, e), true); break; }
     case "spot": { const shot = spotFor && findEvent(g, spotFor); if (!shot || shot.x != null) break;
       const r = b.getBoundingClientRect();
@@ -933,7 +943,7 @@ function exportData(g){
     player: e.player ?? null, name: e.player != null ? pname(g, e.player) : null,
     type: e.type, pts: e.type === "shot" ? e.pts : null, made: e.type === "shot" ? e.made : null,
     off: e.type === "reb" ? e.off : null, action: e.action ?? null, sub_in: e.in ?? null, sub_out: e.out ?? null,
-    timeout_kind: e.type === "timeout" ? (e.kind || null) : null,
+    timeout_kind: e.type === "timeout" ? (e.kind || null) : null, defense: e.def ?? null,
     x_ft: e.x ?? null, y_ft: e.y ?? null, dist_ft: e.x != null ? Math.round(Math.hypot(e.x - RIM.x, e.y - RIM.y) * 10) / 10 : null,
     ref: e.ref ?? null, group: e.grp, on_court: e.on, score_us: c.scoreAfter[e.id][0], score_them: c.scoreAfter[e.id][1],
     text: describe(g, e)
@@ -1027,6 +1037,7 @@ function renderLive(g){
   else if (!ps.live) top = '<button class="cta" data-act="period">Start ' + pLabel(ps.p + 1) + "</button>";
   const tiles = sortNums(on).map(n => { const l = c.P[n] || blankLine(); const fc = l.pf >= 5 ? "f5" : l.pf >= 4 ? "f4" : "";
     return '<button class="tile" data-act="player" data-n="' + esc(n) + '"><span class="top"><span class="num">#' + esc(n) + '</span><span class="nm">' + esc(pname(g, n)) + '</span></span><span class="ln">' + l.pts + " pts · " + (l.oreb + l.dreb) + " reb · " + l.ast + ' ast · <span class="' + fc + '">' + l.pf + " F</span></span></button>"; }).join("");
+  const defTile = '<button class="tile deftile" data-act="defense" aria-label="Our defense: ' + esc(g.def || "not set") + ', tap to change"><span class="ln">Defense</span><span class="dv' + (g.def ? "" : " unset") + '">' + esc(g.def || "Tap to set") + "</span></button>";
   const T = c.T.them; const ob = (k, label, cls = "") => '<button class="act' + cls + '" data-act="olog" data-k="' + k + '">' + label + "</button>";
   const opp = '</div><section class="opppanel" aria-label="' + esc(g.them) + ' team stats"><div class="opphead"><span class="label">' + esc(g.them) + ' · team</span><span class="ln">' +
     T.fgm + "-" + T.fga + " FG · " + T.ftm + "-" + T.fta + " FT · " + (T.oreb + T.dreb) + " reb · " + T.to + " TO</span></div>" +
@@ -1039,7 +1050,7 @@ function renderLive(g){
   const recent = g.events.slice(-4).reverse().map(e => '<div class="row"><span>' + esc(describe(g, e)) + "</span><span>" + c.scoreAfter[e.id][0] + "–" + c.scoreAfter[e.id][1] + "</span></div>").join("");
   return board(g, c, ps) + '<main class="live wrap">' + top +
     '<div class="lastline" id="lastline" aria-live="polite">' + lastHtml() + "</div>" +
-    '<div class="grid">' + tiles + opp + "</div>" +
+    '<div class="grid">' + tiles + defTile + opp + "</div>" +
     '<div class="bar"><button data-act="sub">Sub</button><button data-act="ftgo">FT</button><button data-act="timeout">Timeout</button><button data-act="undo"' + (g.events.length ? "" : " disabled") + '>Undo</button><button data-act="period"' + (ps.final ? " disabled" : "") + ">" + (ps.live ? "End " + pLabel(ps.p) : "Period") + "</button></div>" +
     (recent ? '<div class="label">Last plays</div><div class="recent">' + recent + "</div>" : "") +
     "</main>";
